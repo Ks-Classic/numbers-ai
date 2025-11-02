@@ -50,6 +50,8 @@
   - round_number-1 (前回) と round_number-2 (前々回) の当選番号を取得
   - keisen_master.json から各桁の予測出目を取得
   - 全桁の予測出目を結合 → source_list
+  
+  **注意:** `keisen_master.json`の作成方法については、[08-keisen-master-creation.md](./08-keisen-master-creation.md)を参照してください。
 
 ステップ2: パターン別の元数字リスト作成
   - pattern = 'A' (0なし):

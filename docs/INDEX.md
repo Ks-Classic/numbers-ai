@@ -126,6 +126,24 @@
 
 ---
 
+### 08. keisen_master.json作成方法ドキュメント（Core Data Creation）
+
+**ファイル**: `08-keisen-master-creation.md`  
+**対象読者**: データエンジニア、アルゴリズム実装者、品質管理者
+
+**主な内容**:
+- keisen_master.jsonの重要性とプロジェクトへの影響
+- JSON構造の詳細説明
+- 作成手順の枠組み
+- 検証方法
+- 注意事項
+
+**いつ読むか**: keisen_master.json作成時、データ基盤構築時
+
+**注意**: 具体的な作成方法と予測出目ルールは、紙媒体の罫線ルール確定後に追加予定
+
+---
+
 ## 📖 推奨読書順序
 
 ### 新規メンバー向け
@@ -145,9 +163,10 @@
 ### バックエンド/AI開発者向け
 
 1. **06-implementation-plan.md** - 現在のフェーズで使う技術を確認 ⭐️
-2. **04-algorithm-ai.md** - アルゴリズムとAIを理解
-3. **03-data-api-design.md** - データ・API設計を確認
-4. **02-system-architecture.md** - システム全体像を把握
+2. **08-keisen-master-creation.md** - keisen_master.jsonの作成方法を理解
+3. **04-algorithm-ai.md** - アルゴリズムとAIを理解
+4. **03-data-api-design.md** - データ・API設計を確認
+5. **02-system-architecture.md** - システム全体像を把握
 
 ### プロジェクトマネージャー向け
 
@@ -161,6 +180,7 @@
 
 | バージョン | 日付 | 主な変更内容 |
 |-----------|------|-------------|
+| 2.1 | 2025-11-02 | 08-keisen-master-creation.md追加（keisen_master.json作成方法） |
 | 2.0 | 2025-11-02 | ドキュメントを7カテゴリに分割、開発フェーズごとに最適化 |
 | 1.1 | 2025-11-02 | implementation-plan.md追加（実装計画書） |
 | 1.0 | 2025-11-02 | 初版作成（requirements.md, specifications.md, INDEX.md追加） |
@@ -191,7 +211,8 @@
   ├─ 02-system-architecture.md（全体設計）
   ├─ 03-data-api-design.md（データ層）
   ├─ 04-algorithm-ai.md（コアロジック）
-  └─ 05-frontend-design.md（UI/UX）
+  ├─ 05-frontend-design.md（UI/UX）
+  └─ 08-keisen-master-creation.md（コアデータ作成）
 
 レイヤー3: 実装・運用層（When & Action）
   ├─ 06-implementation-plan.md（実装戦略）⭐️

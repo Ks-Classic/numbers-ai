@@ -125,6 +125,9 @@ round_number,draw_date,n3_winning,n4_winning,n3_rehearsal,n4_rehearsal
 
 意味: N3の百の位で、前回が0、前々回が0の場合、予測出目は `[0, 5]`
 
+**作成方法について:**
+`keisen_master.json`の具体的な作成方法と予測出目ルールについては、[08-keisen-master-creation.md](./08-keisen-master-creation.md)を参照してください。
+
 ---
 
 ### 2.2 データベーススキーマ（Phase 2以降: Supabase PostgreSQL）

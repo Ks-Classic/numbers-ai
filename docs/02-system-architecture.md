@@ -1,10 +1,10 @@
-# システムアーキテクチャ設計書 v1.0
+# システムアーキテクチャ設計書 v1.1
 
 **Document Management Information**
 - Document ID: DOC-02
-- Version: 1.0
+- Version: 1.1
 - Created: 2025-11-02
-- Last Updated: 2025-11-02
+- Last Updated: 2025-01-XX
 - Status: Confirmed
 - Approver: Technical Lead
 
@@ -169,7 +169,7 @@
 **Frontend (Next.js/React)**
 - ユーザーインターフェース提供
 - 入力バリデーション
-- 状態管理（Redux Toolkit）
+- 状態管理（Zustand）
 - APIコール
 - 結果のビジュアライゼーション
 
@@ -209,8 +209,8 @@
 - **TypeScript**: 5.3.0+
 
 **状態管理**
-- **Redux Toolkit**: 2.0.0+
-- **React Query (TanStack Query)**: 5.0.0+
+- **Zustand**: 4.4.0+（軽量でシンプルな状態管理）
+- **React Query (TanStack Query)**: 5.0.0+（Phase 2以降）
 
 **スタイリング**
 - **Tailwind CSS**: 3.4.0+
@@ -322,88 +322,108 @@ numbers-ai/
 │   ├── app/                       # Next.js App Router
 │   │   ├── layout.tsx             # ルートレイアウト
 │   │   ├── page.tsx               # ホーム画面
-│   │   ├── predict/
-│   │   │   ├── page.tsx           # 予測開始画面
-│   │   │   ├── input/
-│   │   │   │   └── page.tsx       # 回号入力
+│   │   ├── globals.css            # グローバルスタイル
+│   │   ├── favicon.ico            # ファビコン
+│   │   │
+│   │   ├── predict/               # 予測フロー
+│   │   │   ├── page.tsx           # 回号入力画面（実装済み）
 │   │   │   ├── rehearsal/
-│   │   │   │   └── page.tsx       # リハーサル入力
+│   │   │   │   └── page.tsx       # リハーサル入力（実装済み）
+│   │   │   ├── loading/
+│   │   │   │   └── page.tsx       # ローディング画面（実装済み）
+│   │   │   ├── axis/
+│   │   │   │   └── page.tsx       # 軸数字選択画面（実装済み）
 │   │   │   └── result/
-│   │   │       └── page.tsx       # 結果表示
+│   │   │       └── page.tsx       # 結果表示（実装済み）
+│   │   │
+│   │   ├── history/               # 履歴画面（実装済み・非表示）
+│   │   │   └── page.tsx
+│   │   │
+│   │   ├── statistics/            # 統計画面（実装済み・非表示）
+│   │   │   └── page.tsx
+│   │   │
+│   │   ├── settings/              # 設定画面（実装済み・非表示）
+│   │   │   └── page.tsx
 │   │   │
 │   │   └── api/                   # API Routes
 │   │       └── predict/
-│   │           └── route.ts       # 予測実行API
+│   │           └── route.ts       # 予測実行API（実装済み）
 │   │
 │   ├── components/                # Reactコンポーネント
-│   │   ├── ui/                    # 共通UIコンポーネント
-│   │   │   ├── button.tsx
-│   │   │   ├── input.tsx
-│   │   │   ├── tabs.tsx
-│   │   │   ├── accordion.tsx
-│   │   │   ├── modal.tsx
-│   │   │   └── progress-bar.tsx
+│   │   ├── ui/                    # 共通UIコンポーネント（shadcn/ui）
+│   │   │   ├── button.tsx         # 実装済み
+│   │   │   ├── input.tsx          # 実装済み
+│   │   │   ├── tabs.tsx           # 実装済み
+│   │   │   ├── dialog.tsx         # 実装済み
+│   │   │   ├── card.tsx           # 実装済み
+│   │   │   ├── badge.tsx          # 実装済み
+│   │   │   ├── label.tsx          # 実装済み
+│   │   │   ├── progress.tsx       # 実装済み
+│   │   │   ├── select.tsx         # 実装済み
+│   │   │   ├── switch.tsx         # 実装済み
+│   │   │   ├── radio-group.tsx    # 実装済み
+│   │   │   ├── sonner.tsx         # 実装済み
+│   │   │   ├── accordion.tsx      # Phase 2実装予定
+│   │   │   └── modal.tsx          # Phase 2実装予定
 │   │   │
 │   │   ├── features/              # 機能別コンポーネント
-│   │   │   ├── RoundInput.tsx
-│   │   │   ├── RehearsalInput.tsx
-│   │   │   ├── ResultView.tsx
-│   │   │   ├── AxisCandidates.tsx
-│   │   │   └── ManualAxis.tsx
+│   │   │   ├── RoundInput.tsx     # Phase 2実装予定
+│   │   │   ├── RehearsalInput.tsx # Phase 2実装予定
+│   │   │   ├── ResultView.tsx     # Phase 2実装予定
+│   │   │   ├── AxisCandidates.tsx # Phase 2実装予定
+│   │   │   └── ManualAxis.tsx     # Phase 2実装予定
 │   │   │
-│   │   └── layouts/               # レイアウトコンポーネント
-│   │       ├── Header.tsx
-│   │       └── Navigation.tsx
+│   │   ├── layouts/               # レイアウトコンポーネント
+│   │   │   ├── Header.tsx         # Phase 2実装予定
+│   │   │   └── Navigation.tsx     # Phase 2実装予定（shared/から移動予定）
+│   │   │
+│   │   └── shared/                # 共有コンポーネント
+│   │       └── Navigation.tsx     # ナビゲーション（実装済み）
 │   │
 │   ├── lib/                       # ビジネスロジック
-│   │   ├── chart-generator/       # 予測表生成
+│   │   ├── store.ts               # Zustand状態管理（実装済み）
+│   │   ├── utils.ts               # ユーティリティ関数（実装済み）
+│   │   ├── sample-data.ts         # サンプルデータ（実装済み）
+│   │   │
+│   │   ├── chart-generator/       # 予測表生成（Phase 2実装予定）
 │   │   │   ├── index.ts
-│   │   │   ├── pattern-a.ts       # パターンA
-│   │   │   ├── pattern-b.ts       # パターンB（Phase 4）
+│   │   │   ├── pattern-a.ts       # パターンA（0なし）
+│   │   │   ├── pattern-b.ts       # パターンB（0あり、Phase 4実装予定）
 │   │   │   └── types.ts
 │   │   │
-│   │   ├── feature-extraction/    # 特徴量計算
+│   │   ├── feature-extraction/    # 特徴量計算（Phase 2実装予定）
 │   │   │   ├── index.ts
-│   │   │   ├── shape-features.ts
-│   │   │   ├── position-features.ts
-│   │   │   ├── relation-features.ts
-│   │   │   └── aggregate-features.ts
+│   │   │   ├── shape-features.ts   # 形状特徴
+│   │   │   ├── position-features.ts # 位置特徴
+│   │   │   ├── relation-features.ts # 関係性特徴
+│   │   │   └── aggregate-features.ts # 集約特徴
 │   │   │
-│   │   ├── ai-predictor/          # AI予測
+│   │   ├── ai-predictor/          # AI予測（Phase 2実装予定）
 │   │   │   ├── index.ts
-│   │   │   ├── axis-predictor.ts
-│   │   │   ├── combination-predictor.ts
-│   │   │   └── model-loader.ts
+│   │   │   ├── axis-predictor.ts  # 軸数字予測
+│   │   │   ├── combination-predictor.ts # 組み合わせ予測
+│   │   │   └── model-loader.ts    # モデル読み込み
 │   │   │
-│   │   ├── data-loader/           # データ読み込み
+│   │   ├── data-loader/           # データ読み込み（Phase 2実装予定）
 │   │   │   ├── index.ts
-│   │   │   ├── past-results.ts
-│   │   │   └── keisen-master.ts
+│   │   │   ├── past-results.ts    # 過去実績データ（CSV→Supabase）
+│   │   │   └── keisen-master.ts    # 罫線マスターデータ
 │   │   │
-│   │   └── utils/                 # ユーティリティ
-│   │       ├── validators.ts
-│   │       ├── formatters.ts
-│   │       └── constants.ts
+│   │   └── utils/                 # ユーティリティ（Phase 2実装予定）
+│   │       ├── validators.ts      # バリデーション
+│   │       ├── formatters.ts      # フォーマット
+│   │       └── constants.ts      # 定数
 │   │
-│   ├── store/                     # Redux状態管理
-│   │   ├── index.ts
-│   │   ├── slices/
-│   │   │   ├── prediction-slice.ts
-│   │   │   └── ui-slice.ts
-│   │   └── hooks.ts
-│   │
-│   ├── types/                     # TypeScript型定義
-│   │   ├── prediction.ts
-│   │   ├── chart.ts
-│   │   └── api.ts
-│   │
-│   └── styles/                    # グローバルスタイル
-│       └── globals.css
+│   └── types/                     # TypeScript型定義
+│       ├── prediction.ts          # 予測関連の型（実装済み）
+│       ├── statistics.ts           # 統計関連の型（実装済み）
+│       ├── chart.ts                # チャート関連の型（Phase 2実装予定）
+│       └── api.ts                  # API関連の型（Phase 2実装予定）
 │
 ├── data/                          # データファイル（MVP）
-│   ├── past_results.csv           # 過去実績
+│   ├── past_results.csv           # 過去実績（MVP: CSV、Phase 2: Supabaseへ移行）
 │   ├── keisen_master.json         # 罫線マスター
-│   └── models/                    # 学習済みモデル
+│   └── models/                     # 学習済みモデル（MVP: ローカル、Phase 4: GCP Storageへ移行）
 │       ├── n3_box_axis.pkl
 │       ├── n3_box_comb.pkl
 │       ├── n3_straight_axis.pkl
@@ -413,12 +433,25 @@ numbers-ai/
 │       ├── n4_straight_axis.pkl
 │       └── n4_straight_comb.pkl
 │
+├── api/                           # FastAPIバックエンド（Phase 4実装予定）
+│   ├── main.py                    # FastAPIアプリケーション
+│   ├── requirements.txt           # Python依存関係
+│   ├── Dockerfile                 # Dockerイメージ
+│   ├── routers/
+│   │   └── predict.py             # 予測APIルーター
+│   ├── services/
+│   │   ├── chart_generator.py     # 予測表生成サービス
+│   │   ├── feature_extractor.py   # 特徴量抽出サービス
+│   │   └── ai_predictor.py        # AI予測サービス
+│   └── models/
+│       └── schemas.py             # Pydanticスキーマ
+│
 ├── notebooks/                     # Jupyter Notebooks
-│   ├── 01_data_preparation.ipynb
-│   ├── 02_chart_generation.ipynb
-│   ├── 03_feature_engineering.ipynb
-│   ├── 04_model_training.ipynb
-│   └── 05_evaluation.ipynb
+│   ├── 01_data_preparation.ipynb  # Phase 2実装予定
+│   ├── 02_chart_generation.ipynb  # Phase 2実装予定
+│   ├── 03_feature_engineering.ipynb # Phase 3実装予定
+│   ├── 04_model_training.ipynb    # Phase 3実装予定（W&B統合）
+│   └── 05_evaluation.ipynb        # Phase 3実装予定
 │
 ├── tests/                         # テストコード
 │   ├── unit/
@@ -449,13 +482,32 @@ numbers-ai/
 **レイヤー分離**
 - `app/`: ルーティング層（Next.js App Router）
 - `components/`: プレゼンテーション層（UIコンポーネント）
-- `lib/`: ビジネスロジック層（ドメインロジック）
-- `store/`: 状態管理層（グローバル状態）
+- `lib/`: ビジネスロジック層（ドメインロジック、状態管理）
+- `types/`: 型定義層（TypeScript型）
 
 **責務の明確化**
-- `components/ui/`: 汎用的なUIコンポーネント（再利用可能）
-- `components/features/`: 機能特化コンポーネント（ビジネスロジック含む）
-- `lib/*/`: モジュール単位でディレクトリ分割
+- `components/ui/`: 汎用的なUIコンポーネント（shadcn/ui、再利用可能）
+- `components/shared/`: アプリ全体で共有されるコンポーネント
+- `components/features/`: 機能特化コンポーネント（将来拡張用）
+- `components/layouts/`: レイアウトコンポーネント（将来拡張用）
+- `lib/store.ts`: Zustandによる状態管理（軽量でシンプル）
+
+**MVP版の簡素化**
+- ビジネスロジックは `lib/` に直接配置（Phase 2以降でディレクトリ分割予定）
+- 状態管理はZustandを使用（Redux Toolkitより軽量）
+- グローバルスタイルは `app/globals.css` に配置（Next.js App Routerの標準）
+
+**将来実装予定の明確化**
+- **Phase 2**: `lib/chart-generator/`, `lib/feature-extraction/`, `lib/ai-predictor/`, `lib/data-loader/` を実装
+- **Phase 2**: `components/features/` に機能別コンポーネントを実装
+- **Phase 2**: `components/layouts/` にレイアウトコンポーネントを実装（`shared/Navigation.tsx` を移動予定）
+- **Phase 2**: Supabase統合により `lib/data-loader/` でCSV→Supabase移行
+- **Phase 2**: `data/past_results.csv` → Supabase PostgreSQLへ移行
+- **Phase 3**: W&B統合（実験管理機能、`notebooks/` にW&B統合）
+- **Phase 3**: 特徴量エンジニアリングとハイパーパラメータチューニング
+- **Phase 4**: パターンB実装（`lib/chart-generator/pattern-b.ts`）
+- **Phase 4**: FastAPIバックエンド実装（`api/` ディレクトリ、GCP Cloud Runでデプロイ）
+- **Phase 4**: `data/models/` → GCP Cloud Storageへ移行
 
 **命名規則**
 - コンポーネント: PascalCase（例: `RoundInput.tsx`）
@@ -469,6 +521,7 @@ numbers-ai/
 | バージョン | 日付 | 変更者 | 変更内容 |
 |-----------|------|--------|----------|
 | 1.0 | 2025-11-02 | 技術リード | 初版作成（元specifications.mdから分割） |
+| 1.1 | 2025-01-XX | 技術リード | 現実装に合わせてディレクトリ構成を更新（Zustand採用、ルーティング構造反映） |
 
 ---
 
