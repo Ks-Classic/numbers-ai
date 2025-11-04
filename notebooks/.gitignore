@@ -1,0 +1,29 @@
+# Jupyter Notebook outputs
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# モデルファイル（大きいため、Git管理対象外）
+*.pkl
+*.joblib
+*.h5
+*.ckpt
+
+# データファイル（Git管理対象外）
+*.csv
+*.json
+!../data/past_results.csv
+!../data/keisen_master.json
+
+# 環境変数
+.env
+.env.local
+
+# IDE設定
+.vscode/
+.idea/
+

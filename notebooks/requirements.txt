@@ -1,0 +1,22 @@
+# AI学習用Pythonライブラリ
+
+# データ処理
+pandas>=2.0.0
+numpy>=1.26.0
+
+# 機械学習
+xgboost>=2.0.0
+scikit-learn>=1.3.0
+
+# Jupyter環境
+jupyter>=1.0.0
+ipykernel>=6.25.0
+notebook>=7.0.0
+
+# 可視化
+matplotlib>=3.7.0
+seaborn>=0.12.0
+
+# 型チェック（オプション）
+mypy>=1.5.0
+
