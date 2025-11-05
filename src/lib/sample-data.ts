@@ -10,7 +10,7 @@ export const sampleAxisCandidates: AxisCandidate[] = [
     rehearsal_score: 0.94,
     reason: "過去L字パターン類似度94%",
     score: 985,
-    source: 'A', // 0なし
+    source: 'A1', // 欠番補足あり、中心0配置なし
     candidates: {
       box: [
         { number: "147", score: 978, probability: 0.221, reason: "L字配置完全一致", source: 'A' },
@@ -35,7 +35,7 @@ export const sampleAxisCandidates: AxisCandidate[] = [
     rehearsal_score: 0.90,
     reason: "リハーサル相関性高",
     score: 952,
-    source: 'B', // 0あり
+    source: 'B1', // 欠番補足なし（0のみ追加）、中心0配置なし
     candidates: {
       box: [
         { number: "245", score: 967, probability: 0.231, reason: "パターンB最適化パターン", source: 'B' },
@@ -60,7 +60,7 @@ export const sampleAxisCandidates: AxisCandidate[] = [
     rehearsal_score: 0.71,
     reason: "出現周期パターン",
     score: 918,
-    source: 'A', // 0なし
+    source: 'A1', // 欠番補足あり、中心0配置なし
     candidates: {
       box: [
         { number: "145", score: 934, probability: 0.221, reason: "過去類似パターン", source: 'A' },
@@ -83,7 +83,7 @@ export const sampleAxisCandidates: AxisCandidate[] = [
     rehearsal_score: 0.65,
     reason: "頻出数字候補",
     score: 890,
-    source: 'A', // 0なし
+    source: 'A1', // 欠番補足あり、中心0配置なし
     candidates: {
       box: [
         { number: "178", score: 923, probability: 0.221, reason: "リハーサル相関性高", source: 'A' },
@@ -106,7 +106,7 @@ export const sampleAxisCandidates: AxisCandidate[] = [
     rehearsal_score: 0.59,
     reason: "補完パターン",
     score: 875,
-    source: 'B', // 0あり
+    source: 'B1', // 欠番補足なし（0のみ追加）、中心0配置なし
     candidates: {
       box: [
         { number: "089", score: 898, probability: 0.231, reason: "パターンB最適化パターン", source: 'B' },
@@ -133,7 +133,7 @@ export const sampleAxisCandidatesN4: AxisCandidate[] = [
     rehearsal_score: 0.94,
     reason: "過去L字パターン類似度94%",
     score: 985,
-    source: 'A',
+        source: 'A1',
     candidates: {
       box: [
         { number: "1472", score: 976, probability: 0.221, reason: "L字配置完全一致", source: 'A' },
@@ -158,7 +158,7 @@ export const sampleAxisCandidatesN4: AxisCandidate[] = [
     rehearsal_score: 0.90,
     reason: "リハーサル相関性高",
     score: 952,
-    source: 'B',
+        source: 'B1',
     candidates: {
       box: [
         { number: "2457", score: 971, probability: 0.231, reason: "パターンB最適化パターン", source: 'B' },
@@ -183,7 +183,7 @@ export const sampleAxisCandidatesN4: AxisCandidate[] = [
     rehearsal_score: 0.82,
     reason: "出現周期パターン",
     score: 952,
-    source: 'B',
+        source: 'B1',
     candidates: {
       box: [
         { number: "0457", score: 962, probability: 0.228, reason: "パターンB最適化パターン", source: 'B' },
@@ -206,7 +206,7 @@ export const sampleAxisCandidatesN4: AxisCandidate[] = [
     rehearsal_score: 0.65,
     reason: "頻出数字候補",
     score: 918,
-    source: 'A',
+        source: 'A1',
     candidates: {
       box: [
         { number: "1789", score: 936, probability: 0.221, reason: "リハーサル相関性高", source: 'A' },

@@ -106,12 +106,25 @@ def extract_predicted_digits(
     # 対象に応じた桁名と当選番号を取得
     if target == 'n3':
         column_names: List[ColumnName] = ['百の位', '十の位', '一の位']
-        previous_winning = previous_row['n3_winning'].iloc[0]
-        previous_previous_winning = previous_previous_row['n3_winning'].iloc[0]
+        previous_winning = str(previous_row['n3_winning'].iloc[0])
+        previous_previous_winning = str(previous_previous_row['n3_winning'].iloc[0])
+        expected_length = 3
     else:
         column_names: List[ColumnName] = ['千の位', '百の位', '十の位', '一の位']
-        previous_winning = previous_row['n4_winning'].iloc[0]
-        previous_previous_winning = previous_previous_row['n4_winning'].iloc[0]
+        previous_winning = str(previous_row['n4_winning'].iloc[0])
+        previous_previous_winning = str(previous_previous_row['n4_winning'].iloc[0])
+        expected_length = 4
+    
+    # 数値型の場合に備えて、'.0'を除去
+    previous_winning = previous_winning.replace('.0', '')
+    previous_previous_winning = previous_previous_winning.replace('.0', '')
+    
+    # 先頭の0が欠落している場合（例: 013 → 13）を補正
+    # 数値として読み込まれた場合、先頭の0が失われる可能性がある
+    if len(previous_winning) < expected_length:
+        previous_winning = previous_winning.zfill(expected_length)
+    if len(previous_previous_winning) < expected_length:
+        previous_previous_winning = previous_previous_winning.zfill(expected_length)
     
     # 各桁の予測出目を取得して結合
     source_list: List[int] = []

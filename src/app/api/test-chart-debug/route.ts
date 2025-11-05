@@ -7,12 +7,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateChart } from '@/lib/chart-generator';
 import { getPreviousResult, getPreviousPreviousResult, getPredictedDigits } from '@/lib/data-loader';
+import type { Pattern, Target } from '@/types/prediction';
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const roundNumber = parseInt(searchParams.get('roundNumber') || '6758', 10);
-  const pattern = (searchParams.get('pattern') || 'A') as 'A' | 'B';
-  const target = (searchParams.get('target') || 'n3') as 'n3' | 'n4';
+  const pattern = (searchParams.get('pattern') || 'A1') as Pattern;
+  const target = (searchParams.get('target') || 'n3') as Target;
 
   try {
     // デバッグ情報: 前回・前々回のデータを取得

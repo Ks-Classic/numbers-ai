@@ -7,8 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test:data-loader": "tsx scripts/test-data-loader.ts",
-    "test:chart-generator": "tsx scripts/test-chart-generator.ts"
+    "test:data-loader": "npx tsx scripts/test-data-loader.ts",
+    "test:chart-generator": "npx tsx scripts/test-chart-generator.ts",
+    "test:patterns": "npx tsx scripts/test-4-patterns.ts",
+    "test:api": "bash scripts/test-api.sh"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -46,6 +48,7 @@
     "eslint": "^9",
     "eslint-config-next": "15.5.4",
     "tailwindcss": "^4",
+    "tsx": "^4.7.0",
     "typescript": "^5"
   }
 }

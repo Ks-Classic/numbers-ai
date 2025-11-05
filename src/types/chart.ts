@@ -20,20 +20,24 @@ export interface ChartData {
   rows: number;
   /** 列数（常に8） */
   cols: number;
-  /** パターン（'A' = 0なし、'B' = 0あり） */
+  /** パターン（'A1' | 'A2' | 'B1' | 'B2'） */
   pattern: Pattern;
   /** 対象（'n3' または 'n4'） */
   target: Target;
-  /** 元数字リスト（source_list） */
+  /** 元数字リスト（source_list、欠番補足前） */
   sourceDigits: number[];
+  /** 拡張後の数字リスト（欠番補足後） */
+  expandedDigits?: number[];
+  /** 中心0配置が明示的に実行されたかどうか（A2/B2のみtrue） */
+  centerZeroPlaced?: boolean;
 }
 
 /**
  * メイン行のデータ
  */
 export interface MainRow {
-  /** メイン行の要素（必ず4要素） */
-  elements: [number, number, number, number];
+  /** メイン行の要素（1〜4要素） */
+  elements: number[];
   /** 行インデックス（0始まり） */
   rowIndex: number;
 }

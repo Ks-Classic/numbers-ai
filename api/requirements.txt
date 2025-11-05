@@ -1,0 +1,17 @@
+# FastAPIサーバー用のrequirements.txt
+
+# Webフレームワーク
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+
+# データ処理
+pandas>=2.0.0
+numpy>=1.24.0
+
+# 機械学習
+xgboost>=2.0.0
+scikit-learn>=1.3.0
+
+# その他
+pydantic>=2.0.0
+

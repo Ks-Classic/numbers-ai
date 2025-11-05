@@ -13,10 +13,20 @@ import Link from 'next/link';
 import type { PredictionItem } from '@/types/prediction';
 
 export default function AxisPage() {
-  const { currentSession } = usePredictionStore();
+  // データ取得（ストアから取得）
+  const { 
+    axisCandidates: storeAxisCandidates, 
+    finalPredictions, 
+    currentSession, 
+    setSessionData,
+    n3AxisCandidates,
+    n4AxisCandidates,
+    n3FinalPredictions,
+    n4FinalPredictions,
+  } = usePredictionStore();
   
-  // メインタブ: N3/N4
-  const [mainTab, setMainTab] = useState<'N3' | 'N4'>('N3');
+  // メインタブ: N3/N4（ストアの値と同期）
+  const [mainTab, setMainTab] = useState<'N3' | 'N4'>(currentSession.numbersType);
   // サブタブ: box/straight
   const [subTab, setSubTab] = useState<'box' | 'straight'>('box');
   // 表示モード: 軸数字候補 or 総合ランキング
@@ -29,16 +39,63 @@ export default function AxisPage() {
   const [customAxis, setCustomAxis] = useState<string>('');
   const [isCustomExpanded, setIsCustomExpanded] = useState(false);
   const [customCandidates, setCustomCandidates] = useState<PredictionItem[]>([]);
+  const [isCalculating, setIsCalculating] = useState(false); // 計算中フラグ
 
-  // データ取得
-  const axisCandidates = mainTab === 'N3' ? sampleAxisCandidates : sampleAxisCandidatesN4;
-
+  // N3/N4に応じてデータをフィルタリング
+  const axisCandidates = useMemo(() => {
+    console.log('axisCandidates再計算:', {
+      mainTab,
+      currentSessionNumbersType: currentSession.numbersType,
+      storeAxisCandidatesLength: storeAxisCandidates.length,
+      n3AxisCandidatesLength: n3AxisCandidates.length,
+      n4AxisCandidatesLength: n4AxisCandidates.length,
+    });
+    
+    // mainTabに応じて適切なデータを返す
+    if (mainTab === 'N3') {
+      if (n3AxisCandidates.length > 0) {
+        console.log('N3データを使用（n3AxisCandidates）:', n3AxisCandidates.length, '件');
+        return n3AxisCandidates;
+      }
+      console.log('N3サンプルデータを使用');
+      return sampleAxisCandidates;
+    } else {
+      if (n4AxisCandidates.length > 0) {
+        console.log('N4データを使用（n4AxisCandidates）:', n4AxisCandidates.length, '件');
+        return n4AxisCandidates;
+      }
+      console.log('N4サンプルデータを使用');
+      return sampleAxisCandidatesN4;
+    }
+  }, [mainTab, n3AxisCandidates, n4AxisCandidates]);
+  
   // タブ切り替え時に手動指定状態をリセット
   const handleMainTabChange = (v: string) => {
-    setMainTab(v as 'N3' | 'N4');
+    const newTab = v as 'N3' | 'N4';
+    console.log('=== タブ切り替え開始 ===');
+    console.log('タブ切り替え:', {
+      from: mainTab,
+      to: newTab,
+      currentSessionNumbersType: currentSession.numbersType,
+      storeAxisCandidatesLength: storeAxisCandidates.length,
+      n3AxisCandidatesLength: n3AxisCandidates.length,
+      n4AxisCandidatesLength: n4AxisCandidates.length,
+    });
+    
+    setMainTab(newTab);
+    // ストアのnumbersTypeも更新（これによりaxisCandidatesが再計算される）
+    setSessionData({ numbersType: newTab });
     setCustomAxis('');
     setIsCustomExpanded(false);
     setCustomCandidates([]);
+    
+    console.log('タブ切り替え完了:', {
+      newTab,
+      storeAxisCandidatesLength: storeAxisCandidates.length,
+      n3AxisCandidatesLength: n3AxisCandidates.length,
+      n4AxisCandidatesLength: n4AxisCandidates.length,
+    });
+    console.log('=== タブ切り替え終了 ===');
   };
 
   const handleSubTabChange = (v: string) => {
@@ -61,32 +118,61 @@ export default function AxisPage() {
 
   // 総合ランキング用：全候補をスコア順に取得
   const allCandidates = useMemo((): PredictionItem[] => {
+    console.log('allCandidates再計算:', {
+      subTab,
+      axisCandidatesLength: axisCandidates.length,
+    });
+    
     const all: PredictionItem[] = [];
     if (Array.isArray(axisCandidates)) {
-      axisCandidates.forEach(axis => {
+      axisCandidates.forEach((axis, idx) => {
         if (subTab === 'box' && axis.candidates?.box && Array.isArray(axis.candidates.box)) {
+          console.log(`軸数字${axis.axis}のbox候補数:`, axis.candidates.box.length);
           all.push(...axis.candidates.box);
         } else if (subTab === 'straight' && axis.candidates?.straight && Array.isArray(axis.candidates.straight)) {
+          console.log(`軸数字${axis.axis}のstraight候補数:`, axis.candidates.straight.length);
           all.push(...axis.candidates.straight);
         }
       });
     }
+    
+    console.log('allCandidates収集結果:', {
+      subTab,
+      totalCount: all.length,
+      sampleNumbers: all.slice(0, 5).map(item => item.number),
+    });
+    
     // スコア順にソート（降順）、重複を除去（番号が同じものは1つだけ）
     const unique = all.filter((item, index, self) => 
       item.number && index === self.findIndex(t => t.number === item.number)
     );
-    return unique.sort((a, b) => (b.score || 0) - (a.score || 0)).slice(0, 10);
+    const sorted = unique.sort((a, b) => (b.score || 0) - (a.score || 0)).slice(0, 20);
+    
+    console.log('allCandidates最終結果:', {
+      subTab,
+      uniqueCount: sorted.length,
+      sampleNumbers: sorted.slice(0, 5).map(item => item.number),
+    });
+    
+    return sorted;
   }, [axisCandidates, subTab]);
 
   // 手動指定軸の候補を計算
-  const calculateCustomCandidates = () => {
+  const calculateCustomCandidates = async () => {
     const axisNum = parseInt(customAxis);
     if (isNaN(axisNum) || axisNum < 0 || axisNum > 9) {
       alert('0-9の数字を入力してください');
       return;
     }
 
-    // 全ての候補から指定された軸数字を含むものをフィルタリング
+    console.log('手動指定軸の候補を計算開始:', {
+      axisNum,
+      subTab,
+      mainTab,
+      currentSessionNumbersType: currentSession.numbersType,
+    });
+
+    // まず既存の候補からフィルタリングを試みる
     const localCandidates: PredictionItem[] = [];
     if (Array.isArray(axisCandidates)) {
       axisCandidates.forEach(axis => {
@@ -103,11 +189,87 @@ export default function AxisPage() {
       return item.number && item.number.includes(axisNum.toString());
     });
 
-    // スコア順にソート
-    const sorted = filtered.sort((a, b) => (b.score || 0) - (a.score || 0));
+    // 既存の候補に該当するものがある場合は、それを使用
+    if (filtered.length > 0) {
+      console.log('既存の候補からフィルタリング:', filtered.length, '件');
+      const sorted = filtered.sort((a, b) => (b.score || 0) - (a.score || 0)).slice(0, 10); // 10位まで
+      setCustomCandidates(sorted);
+      setIsCustomExpanded(true);
+      return;
+    }
+
+    // 既存の候補にない場合、APIを呼び出して新しく予測を実行
+    console.log('既存の候補にないため、APIを呼び出して新しく予測を実行します');
     
-    setCustomCandidates(sorted);
-    setIsCustomExpanded(true);
+    try {
+      setIsCalculating(true);
+      // ローディング状態を設定
+      setIsCustomExpanded(false);
+      
+      // FastAPIのURLを取得
+      const fastApiUrl = process.env.NEXT_PUBLIC_FASTAPI_URL || 'http://localhost:8000';
+      const target = mainTab.toLowerCase() as 'n3' | 'n4';
+      const rehearsalDigits = target === 'n3' ? currentSession.rehearsalN3 : currentSession.rehearsalN4;
+      
+      if (!rehearsalDigits) {
+        alert('リハーサル数字が設定されていません');
+        setIsCalculating(false);
+        return;
+      }
+
+      // 最良パターンを取得（currentSessionから、またはデフォルト）
+      const bestPattern = currentSession.patternType || 'A1';
+
+      // 組み合わせ予測APIを呼び出し（指定された軸数字のみを使用）
+      const response = await fetch(`${fastApiUrl}/api/predict/combination`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          round_number: currentSession.roundNumber,
+          target: target,
+          combo_type: subTab,
+          best_pattern: bestPattern,
+          top_axis_digits: [axisNum], // 指定された軸数字のみを使用
+          rehearsal_digits: rehearsalDigits,
+          max_combinations: 100,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`予測エラー: ${response.status} ${response.statusText} - ${errorText}`);
+      }
+
+      const result = await response.json();
+      
+      console.log('API予測結果:', {
+        combinationsCount: result.combinations?.length || 0,
+      });
+
+      // レスポンスをPredictionItem形式に変換
+      const candidates: PredictionItem[] = (result.combinations || []).map((item: any) => ({
+        number: item.combination,
+        score: item.score,
+        probability: item.score / 1000, // スコアを確率に変換
+        reason: `スコア: ${item.score.toFixed(1)}`,
+        source: bestPattern as any,
+      }));
+
+      // スコア順にソート
+      const sorted = candidates.sort((a, b) => (b.score || 0) - (a.score || 0)).slice(0, 10); // 10位まで
+      
+      setCustomCandidates(sorted);
+      setIsCustomExpanded(true);
+      
+      console.log('手動指定軸の候補を計算完了:', sorted.length, '件');
+    } catch (error: any) {
+      console.error('手動指定軸の予測エラー:', error);
+      alert(`予測エラー: ${error.message || '予測の実行に失敗しました'}`);
+    } finally {
+      setIsCalculating(false);
+    }
   };
 
   return (
@@ -218,17 +380,17 @@ export default function AxisPage() {
                           {allCandidates.length > 0 ? (
                             allCandidates.map((item, index) => (
                               <tr key={index} className="border-b border-border hover:bg-muted/50 transition-colors">
-                                <td className="p-2.5 text-sm md:text-base">{index + 1}</td>
-                                <td className="p-2.5 text-base md:text-lg font-bold">{item.number}</td>
-                                <td 
-                                  className="p-2.5 text-sm md:text-base cursor-pointer hover:text-primary underline underline-offset-1 transition-colors"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setOpenDialog('score');
-                                  }}
-                                >
-                                  {item.score || '-'}
-                                </td>
+                                    <td className="p-2.5 text-sm md:text-base">{index + 1}</td>
+                                    <td className="p-2.5 text-base md:text-lg font-bold">{item.number}</td>
+                                    <td 
+                                      className="p-2.5 text-sm md:text-base cursor-pointer hover:text-primary underline underline-offset-1 transition-colors"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setOpenDialog('score');
+                                      }}
+                                    >
+                                      {typeof item.score === 'number' ? item.score.toFixed(1) : (item.score || '-')}
+                                    </td>
                               </tr>
                             ))
                           ) : (
@@ -247,9 +409,18 @@ export default function AxisPage() {
                   <div className="space-y-3">
                     {Array.isArray(axisCandidates) && axisCandidates
                       .sort((a, b) => (b.score || 0) - (a.score || 0))
+                      .slice(0, 5) // 軸数字は5位まで表示
                       .map((axis, index) => {
                         const isExpanded = expandedAxes.has(axis.axis);
                         const candidates = subTab === 'box' ? axis.candidates?.box : axis.candidates?.straight || [];
+                        
+                        console.log(`軸数字${axis.axis}表示:`, {
+                          subTab,
+                          boxCount: axis.candidates?.box?.length || 0,
+                          straightCount: axis.candidates?.straight?.length || 0,
+                          selectedCandidatesCount: candidates.length,
+                          selectedSampleNumbers: candidates.slice(0, 3).map((c: any) => c.number),
+                        });
 
                         return (
                           <Card key={axis.axis} className="overflow-hidden">
@@ -275,7 +446,7 @@ export default function AxisPage() {
                                         setOpenDialog('score');
                                       }}
                                     >
-                                      スコア: {axis.score}
+                                      スコア: {typeof axis.score === 'number' ? axis.score.toFixed(1) : axis.score}
                                     </span>
                                   </div>
                                 </div>
@@ -310,7 +481,7 @@ export default function AxisPage() {
                                       </tr>
                                     </thead>
                                     <tbody>
-                                      {candidates.map((item, idx) => (
+                                      {candidates.slice(0, 10).map((item, idx) => ( // 軸数字内の番号は10位まで表示
                                         <tr key={idx} className="border-b border-border hover:bg-muted/50 transition-colors">
                                           <td className="p-2.5 text-sm md:text-base">{idx + 1}</td>
                                           <td className="p-2.5 text-base md:text-lg font-bold">{item.number}</td>
@@ -321,7 +492,7 @@ export default function AxisPage() {
                                               setOpenDialog('score');
                                             }}
                                           >
-                                            {item.score || '-'}
+                                            {typeof item.score === 'number' ? item.score.toFixed(1) : (item.score || '-')}
                                           </td>
                                         </tr>
                                       ))}
@@ -364,11 +535,11 @@ export default function AxisPage() {
                                 e.stopPropagation();
                                 calculateCustomCandidates();
                               }}
-                              disabled={!customAxis}
+                              disabled={!customAxis || isCalculating}
                               size="sm"
                               className="text-xs md:text-sm h-8 md:h-9 px-4"
                             >
-                              計算
+                              {isCalculating ? '計算中...' : '計算'}
                             </Button>
                           </div>
                           <div className="ml-auto flex-shrink-0">
@@ -426,7 +597,7 @@ export default function AxisPage() {
                                           setOpenDialog('score');
                                         }}
                                       >
-                                        {item.score || '-'}
+                                        {typeof item.score === 'number' ? item.score.toFixed(1) : (item.score || '-')}
                                       </td>
                                     </tr>
                                   ))}

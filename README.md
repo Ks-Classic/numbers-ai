@@ -121,18 +121,92 @@ pnpm install
 3. **環境変数の設定**
 
 ```bash
-cp .env.local.example .env.local
+# .env.localファイルを作成
+echo "FASTAPI_URL=http://localhost:8000" > .env.local
 ```
 
-`.env.local` を編集して必要な環境変数を設定してください。
+`.env.local` を編集して `FASTAPI_URL` を設定してください。
 
-4. **開発サーバーの起動**
+4. **FastAPIサーバーの起動**
 
 ```bash
+# apiディレクトリに移動
+cd api
+
+# 仮想環境を作成（初回のみ）
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+
+# 依存関係をインストール（初回のみ）
+pip install -r requirements.txt
+
+# サーバーを起動
+python run.py
+```
+
+FastAPIサーバーは `http://localhost:8000` で起動します。
+
+5. **Next.js開発サーバーの起動**
+
+別のターミナルで：
+
+```bash
+# プロジェクトルートに戻る
+cd ..
+
+# 開発サーバーを起動
 pnpm dev
 ```
 
 ブラウザで `http://localhost:3000` を開いてください。
+
+### API統合テストの実行
+
+両方のサーバーが起動している状態で、以下のコマンドでAPI統合テストを実行できます：
+
+```bash
+# テストスクリプトを実行
+pnpm test:api
+
+# または直接実行
+bash scripts/test-api.sh
+```
+
+テストスクリプトは以下を確認します：
+- FastAPIサーバーのヘルスチェック
+- Next.js API Routeの動作確認
+- FastAPI軸数字予測エンドポイントのテスト
+- FastAPI組み合わせ予測エンドポイントのテスト
+
+詳細は `docs/SETUP.md` を参照してください。
+
+### Vercelへのデプロイ
+
+プロジェクトをVercelにデプロイする手順：
+
+1. **GitHubリポジトリにプッシュ**
+   ```bash
+   git add .
+   git commit -m "Deploy to Vercel"
+   git push origin main
+   ```
+
+2. **Vercelプロジェクトの作成**
+   - [Vercelダッシュボード](https://vercel.com/dashboard)にログイン
+   - 「Add New...」→「Project」をクリック
+   - GitHubリポジトリ `numbers-ai` を選択
+   - プロジェクト名: `numbers-ai` を確認
+
+3. **環境変数の設定**
+   - Vercelダッシュボード → Settings → Environment Variables
+   - `FASTAPI_URL` を設定（FastAPIサーバーのURL）
+   - Environment: Production, Preview, Development すべてにチェック
+
+4. **デプロイの実行**
+   - 「Deploy」ボタンをクリック
+   - デプロイが完了するまで待機
+
+**注意**: FastAPIサーバーは別途デプロイが必要です（Railway、Cloud Run等）。詳細は `VERCEL_DEPLOY.md` を参照してください。
 
 ### データの準備
 
@@ -142,11 +216,34 @@ MVP版では、以下のデータファイルが必要です：
 - `data/keisen_master.json`: 罫線マスターデータ
 - `data/models/`: 学習済みモデルファイル（.pkl）
 
-詳細は `docs/specifications.md` を参照してください。
+詳細は `docs/design/04-algorithm-ai.md` を参照してください。
+
+### AIモデルの学習
+
+モデルを学習する場合は、以下の手順でNotebookを実行してください：
+
+1. **データ準備** (`notebooks/01_data_preparation.ipynb`)
+   - 過去当選番号データの読み込みとクリーニング
+   - 学習用データセットの準備（直近100回分）
+
+2. **予測表生成** (`notebooks/02_chart_generation.ipynb`)
+   - 各回号に対して4パターン（A1/A2/B1/B2）の予測表を生成
+
+3. **特徴量エンジニアリング** (`notebooks/03_feature_engineering.ipynb`)
+   - 予測表から特徴量を抽出
+   - 学習データの生成と保存
+
+4. **モデル学習** (`notebooks/04_model_training.ipynb`)
+   - 6つの統合モデルの学習
+   - モデル評価と保存
+
+詳細な手順は `docs/design/04-algorithm-ai.md` の「4.5.2 モデル学習手順」を参照してください。
 
 ---
 
 ## 使い方
+
+### Webアプリケーション（Phase 2以降）
 
 ### 1. ホーム画面
 
@@ -173,6 +270,30 @@ MVP版では、以下のデータファイルが必要です：
 - **表示モード**: 軸数字モード / 総合ランキングモード
 - **軸数字候補**: スコア順にランキング表示、タップで展開
 - **手動指定軸**: 任意の数字（0〜9）を指定して予測
+
+### CLIツール（MVP版）
+
+コマンドラインから予測を実行するためのCLIツールが利用可能です。
+
+**使用方法:**
+
+```bash
+cd notebooks
+
+# コマンドライン引数で実行
+python predict_cli.py --round 6758 --n3-rehearsal 149 --n4-rehearsal 3782
+
+# 対話的に実行
+python predict_cli.py
+```
+
+**出力内容:**
+- パターン別軸数字予測結果（A1/A2/B1/B2）
+- 最良パターンの特定
+- 軸数字ランキング（上位10件）
+- 組み合わせランキング（ボックス/ストレート別、上位10件）
+
+詳細は `notebooks/README_predict_cli.md` を参照してください。
 
 ---
 
@@ -246,11 +367,11 @@ numbers-ai/
 
 - [x] 環境構築
 - [x] ドキュメント作成
-- [ ] 罫線データのデジタル化
-- [ ] 予測表生成アルゴリズム実装
-- [ ] AIモデル構築（100回分データ）
-- [ ] フロントエンド実装
-- [ ] Vercelデプロイ
+- [x] 罫線データのデジタル化
+- [x] 予測表生成アルゴリズム実装
+- [x] AIモデル構築（100回分データ）
+- [x] フロントエンド実装
+- [x] Vercelデプロイ設定（vercel.json作成完了）
 
 ### 🔜 Phase 2: 信頼性向上（MVP+2週間）
 
@@ -338,5 +459,5 @@ Copyright (c) 2025 Numbers-AI Project
 
 ---
 
-**Last Updated**: 2025-11-02
+**Last Updated**: 2025-11-06
 

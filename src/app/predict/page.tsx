@@ -29,7 +29,7 @@ export default function PredictPage() {
     setSessionData({
       roundNumber: roundNum,
       numbersType: 'N3',
-      patternType: 'A',
+      patternType: 'A1', // デフォルトはA1
     });
 
     router.push('/predict/rehearsal');
