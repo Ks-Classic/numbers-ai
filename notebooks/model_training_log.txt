@@ -1,0 +1,95 @@
+プロジェクトルート: /home/ykoha/numbers-ai
+データディレクトリ: /home/ykoha/numbers-ai/data
+モデルディレクトリ: /home/ykoha/numbers-ai/data/models
+
+モデルバージョン: v_from_4801
+
+XGBoostハイパーパラメータ:
+  objective: binary:logistic
+  eval_metric: logloss
+  max_depth: 6
+  learning_rate: 0.05
+  n_estimators: 500
+  subsample: 0.8
+  colsample_bytree: 0.8
+  min_child_weight: 3
+  gamma: 0.1
+  reg_alpha: 0.1
+  reg_lambda: 1.0
+  random_state: 42
+  n_jobs: -1
+
+============================================================
+N3軸数字予測モデルの学習を開始します
+============================================================
+
+データ形状:
+  学習データ: (59960, 70)
+  検証データ: (15000, 70)
+  ラベル分布（学習）: [43784 16176]
+  ラベル分布（検証）: [10908  4092]
+
+モデルを学習中...
+
+=== n3_axis の評価結果 ===
+AUC-ROC: 0.5068
+Precision: 0.2500
+Recall: 0.0071
+F1-Score: 0.0138
+Top-5 Accuracy: 1.0000
+
+モデル学習完了: n3_axis
+
+============================================================
+N4軸数字予測モデルの学習を開始します
+============================================================
+
+データ形状:
+  学習データ: (59960, 70)
+  検証データ: (15000, 70)
+  ラベル分布（学習）: [39368 20592]
+  ラベル分布（検証）: [9876 5124]
+
+モデルを学習中...
+
+=== n4_axis の評価結果 ===
+AUC-ROC: 0.5148
+Precision: 0.3737
+Recall: 0.0416
+F1-Score: 0.0748
+Top-5 Accuracy: 1.0000
+
+モデル学習完了: n4_axis
+
+============================================================
+軸数字予測モデルの学習が完了しました
+============================================================
+
+軸数字予測モデルを保存中...
+  保存完了: /home/ykoha/numbers-ai/data/models/n3_axis.pkl
+  保存完了: /home/ykoha/numbers-ai/data/models/n4_axis.pkl
+
+評価結果を保存しました: /home/ykoha/numbers-ai/data/models/evaluation_results_axis.pkl
+
+✅ すべての軸数字予測モデルを保存しました: /home/ykoha/numbers-ai/data/models
+
+============================================================
+評価結果サマリー
+============================================================
+
+評価指標の一覧:
+model_name  auc_roc  precision   recall  f1_score  top_5_accuracy
+   n3_axis 0.506785   0.250000 0.007087  0.013783             1.0
+   n4_axis 0.514754   0.373684 0.041569  0.074816             1.0
+
+各評価指標の平均値:
+  AUC-ROC: 0.5108
+  Precision: 0.3118
+  Recall: 0.0243
+  F1-Score: 0.0443
+  Top-5 Accuracy: 1.0000
+
+目標値との比較:
+  AUC-ROC目標: 0.65以上
+    n3_axis: 0.5068 ❌
+    n4_axis: 0.5148 ❌

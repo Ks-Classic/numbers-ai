@@ -1,0 +1,80 @@
+{
+  "n3": {
+    "target": "n3",
+    "total_samples": 73328,
+    "won_samples": 19926,
+    "lost_samples": 53402,
+    "rehearsal_distance": {
+      "all_mean": 1.083462136623413,
+      "all_std": 0.8259609189653428,
+      "all_median": 1.0,
+      "won_mean": 1.100602956319567,
+      "won_std": 0.8387141452048539,
+      "won_median": 1.051776695296637,
+      "lost_mean": 1.0770663467042045,
+      "lost_std": 0.8210598750656843,
+      "lost_median": 1.0
+    },
+    "overlap_count": {
+      "all_mean": 1.7706196814313768,
+      "all_std": 3.2159820709698677,
+      "all_median": 0.0,
+      "won_mean": 1.8021680216802167,
+      "won_std": 3.288574430917995,
+      "won_median": 0.0,
+      "lost_mean": 1.7588479832216022,
+      "lost_std": 3.1883921976383287,
+      "lost_median": 0.0
+    },
+    "inverse_ratio": {
+      "all_mean": 0.0,
+      "all_std": 0.0,
+      "all_median": 0.0,
+      "won_mean": 0.0,
+      "won_std": 0.0,
+      "won_median": 0.0,
+      "lost_mean": 0.0,
+      "lost_std": 0.0,
+      "lost_median": 0.0
+    }
+  },
+  "n4": {
+    "target": "n4",
+    "total_samples": 74240,
+    "won_samples": 25540,
+    "lost_samples": 48700,
+    "rehearsal_distance": {
+      "all_mean": 0.8825163784752003,
+      "all_std": 0.743385762725669,
+      "all_median": 1.0,
+      "won_mean": 0.8785113853855249,
+      "won_std": 0.7430302580077859,
+      "won_median": 1.0,
+      "lost_mean": 0.884616738300874,
+      "lost_std": 0.743563511102726,
+      "lost_median": 1.0
+    },
+    "overlap_count": {
+      "all_mean": 2.6778286637931035,
+      "all_std": 4.1478181355140284,
+      "all_median": 0.0,
+      "won_mean": 2.734064212999217,
+      "won_std": 4.217267725518933,
+      "won_median": 0.0,
+      "lost_mean": 2.648336755646817,
+      "lost_std": 4.110619829851569,
+      "lost_median": 0.0
+    },
+    "inverse_ratio": {
+      "all_mean": 0.0,
+      "all_std": 0.0,
+      "all_median": 0.0,
+      "won_mean": 0.0,
+      "won_std": 0.0,
+      "won_median": 0.0,
+      "lost_mean": 0.0,
+      "lost_std": 0.0,
+      "lost_median": 0.0
+    }
+  }
+}
