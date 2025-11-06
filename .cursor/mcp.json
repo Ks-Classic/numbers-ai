@@ -1,3 +1,58 @@
 {
-  "mcpServers": {}
+  "mcpServers": {
+    "serena": {
+      "command": "wsl",
+      "args": ["-d", "Ubuntu", "--", "bash", "-c", "source ~/.local/bin/env && cd \"/mnt/c/Users/ykoha/OneDrive/ドキュメント/デスクトップ/ケーズ・クラシック/01.cクライアント/Venus Ark/レポートプロジェクト/venus-ark-dashboard\" && serena start-mcp-server --context ide-assistant --project \"$(pwd)\" --transport stdio"],
+      "cwd": "C:\\Users\\ykoha\\OneDrive\\ドキュメント\\デスクトップ\\ケーズ・クラシック\\01.cクライアント\\Venus Ark\\レポートプロジェクト\\venus-ark-dashboard"
+    },
+    "notion_k's-Classic": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@notionhq/notion-mcp-server"
+      ],
+      "env": {
+        "OPENAPI_MCP_HEADERS": "{\"Authorization\": \"Bearer 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\", \"Notion-Version\": \"2022-06-28\" }"
+      }
+    },
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "@playwright/mcp@latest"
+      ],
+      "env": {}
+    },
+    "lark-mcp": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@larksuiteoapi/lark-mcp",
+        "mcp",
+        "-a",
+        "cli_a8e49dfd1d02d",
+        "-s",
+        "ZOoQACGp4yJ3D1e6oX3uNeAoKlTTUQP0",
+        "--domain",
+        "https://open.larksuite.com",
+        "-t",
+        "preset.base.default,preset.base.admin,preset.user.management,preset.permission.management,preset.app.management,preset.contact.management,preset.calendar.management,preset.doc.management,preset.sheet.management,preset.mail.management,preset.bot.management,preset.ai.management,preset.workflow.management,preset.approval.management,preset.attendance.management,preset.hire.management,preset.search.management,preset.tenant.management"
+      ]
+    },
+    "context7": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@upstash/context7-mcp@latest"
+      ]
+    },
+    "linear": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "https://mcp.linear.app/sse"
+      ]
+    }
+  }
 }
+
