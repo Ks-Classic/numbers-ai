@@ -412,7 +412,7 @@ export default function AxisPage() {
                       .slice(0, 5) // 軸数字は5位まで表示
                       .map((axis, index) => {
                         const isExpanded = expandedAxes.has(axis.axis);
-                        const candidates = subTab === 'box' ? axis.candidates?.box : axis.candidates?.straight || [];
+                        const candidates = subTab === 'box' ? (axis.candidates?.box || []) : (axis.candidates?.straight || []);
                         
                         console.log(`軸数字${axis.axis}表示:`, {
                           subTab,

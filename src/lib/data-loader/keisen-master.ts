@@ -4,7 +4,7 @@
 
 import { promises as fs } from 'fs';
 import path from 'path';
-import { KeisenMaster, DataLoadError, ColumnName, PredictedDigits } from './types';
+import { KeisenMaster, DataLoadError, ColumnName, PredictedDigits, N3KeisenMaster, N4KeisenMaster, ColumnRules } from './types';
 
 /**
  * JSONファイルのパス（プロジェクトルートからの相対パス）
@@ -221,7 +221,23 @@ export async function getPredictedDigits(
     throw new DataLoadError(`${target}データが見つかりません`);
   }
   
-  const columnData = targetData[columnName];
+  // targetに応じて適切な型をアサート
+  let columnData: ColumnRules | undefined;
+  if (target === 'n3') {
+    const n3Data = targetData as N3KeisenMaster;
+    if (columnName === '百の位' || columnName === '十の位' || columnName === '一の位') {
+      columnData = n3Data[columnName];
+    } else {
+      throw new DataLoadError(`N3では${columnName}は使用できません`);
+    }
+  } else {
+    const n4Data = targetData as N4KeisenMaster;
+    if (columnName === '千の位' || columnName === '百の位' || columnName === '十の位' || columnName === '一の位') {
+      columnData = n4Data[columnName];
+    } else {
+      throw new DataLoadError(`N4では${columnName}は使用できません`);
+    }
+  }
   
   if (!columnData || typeof columnData !== 'object') {
     throw new DataLoadError(`${target}の${columnName}データが見つかりません`);

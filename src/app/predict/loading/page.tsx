@@ -7,6 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { usePredictionStore } from '@/lib/store';
+import type { PredictionItem } from '@/types/prediction';
 import { ArrowLeft, Bot, CheckCircle, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 
@@ -159,8 +160,8 @@ export default function LoadingPage() {
               console.log(`軸数字${axisDigit}の候補数:`, {
                 box: boxCandidates.length,
                 straight: straightCandidates.length,
-                boxSample: boxCandidates.slice(0, 3).map(c => c.number),
-                straightSample: straightCandidates.slice(0, 3).map(c => c.number),
+                boxSample: boxCandidates.slice(0, 3).map((c: PredictionItem) => c.number),
+                straightSample: straightCandidates.slice(0, 3).map((c: PredictionItem) => c.number),
               });
               
               return {
@@ -238,8 +239,8 @@ export default function LoadingPage() {
               console.log(`軸数字${axisDigit}の候補数:`, {
                 box: boxCandidates.length,
                 straight: straightCandidates.length,
-                boxSample: boxCandidates.slice(0, 3).map(c => c.number),
-                straightSample: straightCandidates.slice(0, 3).map(c => c.number),
+                boxSample: boxCandidates.slice(0, 3).map((c: PredictionItem) => c.number),
+                straightSample: straightCandidates.slice(0, 3).map((c: PredictionItem) => c.number),
               });
               
               return {

@@ -13,18 +13,18 @@ export const sampleAxisCandidates: AxisCandidate[] = [
     source: 'A1', // 欠番補足あり、中心0配置なし
     candidates: {
       box: [
-        { number: "147", score: 978, probability: 0.221, reason: "L字配置完全一致", source: 'A' },
-        { number: "079", score: 942, probability: 0.194, reason: "過去類似パターン", source: 'B' },
-        { number: "278", score: 916, probability: 0.176, reason: "リハーサル相関性高", source: 'A' },
-        { number: "357", score: 901, probability: 0.163, reason: "統計的特徴良好", source: 'A' },
-        { number: "670", score: 887, probability: 0.152, reason: "出現周期パターン", source: 'B' },
+        { number: "147", score: 978, probability: 0.221, reason: "L字配置完全一致", source: 'A1' },
+        { number: "079", score: 942, probability: 0.194, reason: "過去類似パターン", source: 'B1' },
+        { number: "278", score: 916, probability: 0.176, reason: "リハーサル相関性高", source: 'A1' },
+        { number: "357", score: 901, probability: 0.163, reason: "統計的特徴良好", source: 'A1' },
+        { number: "670", score: 887, probability: 0.152, reason: "出現周期パターン", source: 'B1' },
       ],
       straight: [
-        { number: "174", score: 978, probability: 0.183, reason: "過去類似パターンと94%一致", source: 'A' },
-        { number: "079", score: 942, probability: 0.157, reason: "リハーサル相関性高", source: 'B' },
-        { number: "278", score: 916, probability: 0.141, reason: "L字配置完全一致", source: 'A' },
-        { number: "357", score: 901, probability: 0.132, reason: "統計的特徴良好", source: 'A' },
-        { number: "670", score: 887, probability: 0.125, reason: "出現周期パターン", source: 'B' },
+        { number: "174", score: 978, probability: 0.183, reason: "過去類似パターンと94%一致", source: 'A1' },
+        { number: "079", score: 942, probability: 0.157, reason: "リハーサル相関性高", source: 'B1' },
+        { number: "278", score: 916, probability: 0.141, reason: "L字配置完全一致", source: 'A1' },
+        { number: "357", score: 901, probability: 0.132, reason: "統計的特徴良好", source: 'A1' },
+        { number: "670", score: 887, probability: 0.125, reason: "出現周期パターン", source: 'B1' },
       ]
     }
   },
@@ -38,18 +38,18 @@ export const sampleAxisCandidates: AxisCandidate[] = [
     source: 'B1', // 欠番補足なし（0のみ追加）、中心0配置なし
     candidates: {
       box: [
-        { number: "245", score: 967, probability: 0.231, reason: "パターンB最適化パターン", source: 'B' },
-        { number: "278", score: 948, probability: 0.198, reason: "頻出数字候補", source: 'A' },
-        { number: "124", score: 931, probability: 0.183, reason: "統計的特徴良好", source: 'A' },
-        { number: "026", score: 914, probability: 0.171, reason: "0ありパターン特化", source: 'B' },
-        { number: "234", score: 899, probability: 0.162, reason: "連番パターン", source: 'A' },
+        { number: "245", score: 967, probability: 0.231, reason: "パターンB最適化パターン", source: 'B1' },
+        { number: "278", score: 948, probability: 0.198, reason: "頻出数字候補", source: 'A1' },
+        { number: "124", score: 931, probability: 0.183, reason: "統計的特徴良好", source: 'A1' },
+        { number: "026", score: 914, probability: 0.171, reason: "0ありパターン特化", source: 'B1' },
+        { number: "234", score: 899, probability: 0.162, reason: "連番パターン", source: 'A1' },
       ],
       straight: [
-        { number: "245", score: 967, probability: 0.192, reason: "パターンB特有の配置パターン", source: 'B' },
-        { number: "278", score: 948, probability: 0.165, reason: "中心0配置との相関性", source: 'A' },
-        { number: "124", score: 931, probability: 0.148, reason: "統計的特徴良好", source: 'A' },
-        { number: "026", score: 914, probability: 0.139, reason: "0ありパターン特化", source: 'B' },
-        { number: "234", score: 899, probability: 0.131, reason: "連番パターン", source: 'A' },
+        { number: "245", score: 967, probability: 0.192, reason: "パターンB特有の配置パターン", source: 'B1' },
+        { number: "278", score: 948, probability: 0.165, reason: "中心0配置との相関性", source: 'A1' },
+        { number: "124", score: 931, probability: 0.148, reason: "統計的特徴良好", source: 'A1' },
+        { number: "026", score: 914, probability: 0.139, reason: "0ありパターン特化", source: 'B1' },
+        { number: "234", score: 899, probability: 0.131, reason: "連番パターン", source: 'A1' },
       ]
     }
   },
@@ -63,16 +63,16 @@ export const sampleAxisCandidates: AxisCandidate[] = [
     source: 'A1', // 欠番補足あり、中心0配置なし
     candidates: {
       box: [
-        { number: "145", score: 934, probability: 0.221, reason: "過去類似パターン", source: 'A' },
-        { number: "579", score: 921, probability: 0.194, reason: "統計的特徴良好", source: 'A' },
-        { number: "025", score: 908, probability: 0.182, reason: "補完パターン", source: 'B' },
-        { number: "356", score: 892, probability: 0.173, reason: "周期パターン", source: 'A' },
+        { number: "145", score: 934, probability: 0.221, reason: "過去類似パターン", source: 'A1' },
+        { number: "579", score: 921, probability: 0.194, reason: "統計的特徴良好", source: 'A1' },
+        { number: "025", score: 908, probability: 0.182, reason: "補完パターン", source: 'B1' },
+        { number: "356", score: 892, probability: 0.173, reason: "周期パターン", source: 'A1' },
       ],
       straight: [
-        { number: "154", score: 934, probability: 0.183, reason: "過去類似パターン", source: 'A' },
-        { number: "579", score: 921, probability: 0.157, reason: "統計的特徴良好", source: 'A' },
-        { number: "025", score: 908, probability: 0.145, reason: "補完パターン", source: 'B' },
-        { number: "356", score: 892, probability: 0.138, reason: "周期パターン", source: 'A' },
+        { number: "154", score: 934, probability: 0.183, reason: "過去類似パターン", source: 'A1' },
+        { number: "579", score: 921, probability: 0.157, reason: "統計的特徴良好", source: 'A1' },
+        { number: "025", score: 908, probability: 0.145, reason: "補完パターン", source: 'B1' },
+        { number: "356", score: 892, probability: 0.138, reason: "周期パターン", source: 'A1' },
       ]
     }
   },
@@ -86,16 +86,16 @@ export const sampleAxisCandidates: AxisCandidate[] = [
     source: 'A1', // 欠番補足あり、中心0配置なし
     candidates: {
       box: [
-        { number: "178", score: 923, probability: 0.221, reason: "リハーサル相関性高", source: 'A' },
-        { number: "124", score: 911, probability: 0.194, reason: "頻出数字候補", source: 'A' },
-        { number: "139", score: 896, probability: 0.187, reason: "統計的特徴良好", source: 'A' },
-        { number: "016", score: 884, probability: 0.179, reason: "0ありパターン", source: 'B' },
+        { number: "178", score: 923, probability: 0.221, reason: "リハーサル相関性高", source: 'A1' },
+        { number: "124", score: 911, probability: 0.194, reason: "頻出数字候補", source: 'A1' },
+        { number: "139", score: 896, probability: 0.187, reason: "統計的特徴良好", source: 'A1' },
+        { number: "016", score: 884, probability: 0.179, reason: "0ありパターン", source: 'B1' },
       ],
       straight: [
-        { number: "178", score: 923, probability: 0.183, reason: "リハーサル相関性高", source: 'A' },
-        { number: "124", score: 911, probability: 0.157, reason: "頻出数字候補", source: 'A' },
-        { number: "139", score: 896, probability: 0.148, reason: "統計的特徴良好", source: 'A' },
-        { number: "016", score: 884, probability: 0.142, reason: "0ありパターン", source: 'B' },
+        { number: "178", score: 923, probability: 0.183, reason: "リハーサル相関性高", source: 'A1' },
+        { number: "124", score: 911, probability: 0.157, reason: "頻出数字候補", source: 'A1' },
+        { number: "139", score: 896, probability: 0.148, reason: "統計的特徴良好", source: 'A1' },
+        { number: "016", score: 884, probability: 0.142, reason: "0ありパターン", source: 'B1' },
       ]
     }
   },
@@ -109,16 +109,16 @@ export const sampleAxisCandidates: AxisCandidate[] = [
     source: 'B1', // 欠番補足なし（0のみ追加）、中心0配置なし
     candidates: {
       box: [
-        { number: "089", score: 898, probability: 0.231, reason: "パターンB最適化パターン", source: 'B' },
-        { number: "789", score: 886, probability: 0.198, reason: "統計的特徴良好", source: 'A' },
-        { number: "368", score: 873, probability: 0.185, reason: "補完パターン", source: 'A' },
-        { number: "048", score: 861, probability: 0.174, reason: "0あり特化", source: 'B' },
+        { number: "089", score: 898, probability: 0.231, reason: "パターンB最適化パターン", source: 'B1' },
+        { number: "789", score: 886, probability: 0.198, reason: "統計的特徴良好", source: 'A1' },
+        { number: "368", score: 873, probability: 0.185, reason: "補完パターン", source: 'A1' },
+        { number: "048", score: 861, probability: 0.174, reason: "0あり特化", source: 'B1' },
       ],
       straight: [
-        { number: "089", score: 898, probability: 0.192, reason: "パターンB特有の配置パターン", source: 'B' },
-        { number: "789", score: 886, probability: 0.165, reason: "統計的特徴良好", source: 'A' },
-        { number: "368", score: 873, probability: 0.154, reason: "補完パターン", source: 'A' },
-        { number: "048", score: 861, probability: 0.146, reason: "0あり特化", source: 'B' },
+        { number: "089", score: 898, probability: 0.192, reason: "パターンB特有の配置パターン", source: 'B1' },
+        { number: "789", score: 886, probability: 0.165, reason: "統計的特徴良好", source: 'A1' },
+        { number: "368", score: 873, probability: 0.154, reason: "補完パターン", source: 'A1' },
+        { number: "048", score: 861, probability: 0.146, reason: "0あり特化", source: 'B1' },
       ]
     }
   }
@@ -136,18 +136,18 @@ export const sampleAxisCandidatesN4: AxisCandidate[] = [
         source: 'A1',
     candidates: {
       box: [
-        { number: "1472", score: 976, probability: 0.221, reason: "L字配置完全一致", source: 'A' },
-        { number: "0792", score: 958, probability: 0.194, reason: "過去類似パターン", source: 'B' },
-        { number: "2785", score: 941, probability: 0.176, reason: "リハーサル相関性高", source: 'A' },
-        { number: "3571", score: 927, probability: 0.168, reason: "統計的特徴良好", source: 'A' },
-        { number: "6703", score: 912, probability: 0.159, reason: "出現周期パターン", source: 'B' },
+        { number: "1472", score: 976, probability: 0.221, reason: "L字配置完全一致", source: 'A1' },
+        { number: "0792", score: 958, probability: 0.194, reason: "過去類似パターン", source: 'B1' },
+        { number: "2785", score: 941, probability: 0.176, reason: "リハーサル相関性高", source: 'A1' },
+        { number: "3571", score: 927, probability: 0.168, reason: "統計的特徴良好", source: 'A1' },
+        { number: "6703", score: 912, probability: 0.159, reason: "出現周期パターン", source: 'B1' },
       ],
       straight: [
-        { number: "7245", score: 976, probability: 0.183, reason: "過去類似パターン6645回と94%一致", source: 'A' },
-        { number: "2790", score: 958, probability: 0.157, reason: "リハーサル相関性高", source: 'B' },
-        { number: "2785", score: 941, probability: 0.141, reason: "L字配置完全一致", source: 'A' },
-        { number: "3571", score: 927, probability: 0.135, reason: "統計的特徴良好", source: 'A' },
-        { number: "6703", score: 912, probability: 0.129, reason: "出現周期パターン", source: 'B' },
+        { number: "7245", score: 976, probability: 0.183, reason: "過去類似パターン6645回と94%一致", source: 'A1' },
+        { number: "2790", score: 958, probability: 0.157, reason: "リハーサル相関性高", source: 'B1' },
+        { number: "2785", score: 941, probability: 0.141, reason: "L字配置完全一致", source: 'A1' },
+        { number: "3571", score: 927, probability: 0.135, reason: "統計的特徴良好", source: 'A1' },
+        { number: "6703", score: 912, probability: 0.129, reason: "出現周期パターン", source: 'B1' },
       ]
     }
   },
@@ -161,18 +161,18 @@ export const sampleAxisCandidatesN4: AxisCandidate[] = [
         source: 'B1',
     candidates: {
       box: [
-        { number: "2457", score: 971, probability: 0.231, reason: "パターンB最適化パターン", source: 'B' },
-        { number: "2783", score: 954, probability: 0.198, reason: "頻出数字候補", source: 'A' },
-        { number: "1247", score: 937, probability: 0.183, reason: "統計的特徴良好", source: 'A' },
-        { number: "0264", score: 920, probability: 0.174, reason: "0ありパターン特化", source: 'B' },
-        { number: "2348", score: 904, probability: 0.165, reason: "連番パターン", source: 'A' },
+        { number: "2457", score: 971, probability: 0.231, reason: "パターンB最適化パターン", source: 'B1' },
+        { number: "2783", score: 954, probability: 0.198, reason: "頻出数字候補", source: 'A1' },
+        { number: "1247", score: 937, probability: 0.183, reason: "統計的特徴良好", source: 'A1' },
+        { number: "0264", score: 920, probability: 0.174, reason: "0ありパターン特化", source: 'B1' },
+        { number: "2348", score: 904, probability: 0.165, reason: "連番パターン", source: 'A1' },
       ],
       straight: [
-        { number: "2457", score: 971, probability: 0.192, reason: "パターンB特有の配置パターン", source: 'B' },
-        { number: "2783", score: 954, probability: 0.165, reason: "中心0配置との相関性", source: 'A' },
-        { number: "1247", score: 937, probability: 0.148, reason: "統計的特徴良好", source: 'A' },
-        { number: "0264", score: 920, probability: 0.141, reason: "0ありパターン特化", source: 'B' },
-        { number: "2348", score: 904, probability: 0.136, reason: "連番パターン", source: 'A' },
+        { number: "2457", score: 971, probability: 0.192, reason: "パターンB特有の配置パターン", source: 'B1' },
+        { number: "2783", score: 954, probability: 0.165, reason: "中心0配置との相関性", source: 'A1' },
+        { number: "1247", score: 937, probability: 0.148, reason: "統計的特徴良好", source: 'A1' },
+        { number: "0264", score: 920, probability: 0.141, reason: "0ありパターン特化", source: 'B1' },
+        { number: "2348", score: 904, probability: 0.136, reason: "連番パターン", source: 'A1' },
       ]
     }
   },
@@ -186,16 +186,16 @@ export const sampleAxisCandidatesN4: AxisCandidate[] = [
         source: 'B1',
     candidates: {
       box: [
-        { number: "0457", score: 962, probability: 0.228, reason: "パターンB最適化パターン", source: 'B' },
-        { number: "2457", score: 949, probability: 0.198, reason: "頻出数字候補", source: 'A' },
-        { number: "1469", score: 933, probability: 0.189, reason: "統計的特徴良好", source: 'A' },
-        { number: "0478", score: 918, probability: 0.181, reason: "0あり特化", source: 'B' },
+        { number: "0457", score: 962, probability: 0.228, reason: "パターンB最適化パターン", source: 'B1' },
+        { number: "2457", score: 949, probability: 0.198, reason: "頻出数字候補", source: 'A1' },
+        { number: "1469", score: 933, probability: 0.189, reason: "統計的特徴良好", source: 'A1' },
+        { number: "0478", score: 918, probability: 0.181, reason: "0あり特化", source: 'B1' },
       ],
       straight: [
-        { number: "0457", score: 962, probability: 0.189, reason: "パターンB特有の配置パターン", source: 'B' },
-        { number: "2457", score: 949, probability: 0.162, reason: "統計的特徴良好", source: 'A' },
-        { number: "1469", score: 933, probability: 0.157, reason: "統計的特徴良好", source: 'A' },
-        { number: "0478", score: 918, probability: 0.151, reason: "0あり特化", source: 'B' },
+        { number: "0457", score: 962, probability: 0.189, reason: "パターンB特有の配置パターン", source: 'B1' },
+        { number: "2457", score: 949, probability: 0.162, reason: "統計的特徴良好", source: 'A1' },
+        { number: "1469", score: 933, probability: 0.157, reason: "統計的特徴良好", source: 'A1' },
+        { number: "0478", score: 918, probability: 0.151, reason: "0あり特化", source: 'B1' },
       ]
     }
   },
@@ -209,16 +209,16 @@ export const sampleAxisCandidatesN4: AxisCandidate[] = [
         source: 'A1',
     candidates: {
       box: [
-        { number: "1789", score: 936, probability: 0.221, reason: "リハーサル相関性高", source: 'A' },
-        { number: "1294", score: 924, probability: 0.194, reason: "頻出数字候補", source: 'A' },
-        { number: "3496", score: 910, probability: 0.187, reason: "統計的特徴良好", source: 'A' },
-        { number: "0792", score: 897, probability: 0.179, reason: "0ありパターン", source: 'B' },
+        { number: "1789", score: 936, probability: 0.221, reason: "リハーサル相関性高", source: 'A1' },
+        { number: "1294", score: 924, probability: 0.194, reason: "頻出数字候補", source: 'A1' },
+        { number: "3496", score: 910, probability: 0.187, reason: "統計的特徴良好", source: 'A1' },
+        { number: "0792", score: 897, probability: 0.179, reason: "0ありパターン", source: 'B1' },
       ],
       straight: [
-        { number: "1789", score: 936, probability: 0.183, reason: "リハーサル相関性高", source: 'A' },
-        { number: "1294", score: 924, probability: 0.157, reason: "頻出数字候補", source: 'A' },
-        { number: "3496", score: 910, probability: 0.151, reason: "統計的特徴良好", source: 'A' },
-        { number: "0792", score: 897, probability: 0.145, reason: "0ありパターン", source: 'B' },
+        { number: "1789", score: 936, probability: 0.183, reason: "リハーサル相関性高", source: 'A1' },
+        { number: "1294", score: 924, probability: 0.157, reason: "頻出数字候補", source: 'A1' },
+        { number: "3496", score: 910, probability: 0.151, reason: "統計的特徴良好", source: 'A1' },
+        { number: "0792", score: 897, probability: 0.145, reason: "0ありパターン", source: 'B1' },
       ]
     }
   }

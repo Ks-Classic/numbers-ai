@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>6849回予測表 - リハーサル数字と当選番号の可視化</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        .legend {
+            margin: 20px 0;
+            padding: 10px;
+            background-color: #f5f5f5;
+            border-radius: 5px;
+        }
+        .legend-item {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>6849回予測表（N3、パターンA1）</h1>
+    <div class="legend">
+        <h3>凡例:</h3>
+        <div class="legend-item">
+            <svg width="30" height="3" style="vertical-align: middle;"><line x1="0" y1="1.5" x2="30" y2="1.5" stroke="#ff0000" stroke-width="3" opacity="0.7"/></svg>
+            <span style="margin-left: 10px;">リハーサル数字（631）</span>
+        </div>
+        <div class="legend-item">
+            <svg width="30" height="3" style="vertical-align: middle;"><line x1="0" y1="1.5" x2="30" y2="1.5" stroke="#0000ff" stroke-width="3" opacity="0.7"/></svg>
+            <span style="margin-left: 10px;">当選番号（684）</span>
+        </div>
+        <div class="legend-item">
+            <svg width="30" height="3" style="vertical-align: middle;"><line x1="0" y1="1.5" x2="30" y2="1.5" stroke="#00ff00" stroke-width="3" opacity="0.8"/></svg>
+            <span style="margin-left: 10px;">リハーサルと当選の両方</span>
+        </div>
+    </div>
+    <div style='position: relative; width: 480px; height: 480px;'>
+<table style='border-collapse: collapse; font-family: monospace; position: relative; z-index: 1; background-color: white;'>
+<tr><th style='border: 1px solid #ccc; padding: 4px; width: 30px; height: 30px; background-color: white;'></th>
+<th style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 30px; text-align: center; background-color: white;'>1</th>
+<th style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 30px; text-align: center; background-color: white;'>2</th>
+<th style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 30px; text-align: center; background-color: white;'>3</th>
+<th style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 30px; text-align: center; background-color: white;'>4</th>
+<th style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 30px; text-align: center; background-color: white;'>5</th>
+<th style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 30px; text-align: center; background-color: white;'>6</th>
+<th style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 30px; text-align: center; background-color: white;'>7</th>
+<th style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 30px; text-align: center; background-color: white;'>8</th>
+</tr>
+<tr><th style='border: 1px solid #ccc; padding: 4px; width: 30px; height: 42px; text-align: center; background-color: white;'>1</th>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>0</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>5</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>1</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>6</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>2</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>7</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>3</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>8</td>
+</tr>
+<tr><th style='border: 1px solid #ccc; padding: 4px; width: 30px; height: 42px; text-align: center; background-color: white;'>2</th>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>5</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>0</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>6</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>1</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>7</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>2</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>8</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>3</td>
+</tr>
+<tr><th style='border: 1px solid #ccc; padding: 4px; width: 30px; height: 42px; text-align: center; background-color: white;'>3</th>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>4</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>9</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>5</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>0</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>6</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>1</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>7</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>2</td>
+</tr>
+<tr><th style='border: 1px solid #ccc; padding: 4px; width: 30px; height: 42px; text-align: center; background-color: white;'>4</th>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>9</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>4</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>0</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>5</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>1</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>6</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>2</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>7</td>
+</tr>
+<tr><th style='border: 1px solid #ccc; padding: 4px; width: 30px; height: 42px; text-align: center; background-color: white;'>5</th>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>5</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>0</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>6</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>1</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>8</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>3</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>9</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>4</td>
+</tr>
+<tr><th style='border: 1px solid #ccc; padding: 4px; width: 30px; height: 42px; text-align: center; background-color: white;'>6</th>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>0</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>5</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>1</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>6</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>3</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>8</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>4</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>9</td>
+</tr>
+<tr><th style='border: 1px solid #ccc; padding: 4px; width: 30px; height: 42px; text-align: center; background-color: white;'>7</th>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>9</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>4</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>6</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>1</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>8</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>3</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>9</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>4</td>
+</tr>
+<tr><th style='border: 1px solid #ccc; padding: 4px; width: 30px; height: 42px; text-align: center; background-color: white;'>8</th>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>4</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>9</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>1</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>6</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>3</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>8</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>4</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>9</td>
+</tr>
+</table>
+<svg width='480' height='480' style='position: absolute; top: 0; left: 0; z-index: 3; pointer-events: none;'>
+<line x1="165.0" y1="65.0" x2="215.0" y2="115.0" stroke="#ff0000" stroke-width="3" opacity="0.8"/>
+<line x1="315.0" y1="165.0" x2="265.0" y2="215.0" stroke="#ff0000" stroke-width="3" opacity="0.8"/>
+<line x1="265.0" y1="215.0" x2="215.0" y2="265.0" stroke="#ff0000" stroke-width="3" opacity="0.8"/>
+<line x1="215.0" y1="265.0" x2="165.0" y2="315.0" stroke="#ff0000" stroke-width="3" opacity="0.8"/>
+<line x1="165.0" y1="315.0" x2="215.0" y2="365.0" stroke="#ff0000" stroke-width="3" opacity="0.8"/>
+<line x1="215.0" y1="365.0" x2="165.0" y2="415.0" stroke="#ff0000" stroke-width="3" opacity="0.8"/>
+<line x1="365.0" y1="65.0" x2="415.0" y2="115.0" stroke="#ff0000" stroke-width="3" opacity="0.8"/>
+<line x1="315.0" y1="265.0" x2="265.0" y2="315.0" stroke="#ff0000" stroke-width="3" opacity="0.8"/>
+<line x1="265.0" y1="315.0" x2="315.0" y2="365.0" stroke="#ff0000" stroke-width="3" opacity="0.8"/>
+<line x1="315.0" y1="365.0" x2="265.0" y2="415.0" stroke="#ff0000" stroke-width="3" opacity="0.8"/>
+<line x1="215.0" y1="65.0" x2="165.0" y2="115.0" stroke="#ff0000" stroke-width="3" opacity="0.8"/>
+<line x1="265.0" y1="165.0" x2="315.0" y2="215.0" stroke="#ff0000" stroke-width="3" opacity="0.8"/>
+<line x1="165.0" y1="265.0" x2="215.0" y2="315.0" stroke="#ff0000" stroke-width="3" opacity="0.8"/>
+<line x1="215.0" y1="315.0" x2="165.0" y2="365.0" stroke="#ff0000" stroke-width="3" opacity="0.8"/>
+<line x1="165.0" y1="365.0" x2="215.0" y2="415.0" stroke="#ff0000" stroke-width="3" opacity="0.8"/>
+<line x1="65.0" y1="165.0" x2="115.0" y2="215.0" stroke="#0000ff" stroke-width="3" opacity="0.8"/>
+<line x1="415.0" y1="265.0" x2="365.0" y2="315.0" stroke="#0000ff" stroke-width="3" opacity="0.8"/>
+<line x1="365.0" y1="315.0" x2="415.0" y2="365.0" stroke="#0000ff" stroke-width="3" opacity="0.8"/>
+<line x1="115.0" y1="365.0" x2="65.0" y2="415.0" stroke="#0000ff" stroke-width="3" opacity="0.8"/>
+<line x1="415.0" y1="365.0" x2="365.0" y2="415.0" stroke="#0000ff" stroke-width="3" opacity="0.8"/>
+<line x1="215.0" y1="65.0" x2="165.0" y2="115.0" stroke="#0000ff" stroke-width="3" opacity="0.8"/>
+<line x1="265.0" y1="165.0" x2="315.0" y2="215.0" stroke="#0000ff" stroke-width="3" opacity="0.8"/>
+<line x1="165.0" y1="265.0" x2="215.0" y2="315.0" stroke="#0000ff" stroke-width="3" opacity="0.8"/>
+<line x1="215.0" y1="315.0" x2="165.0" y2="365.0" stroke="#0000ff" stroke-width="3" opacity="0.8"/>
+<line x1="165.0" y1="365.0" x2="215.0" y2="415.0" stroke="#0000ff" stroke-width="3" opacity="0.8"/>
+<line x1="415.0" y1="65.0" x2="365.0" y2="115.0" stroke="#0000ff" stroke-width="3" opacity="0.8"/>
+<line x1="265.0" y1="265.0" x2="315.0" y2="315.0" stroke="#0000ff" stroke-width="3" opacity="0.8"/>
+<line x1="315.0" y1="315.0" x2="265.0" y2="365.0" stroke="#0000ff" stroke-width="3" opacity="0.8"/>
+<line x1="265.0" y1="365.0" x2="315.0" y2="415.0" stroke="#0000ff" stroke-width="3" opacity="0.8"/>
+<line x1="215.0" y1="415.0" x2="165.0" y2="365.0" stroke="#00ff00" stroke-width="4" opacity="0.8"/>
+<line x1="315.0" y1="215.0" x2="265.0" y2="165.0" stroke="#00ff00" stroke-width="4" opacity="0.8"/>
+<line x1="215.0" y1="315.0" x2="165.0" y2="365.0" stroke="#00ff00" stroke-width="4" opacity="0.8"/>
+<line x1="215.0" y1="315.0" x2="165.0" y2="265.0" stroke="#00ff00" stroke-width="4" opacity="0.8"/>
+<line x1="215.0" y1="65.0" x2="165.0" y2="115.0" stroke="#00ff00" stroke-width="4" opacity="0.8"/>
+</svg>
+</div>
+</body>
+</html>

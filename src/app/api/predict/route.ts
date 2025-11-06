@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
           error: {
             code: 'VALIDATION_ERROR',
             message: 'Invalid input data',
-            details: validationResult.error.errors.map((err) => ({
+            details: validationResult.error.issues.map((err) => ({
               field: err.path.join('.'),
               message: err.message,
             })),

@@ -6,6 +6,7 @@
  */
 
 import { generateChart } from '../src/lib/chart-generator/index';
+import type { Pattern } from '../src/types/prediction';
 
 /**
  * グリッドを表示する（デバッグ用）
@@ -63,11 +64,15 @@ async function main() {
   console.log('='.repeat(80));
   console.log();
 
-  const testCases = [
-    { roundNumber: 6758, pattern: 'A' as const, target: 'n3' as const },
-    { roundNumber: 6758, pattern: 'A' as const, target: 'n4' as const },
-    { roundNumber: 6758, pattern: 'B' as const, target: 'n3' as const },
-    { roundNumber: 6758, pattern: 'B' as const, target: 'n4' as const },
+  const testCases: Array<{ roundNumber: number; pattern: Pattern; target: 'n3' | 'n4' }> = [
+    { roundNumber: 6758, pattern: 'A1', target: 'n3' },
+    { roundNumber: 6758, pattern: 'A1', target: 'n4' },
+    { roundNumber: 6758, pattern: 'A2', target: 'n3' },
+    { roundNumber: 6758, pattern: 'A2', target: 'n4' },
+    { roundNumber: 6758, pattern: 'B1', target: 'n3' },
+    { roundNumber: 6758, pattern: 'B1', target: 'n4' },
+    { roundNumber: 6758, pattern: 'B2', target: 'n3' },
+    { roundNumber: 6758, pattern: 'B2', target: 'n4' },
   ];
 
   for (const testCase of testCases) {
@@ -95,7 +100,7 @@ async function main() {
       validateGrid(chartData.grid, chartData.rows, chartData.cols);
 
       // グリッドの表示（最初のテストケースのみ詳細表示）
-      if (testCase.roundNumber === 6758 && testCase.pattern === 'A' && testCase.target === 'n3') {
+      if (testCase.roundNumber === 6758 && testCase.pattern === 'A1' && testCase.target === 'n3') {
         printGrid(chartData.grid, chartData.rows, chartData.cols);
       }
 

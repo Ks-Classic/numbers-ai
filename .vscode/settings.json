@@ -1,15 +1,28 @@
 {
-  "terminal.integrated.defaultProfile.windows": "Ubuntu-24.04",
-  "terminal.integrated.profiles.windows": {
-    "Ubuntu-24.04": {
-      "path": "wsl.exe",
-      "args": ["-d", "Ubuntu-24.04"]
+  "python.defaultInterpreterPath": "${workspaceFolder}/notebooks/venv/bin/python3",
+  "python.terminal.activateEnvironment": true,
+  "python.analysis.extraPaths": [
+    "${workspaceFolder}/notebooks",
+    "${workspaceFolder}/api"
+  ],
+  "python.autoComplete.extraPaths": [
+    "${workspaceFolder}/notebooks",
+    "${workspaceFolder}/api"
+  ],
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "explicit"
     }
   },
-  "python.defaultInterpreterPath": "/usr/bin/python3",
-  "python.terminal.activateEnvironment": false,
-  "[python]": {
-    "editor.defaultFormatter": "ms-python.black-formatter"
-  }
+  "python.linting.enabled": true,
+  "python.linting.pylintEnabled": false,
+  "python.linting.flake8Enabled": true,
+  "jupyter.defaultKernel": "${workspaceFolder}/notebooks/venv/bin/python3",
+  "jupyter.kernels.filter": [
+    {
+      "path": "${workspaceFolder}/notebooks/venv/bin/python3"
+    }
+  ]
 }
-

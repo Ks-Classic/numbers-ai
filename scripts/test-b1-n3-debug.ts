@@ -18,7 +18,8 @@ async function testB1N3(): Promise<void> {
   
   // デバッグモードで実行
   process.env.DEBUG_CHART = 'true';
-  process.env.NODE_ENV = 'development';
+  // NODE_ENVは読み取り専用のため、型アサーションを使用
+  (process.env as { NODE_ENV?: string }).NODE_ENV = 'development';
   
   try {
     const chartData = await generateChart(roundNumber, pattern, target);
