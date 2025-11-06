@@ -3,7 +3,7 @@
   "devCommand": "pnpm dev",
   "installCommand": "pnpm install",
   "framework": "nextjs",
-  "regions": ["nrt1"],
+  "regions": ["hnd1"],
   "outputDirectory": ".next"
 }
 
