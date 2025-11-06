@@ -19,10 +19,5 @@
   "python.linting.enabled": true,
   "python.linting.pylintEnabled": false,
   "python.linting.flake8Enabled": true,
-  "jupyter.defaultKernel": "${workspaceFolder}/notebooks/venv/bin/python3",
-  "jupyter.kernels.filter": [
-    {
-      "path": "${workspaceFolder}/notebooks/venv/bin/python3"
-    }
-  ]
+  "jupyter.defaultKernel": "${workspaceFolder}/notebooks/venv/bin/python3"
 }

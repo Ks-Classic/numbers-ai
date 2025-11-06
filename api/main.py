@@ -114,7 +114,16 @@ def load_data_and_models(force_reload: bool = False):
 @app.on_event("startup")
 async def startup_event():
     """アプリケーション起動時にモデルとデータを読み込む"""
-    load_data_and_models(force_reload=True)
+    try:
+        load_data_and_models(force_reload=True)
+        print("✓ アプリケーションの起動が完了しました")
+    except Exception as e:
+        # 起動時のエラーをログに記録するが、アプリケーションは起動を続ける
+        # （後続のリクエストで再試行できるようにする）
+        print(f"警告: 起動時のデータ/モデル読み込みに失敗しました: {e}")
+        print("後続のリクエストで再試行されます")
+        import traceback
+        traceback.print_exc()
 
 
 # ==================== リクエスト/レスポンス型定義 ====================

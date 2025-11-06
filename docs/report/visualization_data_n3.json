@@ -1,0 +1,2971 @@
+{
+  "6849": {
+    "A1": {
+      "round_number": 6849,
+      "target": "n3",
+      "pattern": "A1",
+      "rehearsal_digits": "631",
+      "winning_digits": "684",
+      "rehearsal_positions": [
+        [
+          1,
+          4
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          3,
+          5
+        ],
+        [
+          4,
+          6
+        ],
+        [
+          5,
+          3
+        ],
+        [
+          6,
+          4
+        ],
+        [
+          7,
+          3
+        ],
+        [
+          8,
+          4
+        ],
+        [
+          1,
+          7
+        ],
+        [
+          2,
+          8
+        ],
+        [
+          5,
+          6
+        ],
+        [
+          6,
+          5
+        ],
+        [
+          7,
+          6
+        ],
+        [
+          8,
+          5
+        ],
+        [
+          1,
+          3
+        ],
+        [
+          2,
+          4
+        ],
+        [
+          3,
+          6
+        ],
+        [
+          4,
+          5
+        ],
+        [
+          5,
+          4
+        ],
+        [
+          6,
+          3
+        ],
+        [
+          7,
+          4
+        ],
+        [
+          8,
+          3
+        ]
+      ],
+      "winning_positions": [
+        [
+          1,
+          4
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          3,
+          5
+        ],
+        [
+          4,
+          6
+        ],
+        [
+          5,
+          3
+        ],
+        [
+          6,
+          4
+        ],
+        [
+          7,
+          3
+        ],
+        [
+          8,
+          4
+        ],
+        [
+          1,
+          8
+        ],
+        [
+          2,
+          7
+        ],
+        [
+          5,
+          5
+        ],
+        [
+          6,
+          6
+        ],
+        [
+          7,
+          5
+        ],
+        [
+          8,
+          6
+        ],
+        [
+          3,
+          1
+        ],
+        [
+          4,
+          2
+        ],
+        [
+          5,
+          8
+        ],
+        [
+          6,
+          7
+        ],
+        [
+          7,
+          2
+        ],
+        [
+          7,
+          8
+        ],
+        [
+          8,
+          1
+        ],
+        [
+          8,
+          7
+        ]
+      ],
+      "feature_results": [
+        {
+          "digit": 0,
+          "positions_count": 6,
+          "rehearsal_distance": 1.3333333333333333,
+          "overlap_count": 0,
+          "inverse_ratio": 0.0,
+          "is_winning": false,
+          "is_rehearsal": false
+        },
+        {
+          "digit": 1,
+          "positions_count": 8,
+          "rehearsal_distance": 0.0,
+          "overlap_count": 8,
+          "inverse_ratio": 0.0,
+          "is_winning": false,
+          "is_rehearsal": true
+        },
+        {
+          "digit": 2,
+          "positions_count": 4,
+          "rehearsal_distance": 1.0,
+          "overlap_count": 0,
+          "inverse_ratio": 0.0,
+          "is_winning": false,
+          "is_rehearsal": false
+        },
+        {
+          "digit": 3,
+          "positions_count": 6,
+          "rehearsal_distance": 0.0,
+          "overlap_count": 6,
+          "inverse_ratio": 0.0,
+          "is_winning": false,
+          "is_rehearsal": true
+        },
+        {
+          "digit": 4,
+          "positions_count": 8,
+          "rehearsal_distance": 1.6848385830773844,
+          "overlap_count": 0,
+          "inverse_ratio": 0.0,
+          "is_winning": true,
+          "is_rehearsal": false
+        },
+        {
+          "digit": 5,
+          "positions_count": 6,
+          "rehearsal_distance": 1.3333333333333333,
+          "overlap_count": 0,
+          "inverse_ratio": 0.0,
+          "is_winning": false,
+          "is_rehearsal": false
+        },
+        {
+          "digit": 6,
+          "positions_count": 8,
+          "rehearsal_distance": 0.0,
+          "overlap_count": 8,
+          "inverse_ratio": 0.0,
+          "is_winning": true,
+          "is_rehearsal": true
+        },
+        {
+          "digit": 7,
+          "positions_count": 4,
+          "rehearsal_distance": 1.25,
+          "overlap_count": 0,
+          "inverse_ratio": 0.0,
+          "is_winning": false,
+          "is_rehearsal": false
+        },
+        {
+          "digit": 8,
+          "positions_count": 6,
+          "rehearsal_distance": 1.0,
+          "overlap_count": 0,
+          "inverse_ratio": 0.0,
+          "is_winning": true,
+          "is_rehearsal": false
+        },
+        {
+          "digit": 9,
+          "positions_count": 8,
+          "rehearsal_distance": 1.6403021868590582,
+          "overlap_count": 0,
+          "inverse_ratio": 0.0,
+          "is_winning": false,
+          "is_rehearsal": false
+        }
+      ],
+      "grid": [
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          0,
+          5,
+          1,
+          6,
+          2,
+          7,
+          3
+        ],
+        [
+          null,
+          5,
+          0,
+          6,
+          1,
+          7,
+          2,
+          8
+        ],
+        [
+          null,
+          4,
+          9,
+          5,
+          0,
+          6,
+          1,
+          7
+        ],
+        [
+          null,
+          9,
+          4,
+          0,
+          5,
+          1,
+          6,
+          2
+        ],
+        [
+          null,
+          5,
+          0,
+          6,
+          1,
+          8,
+          3,
+          9
+        ],
+        [
+          null,
+          0,
+          5,
+          1,
+          6,
+          3,
+          8,
+          4
+        ],
+        [
+          null,
+          9,
+          4,
+          6,
+          1,
+          8,
+          3,
+          9
+        ]
+      ],
+      "grid_size": {
+        "rows": 8,
+        "cols": 8
+      }
+    },
+    "A2": {
+      "round_number": 6849,
+      "target": "n3",
+      "pattern": "A2",
+      "rehearsal_digits": "631",
+      "winning_digits": "684",
+      "rehearsal_positions": [
+        [
+          1,
+          4
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          3,
+          5
+        ],
+        [
+          4,
+          6
+        ],
+        [
+          5,
+          3
+        ],
+        [
+          7,
+          3
+        ],
+        [
+          1,
+          7
+        ],
+        [
+          2,
+          8
+        ],
+        [
+          5,
+          6
+        ],
+        [
+          6,
+          5
+        ],
+        [
+          7,
+          6
+        ],
+        [
+          8,
+          5
+        ],
+        [
+          1,
+          3
+        ],
+        [
+          2,
+          4
+        ],
+        [
+          3,
+          6
+        ],
+        [
+          4,
+          5
+        ],
+        [
+          6,
+          3
+        ],
+        [
+          8,
+          3
+        ]
+      ],
+      "winning_positions": [
+        [
+          1,
+          4
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          3,
+          5
+        ],
+        [
+          4,
+          6
+        ],
+        [
+          5,
+          3
+        ],
+        [
+          7,
+          3
+        ],
+        [
+          1,
+          8
+        ],
+        [
+          2,
+          7
+        ],
+        [
+          5,
+          5
+        ],
+        [
+          6,
+          6
+        ],
+        [
+          7,
+          5
+        ],
+        [
+          8,
+          6
+        ],
+        [
+          3,
+          1
+        ],
+        [
+          4,
+          2
+        ],
+        [
+          5,
+          8
+        ],
+        [
+          6,
+          7
+        ],
+        [
+          7,
+          2
+        ],
+        [
+          7,
+          8
+        ],
+        [
+          8,
+          1
+        ],
+        [
+          8,
+          7
+        ]
+      ],
+      "feature_results": [
+        {
+          "digit": 0,
+          "positions_count": 9,
+          "rehearsal_distance": 1.2222222222222223,
+          "overlap_count": 0,
+          "inverse_ratio": 0.0,
+          "is_winning": false,
+          "is_rehearsal": false
+        },
+        {
+          "digit": 1,
+          "positions_count": 6,
+          "rehearsal_distance": 0.0,
+          "overlap_count": 6,
+          "inverse_ratio": 0.0,
+          "is_winning": false,
+          "is_rehearsal": true
+        },
+        {
+          "digit": 2,
+          "positions_count": 4,
+          "rehearsal_distance": 1.0,
+          "overlap_count": 0,
+          "inverse_ratio": 0.0,
+          "is_winning": false,
+          "is_rehearsal": false
+        },
+        {
+          "digit": 3,
+          "positions_count": 6,
+          "rehearsal_distance": 0.0,
+          "overlap_count": 6,
+          "inverse_ratio": 0.0,
+          "is_winning": false,
+          "is_rehearsal": true
+        },
+        {
+          "digit": 4,
+          "positions_count": 8,
+          "rehearsal_distance": 1.6848385830773844,
+          "overlap_count": 0,
+          "inverse_ratio": 0.0,
+          "is_winning": true,
+          "is_rehearsal": false
+        },
+        {
+          "digit": 5,
+          "positions_count": 7,
+          "rehearsal_distance": 1.2857142857142858,
+          "overlap_count": 0,
+          "inverse_ratio": 0.0,
+          "is_winning": false,
+          "is_rehearsal": false
+        },
+        {
+          "digit": 6,
+          "positions_count": 6,
+          "rehearsal_distance": 0.0,
+          "overlap_count": 6,
+          "inverse_ratio": 0.0,
+          "is_winning": true,
+          "is_rehearsal": true
+        },
+        {
+          "digit": 7,
+          "positions_count": 4,
+          "rehearsal_distance": 1.25,
+          "overlap_count": 0,
+          "inverse_ratio": 0.0,
+          "is_winning": false,
+          "is_rehearsal": false
+        },
+        {
+          "digit": 8,
+          "positions_count": 6,
+          "rehearsal_distance": 1.0,
+          "overlap_count": 0,
+          "inverse_ratio": 0.0,
+          "is_winning": true,
+          "is_rehearsal": false
+        },
+        {
+          "digit": 9,
+          "positions_count": 8,
+          "rehearsal_distance": 1.6403021868590582,
+          "overlap_count": 0,
+          "inverse_ratio": 0.0,
+          "is_winning": false,
+          "is_rehearsal": false
+        }
+      ],
+      "grid": [
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          0,
+          5,
+          1,
+          6,
+          2,
+          7,
+          3
+        ],
+        [
+          null,
+          5,
+          0,
+          6,
+          1,
+          7,
+          2,
+          8
+        ],
+        [
+          null,
+          4,
+          9,
+          5,
+          0,
+          6,
+          1,
+          7
+        ],
+        [
+          null,
+          9,
+          4,
+          0,
+          0,
+          1,
+          6,
+          2
+        ],
+        [
+          null,
+          5,
+          0,
+          6,
+          5,
+          8,
+          3,
+          9
+        ],
+        [
+          null,
+          0,
+          5,
+          1,
+          0,
+          3,
+          8,
+          4
+        ],
+        [
+          null,
+          9,
+          4,
+          6,
+          5,
+          8,
+          3,
+          9
+        ]
+      ],
+      "grid_size": {
+        "rows": 8,
+        "cols": 8
+      }
+    },
+    "B1": {
+      "round_number": 6849,
+      "target": "n3",
+      "pattern": "B1",
+      "rehearsal_digits": "631",
+      "winning_digits": "684",
+      "rehearsal_positions": [
+        [
+          1,
+          4
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          4,
+          4
+        ],
+        [
+          5,
+          1
+        ],
+        [
+          6,
+          2
+        ],
+        [
+          1,
+          5
+        ],
+        [
+          2,
+          6
+        ],
+        [
+          1,
+          3
+        ],
+        [
+          2,
+          4
+        ],
+        [
+          3,
+          4
+        ],
+        [
+          4,
+          3
+        ],
+        [
+          5,
+          2
+        ],
+        [
+          6,
+          1
+        ]
+      ],
+      "winning_positions": [
+        [
+          1,
+          4
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          4,
+          4
+        ],
+        [
+          5,
+          1
+        ],
+        [
+          6,
+          2
+        ],
+        [
+          1,
+          6
+        ],
+        [
+          2,
+          5
+        ],
+        [
+          3,
+          6
+        ],
+        [
+          4,
+          5
+        ],
+        [
+          5,
+          4
+        ],
+        [
+          5,
+          6
+        ],
+        [
+          6,
+          3
+        ],
+        [
+          6,
+          5
+        ]
+      ],
+      "feature_results": [
+        {
+          "digit": 0,
+          "positions_count": 10,
+          "rehearsal_distance": 1.9919306483427346,
+          "overlap_count": 0,
+          "inverse_ratio": 0.0,
+          "is_winning": false,
+          "is_rehearsal": false
+        },
+        {
+          "digit": 1,
+          "positions_count": 6,
+          "rehearsal_distance": 0.0,
+          "overlap_count": 6,
+          "inverse_ratio": 0.0,
+          "is_winning": false,
+          "is_rehearsal": true
+        },
+        {
+          "digit": 3,
+          "positions_count": 2,
+          "rehearsal_distance": 0.0,
+          "overlap_count": 2,
+          "inverse_ratio": 0.0,
+          "is_winning": false,
+          "is_rehearsal": true
+        },
+        {
+          "digit": 4,
+          "positions_count": 6,
+          "rehearsal_distance": 1.4120226591665965,
+          "overlap_count": 0,
+          "inverse_ratio": 0.0,
+          "is_winning": true,
+          "is_rehearsal": false
+        },
+        {
+          "digit": 5,
+          "positions_count": 10,
+          "rehearsal_distance": 2.129126786466034,
+          "overlap_count": 0,
+          "inverse_ratio": 0.0,
+          "is_winning": false,
+          "is_rehearsal": false
+        },
+        {
+          "digit": 6,
+          "positions_count": 6,
+          "rehearsal_distance": 0.0,
+          "overlap_count": 6,
+          "inverse_ratio": 0.0,
+          "is_winning": true,
+          "is_rehearsal": true
+        },
+        {
+          "digit": 8,
+          "positions_count": 2,
+          "rehearsal_distance": 1.0,
+          "overlap_count": 0,
+          "inverse_ratio": 0.0,
+          "is_winning": true,
+          "is_rehearsal": false
+        },
+        {
+          "digit": 9,
+          "positions_count": 6,
+          "rehearsal_distance": 1.7071067811865477,
+          "overlap_count": 0,
+          "inverse_ratio": 0.0,
+          "is_winning": false,
+          "is_rehearsal": false
+        }
+      ],
+      "grid": [
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          0,
+          5,
+          1,
+          6,
+          3,
+          8,
+          5
+        ],
+        [
+          null,
+          5,
+          0,
+          6,
+          1,
+          8,
+          3,
+          0
+        ],
+        [
+          null,
+          5,
+          0,
+          6,
+          1,
+          9,
+          4,
+          5
+        ],
+        [
+          null,
+          0,
+          5,
+          1,
+          6,
+          4,
+          9,
+          0
+        ],
+        [
+          null,
+          6,
+          1,
+          9,
+          4,
+          9,
+          4,
+          5
+        ]
+      ],
+      "grid_size": {
+        "rows": 6,
+        "cols": 8
+      }
+    },
+    "B2": {
+      "round_number": 6849,
+      "target": "n3",
+      "pattern": "B2",
+      "rehearsal_digits": "631",
+      "winning_digits": "684",
+      "rehearsal_positions": [
+        [
+          1,
+          4
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          5,
+          1
+        ],
+        [
+          6,
+          2
+        ],
+        [
+          1,
+          5
+        ],
+        [
+          2,
+          6
+        ],
+        [
+          1,
+          3
+        ],
+        [
+          2,
+          4
+        ],
+        [
+          4,
+          3
+        ],
+        [
+          5,
+          2
+        ],
+        [
+          6,
+          1
+        ]
+      ],
+      "winning_positions": [
+        [
+          1,
+          4
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          5,
+          1
+        ],
+        [
+          6,
+          2
+        ],
+        [
+          1,
+          6
+        ],
+        [
+          2,
+          5
+        ],
+        [
+          3,
+          6
+        ],
+        [
+          4,
+          5
+        ],
+        [
+          5,
+          6
+        ],
+        [
+          6,
+          3
+        ],
+        [
+          6,
+          5
+        ]
+      ],
+      "feature_results": [
+        {
+          "digit": 0,
+          "positions_count": 12,
+          "rehearsal_distance": 1.9042561996628429,
+          "overlap_count": 0,
+          "inverse_ratio": 0.0,
+          "is_winning": false,
+          "is_rehearsal": false
+        },
+        {
+          "digit": 1,
+          "positions_count": 5,
+          "rehearsal_distance": 0.0,
+          "overlap_count": 5,
+          "inverse_ratio": 0.0,
+          "is_winning": false,
+          "is_rehearsal": true
+        },
+        {
+          "digit": 3,
+          "positions_count": 2,
+          "rehearsal_distance": 0.0,
+          "overlap_count": 2,
+          "inverse_ratio": 0.0,
+          "is_winning": false,
+          "is_rehearsal": true
+        },
+        {
+          "digit": 4,
+          "positions_count": 5,
+          "rehearsal_distance": 1.965685424949238,
+          "overlap_count": 0,
+          "inverse_ratio": 0.0,
+          "is_winning": true,
+          "is_rehearsal": false
+        },
+        {
+          "digit": 5,
+          "positions_count": 12,
+          "rehearsal_distance": 2.0242723220550283,
+          "overlap_count": 0,
+          "inverse_ratio": 0.0,
+          "is_winning": false,
+          "is_rehearsal": false
+        },
+        {
+          "digit": 6,
+          "positions_count": 5,
+          "rehearsal_distance": 0.0,
+          "overlap_count": 5,
+          "inverse_ratio": 0.0,
+          "is_winning": true,
+          "is_rehearsal": true
+        },
+        {
+          "digit": 8,
+          "positions_count": 2,
+          "rehearsal_distance": 1.0,
+          "overlap_count": 0,
+          "inverse_ratio": 0.0,
+          "is_winning": true,
+          "is_rehearsal": false
+        },
+        {
+          "digit": 9,
+          "positions_count": 5,
+          "rehearsal_distance": 2.0511665630673748,
+          "overlap_count": 0,
+          "inverse_ratio": 0.0,
+          "is_winning": false,
+          "is_rehearsal": false
+        }
+      ],
+      "grid": [
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          0,
+          5,
+          1,
+          6,
+          3,
+          8,
+          5
+        ],
+        [
+          null,
+          5,
+          0,
+          6,
+          1,
+          8,
+          3,
+          0
+        ],
+        [
+          null,
+          5,
+          0,
+          6,
+          0,
+          9,
+          4,
+          5
+        ],
+        [
+          null,
+          0,
+          5,
+          1,
+          5,
+          4,
+          9,
+          0
+        ],
+        [
+          null,
+          6,
+          1,
+          9,
+          0,
+          9,
+          4,
+          5
+        ]
+      ],
+      "grid_size": {
+        "rows": 6,
+        "cols": 8
+      }
+    }
+  },
+  "6800": {
+    "A1": {
+      "round_number": 6800,
+      "target": "n3",
+      "pattern": "A1",
+      "rehearsal_digits": "970",
+      "winning_digits": "038",
+      "rehearsal_positions": [
+        [
+          3,
+          6
+        ],
+        [
+          4,
+          5
+        ],
+        [
+          5,
+          2
+        ],
+        [
+          6,
+          1
+        ],
+        [
+          7,
+          3
+        ],
+        [
+          8,
+          4
+        ],
+        [
+          9,
+          3
+        ],
+        [
+          10,
+          4
+        ],
+        [
+          1,
+          6
+        ],
+        [
+          2,
+          5
+        ],
+        [
+          5,
+          5
+        ],
+        [
+          6,
+          6
+        ],
+        [
+          7,
+          5
+        ],
+        [
+          8,
+          6
+        ],
+        [
+          9,
+          5
+        ],
+        [
+          10,
+          6
+        ],
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          3,
+          1
+        ],
+        [
+          3,
+          8
+        ],
+        [
+          4,
+          2
+        ],
+        [
+          4,
+          7
+        ]
+      ],
+      "winning_positions": [
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          3,
+          1
+        ],
+        [
+          3,
+          8
+        ],
+        [
+          4,
+          2
+        ],
+        [
+          4,
+          7
+        ],
+        [
+          1,
+          7
+        ],
+        [
+          2,
+          8
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          4,
+          4
+        ],
+        [
+          5,
+          8
+        ],
+        [
+          6,
+          7
+        ],
+        [
+          7,
+          2
+        ],
+        [
+          7,
+          8
+        ],
+        [
+          8,
+          1
+        ],
+        [
+          8,
+          7
+        ],
+        [
+          9,
+          2
+        ],
+        [
+          9,
+          8
+        ],
+        [
+          10,
+          1
+        ],
+        [
+          10,
+          7
+        ],
+        [
+          1,
+          8
+        ],
+        [
+          2,
+          7
+        ],
+        [
+          3,
+          4
+        ],
+        [
+          4,
+          3
+        ],
+        [
+          5,
+          7
+        ],
+        [
+          6,
+          8
+        ],
+        [
+          7,
+          1
+        ],
+        [
+          7,
+          7
+        ],
+        [
+          8,
+          2
+        ],
+        [
+          8,
+          8
+        ],
+        [
+          9,
+          1
+        ],
+        [
+          9,
+          7
+        ],
+        [
+          10,
+          2
+        ],
+        [
+          10,
+          8
+        ]
+      ],
+      "feature_results": [
+        {
+          "digit": 0,
+          "positions_count": 6,
+          "rehearsal_distance": 0.0,
+          "overlap_count": 6,
+          "inverse_ratio": 0.0,
+          "is_winning": true,
+          "is_rehearsal": true
+        },
+        {
+          "digit": 1,
+          "positions_count": 4,
+          "rehearsal_distance": 1.1035533905932737,
+          "overlap_count": 0,
+          "inverse_ratio": 0.0,
+          "is_winning": false,
+          "is_rehearsal": false
+        },
+        {
+          "digit": 2,
+          "positions_count": 8,
+          "rehearsal_distance": 1.0,
+          "overlap_count": 0,
+          "inverse_ratio": 0.0,
+          "is_winning": false,
+          "is_rehearsal": false
+        },
+        {
+          "digit": 3,
+          "positions_count": 14,
+          "rehearsal_distance": 1.3954736469461115,
+          "overlap_count": 0,
+          "inverse_ratio": 0.0,
+          "is_winning": true,
+          "is_rehearsal": false
+        },
+        {
+          "digit": 4,
+          "positions_count": 8,
+          "rehearsal_distance": 1.0,
+          "overlap_count": 0,
+          "inverse_ratio": 0.0,
+          "is_winning": false,
+          "is_rehearsal": false
+        },
+        {
+          "digit": 5,
+          "positions_count": 6,
+          "rehearsal_distance": 1.0,
+          "overlap_count": 0,
+          "inverse_ratio": 0.0,
+          "is_winning": false,
+          "is_rehearsal": false
+        },
+        {
+          "digit": 6,
+          "positions_count": 4,
+          "rehearsal_distance": 1.2071067811865475,
+          "overlap_count": 0,
+          "inverse_ratio": 0.0,
+          "is_winning": false,
+          "is_rehearsal": false
+        },
+        {
+          "digit": 7,
+          "positions_count": 8,
+          "rehearsal_distance": 0.0,
+          "overlap_count": 8,
+          "inverse_ratio": 0.0,
+          "is_winning": false,
+          "is_rehearsal": true
+        },
+        {
+          "digit": 8,
+          "positions_count": 14,
+          "rehearsal_distance": 1.5346629553027553,
+          "overlap_count": 0,
+          "inverse_ratio": 0.0,
+          "is_winning": true,
+          "is_rehearsal": false
+        },
+        {
+          "digit": 9,
+          "positions_count": 8,
+          "rehearsal_distance": 0.0,
+          "overlap_count": 8,
+          "inverse_ratio": 0.0,
+          "is_winning": false,
+          "is_rehearsal": true
+        }
+      ],
+      "grid": [
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          0,
+          5,
+          1,
+          6,
+          2,
+          7,
+          3
+        ],
+        [
+          null,
+          5,
+          0,
+          6,
+          1,
+          7,
+          2,
+          8
+        ],
+        [
+          null,
+          0,
+          5,
+          3,
+          8,
+          4,
+          9,
+          5
+        ],
+        [
+          null,
+          5,
+          0,
+          8,
+          3,
+          9,
+          4,
+          0
+        ],
+        [
+          null,
+          4,
+          9,
+          6,
+          1,
+          7,
+          2,
+          8
+        ],
+        [
+          null,
+          9,
+          4,
+          1,
+          6,
+          2,
+          7,
+          3
+        ],
+        [
+          null,
+          8,
+          3,
+          9,
+          4,
+          7,
+          2,
+          8
+        ],
+        [
+          null,
+          3,
+          8,
+          4,
+          9,
+          2,
+          7,
+          3
+        ],
+        [
+          null,
+          8,
+          3,
+          9,
+          4,
+          7,
+          2,
+          8
+        ]
+      ],
+      "grid_size": {
+        "rows": 10,
+        "cols": 8
+      }
+    },
+    "A2": {
+      "round_number": 6800,
+      "target": "n3",
+      "pattern": "A2",
+      "rehearsal_digits": "970",
+      "winning_digits": "038",
+      "rehearsal_positions": [
+        [
+          3,
+          6
+        ],
+        [
+          4,
+          5
+        ],
+        [
+          5,
+          2
+        ],
+        [
+          6,
+          1
+        ],
+        [
+          7,
+          3
+        ],
+        [
+          9,
+          3
+        ],
+        [
+          1,
+          6
+        ],
+        [
+          2,
+          5
+        ],
+        [
+          5,
+          5
+        ],
+        [
+          6,
+          6
+        ],
+        [
+          7,
+          5
+        ],
+        [
+          8,
+          6
+        ],
+        [
+          9,
+          5
+        ],
+        [
+          10,
+          6
+        ],
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          3,
+          1
+        ],
+        [
+          3,
+          8
+        ],
+        [
+          4,
+          2
+        ],
+        [
+          4,
+          7
+        ],
+        [
+          5,
+          4
+        ],
+        [
+          7,
+          4
+        ],
+        [
+          9,
+          4
+        ]
+      ],
+      "winning_positions": [
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          3,
+          1
+        ],
+        [
+          3,
+          8
+        ],
+        [
+          4,
+          2
+        ],
+        [
+          4,
+          7
+        ],
+        [
+          5,
+          4
+        ],
+        [
+          7,
+          4
+        ],
+        [
+          9,
+          4
+        ],
+        [
+          1,
+          7
+        ],
+        [
+          2,
+          8
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          4,
+          4
+        ],
+        [
+          5,
+          8
+        ],
+        [
+          6,
+          7
+        ],
+        [
+          7,
+          2
+        ],
+        [
+          7,
+          8
+        ],
+        [
+          8,
+          1
+        ],
+        [
+          8,
+          7
+        ],
+        [
+          9,
+          2
+        ],
+        [
+          9,
+          8
+        ],
+        [
+          10,
+          1
+        ],
+        [
+          10,
+          7
+        ],
+        [
+          1,
+          8
+        ],
+        [
+          2,
+          7
+        ],
+        [
+          3,
+          4
+        ],
+        [
+          4,
+          3
+        ],
+        [
+          5,
+          7
+        ],
+        [
+          6,
+          8
+        ],
+        [
+          7,
+          1
+        ],
+        [
+          7,
+          7
+        ],
+        [
+          8,
+          2
+        ],
+        [
+          8,
+          8
+        ],
+        [
+          9,
+          1
+        ],
+        [
+          9,
+          7
+        ],
+        [
+          10,
+          2
+        ],
+        [
+          10,
+          8
+        ]
+      ],
+      "feature_results": [
+        {
+          "digit": 0,
+          "positions_count": 9,
+          "rehearsal_distance": 0.0,
+          "overlap_count": 9,
+          "inverse_ratio": 0.0,
+          "is_winning": true,
+          "is_rehearsal": true
+        },
+        {
+          "digit": 1,
+          "positions_count": 3,
+          "rehearsal_distance": 1.1380711874576983,
+          "overlap_count": 0,
+          "inverse_ratio": 0.0,
+          "is_winning": false,
+          "is_rehearsal": false
+        },
+        {
+          "digit": 2,
+          "positions_count": 8,
+          "rehearsal_distance": 1.0,
+          "overlap_count": 0,
+          "inverse_ratio": 0.0,
+          "is_winning": false,
+          "is_rehearsal": false
+        },
+        {
+          "digit": 3,
+          "positions_count": 14,
+          "rehearsal_distance": 1.3954736469461115,
+          "overlap_count": 0,
+          "inverse_ratio": 0.0,
+          "is_winning": true,
+          "is_rehearsal": false
+        },
+        {
+          "digit": 4,
+          "positions_count": 6,
+          "rehearsal_distance": 1.0,
+          "overlap_count": 0,
+          "inverse_ratio": 0.0,
+          "is_winning": false,
+          "is_rehearsal": false
+        },
+        {
+          "digit": 5,
+          "positions_count": 9,
+          "rehearsal_distance": 1.0,
+          "overlap_count": 0,
+          "inverse_ratio": 0.0,
+          "is_winning": false,
+          "is_rehearsal": false
+        },
+        {
+          "digit": 6,
+          "positions_count": 3,
+          "rehearsal_distance": 1.1380711874576983,
+          "overlap_count": 0,
+          "inverse_ratio": 0.0,
+          "is_winning": false,
+          "is_rehearsal": false
+        },
+        {
+          "digit": 7,
+          "positions_count": 8,
+          "rehearsal_distance": 0.0,
+          "overlap_count": 8,
+          "inverse_ratio": 0.0,
+          "is_winning": false,
+          "is_rehearsal": true
+        },
+        {
+          "digit": 8,
+          "positions_count": 14,
+          "rehearsal_distance": 1.5346629553027553,
+          "overlap_count": 0,
+          "inverse_ratio": 0.0,
+          "is_winning": true,
+          "is_rehearsal": false
+        },
+        {
+          "digit": 9,
+          "positions_count": 6,
+          "rehearsal_distance": 0.0,
+          "overlap_count": 6,
+          "inverse_ratio": 0.0,
+          "is_winning": false,
+          "is_rehearsal": true
+        }
+      ],
+      "grid": [
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          0,
+          5,
+          1,
+          6,
+          2,
+          7,
+          3
+        ],
+        [
+          null,
+          5,
+          0,
+          6,
+          1,
+          7,
+          2,
+          8
+        ],
+        [
+          null,
+          0,
+          5,
+          3,
+          8,
+          4,
+          9,
+          5
+        ],
+        [
+          null,
+          5,
+          0,
+          8,
+          3,
+          9,
+          4,
+          0
+        ],
+        [
+          null,
+          4,
+          9,
+          6,
+          0,
+          7,
+          2,
+          8
+        ],
+        [
+          null,
+          9,
+          4,
+          1,
+          5,
+          2,
+          7,
+          3
+        ],
+        [
+          null,
+          8,
+          3,
+          9,
+          0,
+          7,
+          2,
+          8
+        ],
+        [
+          null,
+          3,
+          8,
+          4,
+          5,
+          2,
+          7,
+          3
+        ],
+        [
+          null,
+          8,
+          3,
+          9,
+          0,
+          7,
+          2,
+          8
+        ]
+      ],
+      "grid_size": {
+        "rows": 10,
+        "cols": 8
+      }
+    },
+    "B1": {
+      "round_number": 6800,
+      "target": "n3",
+      "pattern": "B1",
+      "rehearsal_digits": "970",
+      "winning_digits": "038",
+      "rehearsal_positions": [
+        [
+          3,
+          6
+        ],
+        [
+          4,
+          5
+        ],
+        [
+          5,
+          2
+        ],
+        [
+          5,
+          5
+        ],
+        [
+          6,
+          1
+        ],
+        [
+          6,
+          6
+        ],
+        [
+          7,
+          5
+        ],
+        [
+          8,
+          6
+        ],
+        [
+          9,
+          5
+        ],
+        [
+          10,
+          6
+        ],
+        [
+          1,
+          6
+        ],
+        [
+          2,
+          5
+        ],
+        [
+          3,
+          7
+        ],
+        [
+          4,
+          8
+        ],
+        [
+          5,
+          7
+        ],
+        [
+          6,
+          8
+        ],
+        [
+          7,
+          7
+        ],
+        [
+          8,
+          8
+        ],
+        [
+          9,
+          7
+        ],
+        [
+          10,
+          8
+        ],
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          3,
+          1
+        ],
+        [
+          4,
+          2
+        ]
+      ],
+      "winning_positions": [
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          3,
+          1
+        ],
+        [
+          4,
+          2
+        ],
+        [
+          1,
+          7
+        ],
+        [
+          2,
+          8
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          4,
+          4
+        ],
+        [
+          5,
+          4
+        ],
+        [
+          6,
+          3
+        ],
+        [
+          7,
+          2
+        ],
+        [
+          7,
+          4
+        ],
+        [
+          8,
+          1
+        ],
+        [
+          8,
+          3
+        ],
+        [
+          9,
+          2
+        ],
+        [
+          9,
+          4
+        ],
+        [
+          10,
+          1
+        ],
+        [
+          10,
+          3
+        ],
+        [
+          1,
+          8
+        ],
+        [
+          2,
+          7
+        ],
+        [
+          3,
+          4
+        ],
+        [
+          4,
+          3
+        ],
+        [
+          5,
+          3
+        ],
+        [
+          6,
+          4
+        ],
+        [
+          7,
+          1
+        ],
+        [
+          7,
+          3
+        ],
+        [
+          8,
+          2
+        ],
+        [
+          8,
+          4
+        ],
+        [
+          9,
+          1
+        ],
+        [
+          9,
+          3
+        ],
+        [
+          10,
+          2
+        ],
+        [
+          10,
+          4
+        ]
+      ],
+      "feature_results": [
+        {
+          "digit": 0,
+          "positions_count": 4,
+          "rehearsal_distance": 0.0,
+          "overlap_count": 4,
+          "inverse_ratio": 0.0,
+          "is_winning": true,
+          "is_rehearsal": true
+        },
+        {
+          "digit": 1,
+          "positions_count": 2,
+          "rehearsal_distance": 1.2071067811865475,
+          "overlap_count": 0,
+          "inverse_ratio": 0.0,
+          "is_winning": false,
+          "is_rehearsal": false
+        },
+        {
+          "digit": 2,
+          "positions_count": 10,
+          "rehearsal_distance": 1.0,
+          "overlap_count": 0,
+          "inverse_ratio": 0.0,
+          "is_winning": false,
+          "is_rehearsal": false
+        },
+        {
+          "digit": 3,
+          "positions_count": 14,
+          "rehearsal_distance": 1.7234993003208543,
+          "overlap_count": 0,
+          "inverse_ratio": 0.0,
+          "is_winning": true,
+          "is_rehearsal": false
+        },
+        {
+          "digit": 4,
+          "positions_count": 10,
+          "rehearsal_distance": 1.0,
+          "overlap_count": 0,
+          "inverse_ratio": 0.0,
+          "is_winning": false,
+          "is_rehearsal": false
+        },
+        {
+          "digit": 5,
+          "positions_count": 4,
+          "rehearsal_distance": 1.0,
+          "overlap_count": 0,
+          "inverse_ratio": 0.0,
+          "is_winning": false,
+          "is_rehearsal": false
+        },
+        {
+          "digit": 6,
+          "positions_count": 2,
+          "rehearsal_distance": 1.2071067811865475,
+          "overlap_count": 0,
+          "inverse_ratio": 0.0,
+          "is_winning": false,
+          "is_rehearsal": false
+        },
+        {
+          "digit": 7,
+          "positions_count": 10,
+          "rehearsal_distance": 0.0,
+          "overlap_count": 10,
+          "inverse_ratio": 0.0,
+          "is_winning": false,
+          "is_rehearsal": true
+        },
+        {
+          "digit": 8,
+          "positions_count": 14,
+          "rehearsal_distance": 1.7182285633686107,
+          "overlap_count": 0,
+          "inverse_ratio": 0.0,
+          "is_winning": true,
+          "is_rehearsal": false
+        },
+        {
+          "digit": 9,
+          "positions_count": 10,
+          "rehearsal_distance": 0.0,
+          "overlap_count": 10,
+          "inverse_ratio": 0.0,
+          "is_winning": false,
+          "is_rehearsal": true
+        }
+      ],
+      "grid": [
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          0,
+          5,
+          1,
+          6,
+          2,
+          7,
+          3
+        ],
+        [
+          null,
+          5,
+          0,
+          6,
+          1,
+          7,
+          2,
+          8
+        ],
+        [
+          null,
+          0,
+          5,
+          3,
+          8,
+          4,
+          9,
+          7
+        ],
+        [
+          null,
+          5,
+          0,
+          8,
+          3,
+          9,
+          4,
+          2
+        ],
+        [
+          null,
+          4,
+          9,
+          8,
+          3,
+          9,
+          4,
+          7
+        ],
+        [
+          null,
+          9,
+          4,
+          3,
+          8,
+          4,
+          9,
+          2
+        ],
+        [
+          null,
+          8,
+          3,
+          8,
+          3,
+          9,
+          4,
+          7
+        ],
+        [
+          null,
+          3,
+          8,
+          3,
+          8,
+          4,
+          9,
+          2
+        ],
+        [
+          null,
+          8,
+          3,
+          8,
+          3,
+          9,
+          4,
+          7
+        ]
+      ],
+      "grid_size": {
+        "rows": 10,
+        "cols": 8
+      }
+    },
+    "B2": {
+      "round_number": 6800,
+      "target": "n3",
+      "pattern": "B2",
+      "rehearsal_digits": "970",
+      "winning_digits": "038",
+      "rehearsal_positions": [
+        [
+          3,
+          6
+        ],
+        [
+          4,
+          5
+        ],
+        [
+          5,
+          2
+        ],
+        [
+          5,
+          5
+        ],
+        [
+          6,
+          1
+        ],
+        [
+          6,
+          6
+        ],
+        [
+          7,
+          5
+        ],
+        [
+          8,
+          6
+        ],
+        [
+          9,
+          5
+        ],
+        [
+          10,
+          6
+        ],
+        [
+          1,
+          6
+        ],
+        [
+          2,
+          5
+        ],
+        [
+          3,
+          7
+        ],
+        [
+          4,
+          8
+        ],
+        [
+          5,
+          7
+        ],
+        [
+          6,
+          8
+        ],
+        [
+          7,
+          7
+        ],
+        [
+          8,
+          8
+        ],
+        [
+          9,
+          7
+        ],
+        [
+          10,
+          8
+        ],
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          3,
+          1
+        ],
+        [
+          4,
+          2
+        ],
+        [
+          5,
+          4
+        ],
+        [
+          7,
+          4
+        ],
+        [
+          9,
+          4
+        ]
+      ],
+      "winning_positions": [
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          3,
+          1
+        ],
+        [
+          4,
+          2
+        ],
+        [
+          5,
+          4
+        ],
+        [
+          7,
+          4
+        ],
+        [
+          9,
+          4
+        ],
+        [
+          1,
+          7
+        ],
+        [
+          2,
+          8
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          4,
+          4
+        ],
+        [
+          6,
+          3
+        ],
+        [
+          7,
+          2
+        ],
+        [
+          8,
+          1
+        ],
+        [
+          8,
+          3
+        ],
+        [
+          9,
+          2
+        ],
+        [
+          10,
+          1
+        ],
+        [
+          10,
+          3
+        ],
+        [
+          1,
+          8
+        ],
+        [
+          2,
+          7
+        ],
+        [
+          3,
+          4
+        ],
+        [
+          4,
+          3
+        ],
+        [
+          5,
+          3
+        ],
+        [
+          7,
+          1
+        ],
+        [
+          7,
+          3
+        ],
+        [
+          8,
+          2
+        ],
+        [
+          9,
+          1
+        ],
+        [
+          9,
+          3
+        ],
+        [
+          10,
+          2
+        ]
+      ],
+      "feature_results": [
+        {
+          "digit": 0,
+          "positions_count": 7,
+          "rehearsal_distance": 0.0,
+          "overlap_count": 7,
+          "inverse_ratio": 0.0,
+          "is_winning": true,
+          "is_rehearsal": true
+        },
+        {
+          "digit": 1,
+          "positions_count": 2,
+          "rehearsal_distance": 1.2071067811865475,
+          "overlap_count": 0,
+          "inverse_ratio": 0.0,
+          "is_winning": false,
+          "is_rehearsal": false
+        },
+        {
+          "digit": 2,
+          "positions_count": 10,
+          "rehearsal_distance": 1.0,
+          "overlap_count": 0,
+          "inverse_ratio": 0.0,
+          "is_winning": false,
+          "is_rehearsal": false
+        },
+        {
+          "digit": 3,
+          "positions_count": 11,
+          "rehearsal_distance": 1.6043235485824499,
+          "overlap_count": 0,
+          "inverse_ratio": 0.0,
+          "is_winning": true,
+          "is_rehearsal": false
+        },
+        {
+          "digit": 4,
+          "positions_count": 10,
+          "rehearsal_distance": 1.0,
+          "overlap_count": 0,
+          "inverse_ratio": 0.0,
+          "is_winning": false,
+          "is_rehearsal": false
+        },
+        {
+          "digit": 5,
+          "positions_count": 7,
+          "rehearsal_distance": 1.0,
+          "overlap_count": 0,
+          "inverse_ratio": 0.0,
+          "is_winning": false,
+          "is_rehearsal": false
+        },
+        {
+          "digit": 6,
+          "positions_count": 2,
+          "rehearsal_distance": 1.2071067811865475,
+          "overlap_count": 0,
+          "inverse_ratio": 0.0,
+          "is_winning": false,
+          "is_rehearsal": false
+        },
+        {
+          "digit": 7,
+          "positions_count": 10,
+          "rehearsal_distance": 0.0,
+          "overlap_count": 10,
+          "inverse_ratio": 0.0,
+          "is_winning": false,
+          "is_rehearsal": true
+        },
+        {
+          "digit": 8,
+          "positions_count": 11,
+          "rehearsal_distance": 1.535122683397516,
+          "overlap_count": 0,
+          "inverse_ratio": 0.0,
+          "is_winning": true,
+          "is_rehearsal": false
+        },
+        {
+          "digit": 9,
+          "positions_count": 10,
+          "rehearsal_distance": 0.0,
+          "overlap_count": 10,
+          "inverse_ratio": 0.0,
+          "is_winning": false,
+          "is_rehearsal": true
+        }
+      ],
+      "grid": [
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          0,
+          5,
+          1,
+          6,
+          2,
+          7,
+          3
+        ],
+        [
+          null,
+          5,
+          0,
+          6,
+          1,
+          7,
+          2,
+          8
+        ],
+        [
+          null,
+          0,
+          5,
+          3,
+          8,
+          4,
+          9,
+          7
+        ],
+        [
+          null,
+          5,
+          0,
+          8,
+          3,
+          9,
+          4,
+          2
+        ],
+        [
+          null,
+          4,
+          9,
+          8,
+          0,
+          9,
+          4,
+          7
+        ],
+        [
+          null,
+          9,
+          4,
+          3,
+          5,
+          4,
+          9,
+          2
+        ],
+        [
+          null,
+          8,
+          3,
+          8,
+          0,
+          9,
+          4,
+          7
+        ],
+        [
+          null,
+          3,
+          8,
+          3,
+          5,
+          4,
+          9,
+          2
+        ],
+        [
+          null,
+          8,
+          3,
+          8,
+          0,
+          9,
+          4,
+          7
+        ]
+      ],
+      "grid_size": {
+        "rows": 10,
+        "cols": 8
+      }
+    }
+  },
+  "6900": {}
+}

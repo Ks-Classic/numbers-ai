@@ -19,10 +19,10 @@ from sklearn.model_selection import train_test_split
 warnings.filterwarnings('ignore')
 
 # プロジェクトルートのパスを設定
-PROJECT_ROOT = Path.cwd()
+PROJECT_ROOT = Path(__file__).parent.parent if '__file__' in globals() else Path.cwd()
 DATA_DIR = PROJECT_ROOT / 'data'
 MODELS_DIR = DATA_DIR / 'models'
-MODELS_DIR.mkdir(exist_ok=True)
+MODELS_DIR.mkdir(parents=True, exist_ok=True)
 
 # 設定ファイルをインポート
 import sys
@@ -98,6 +98,27 @@ with tqdm(total=total_iterations, desc="軸数字予測データ生成") as pbar
     for _, row in train_df.iterrows():
         round_number = row['round_number']
         
+        # N3/N4のリハーサル数字の共通部分を計算（一度だけ計算）
+        n3_rehearsal = row.get('n3_rehearsal')
+        n4_rehearsal = row.get('n4_rehearsal')
+        
+        # リハーサル数字を正規化
+        if pd.notna(n3_rehearsal) and n3_rehearsal != 'NULL' and str(n3_rehearsal) != 'nan':
+            n3_rehearsal_str = str(n3_rehearsal).replace('.0', '').zfill(3)
+        else:
+            n3_rehearsal_str = None
+        
+        if pd.notna(n4_rehearsal) and n4_rehearsal != 'NULL' and str(n4_rehearsal) != 'nan':
+            n4_rehearsal_str = str(n4_rehearsal).replace('.0', '').zfill(4)
+        else:
+            n4_rehearsal_str = None
+        
+        # N3/N4リハーサル数字の共通部分を計算
+        from feature_extractor import calculate_n3_n4_rehearsal_common_digits
+        n3_n4_common_digits = calculate_n3_n4_rehearsal_common_digits(
+            n3_rehearsal_str, n4_rehearsal_str
+        ) if (n3_rehearsal_str and n4_rehearsal_str) else None
+        
         for target in targets:
             # リハーサル数字を取得（CSVファイルのn3_rehearsal/n4_rehearsalカラムから直接取得）
             rehearsal_digits = row[f'{target}_rehearsal']
@@ -130,7 +151,8 @@ with tqdm(total=total_iterations, desc="軸数字予測データ生成") as pbar
                     for digit in range(10):
                         # 特徴量を抽出
                         features = extract_digit_features(
-                            grid, rows, cols, digit, rehearsal_positions
+                            grid, rows, cols, digit, rehearsal_positions, rehearsal_digits,
+                            n3_n4_common_rehearsal_digits=n3_n4_common_digits
                         )
                         
                         # パターンIDを追加
@@ -170,7 +192,22 @@ print(f"\n{'='*60}")
 print("軸数字予測データをベクトル化中...")
 print(f"{'='*60}")
 
-feature_keys = sorted(axis_samples[0]['features'].keys())
+# 選択された特徴量を読み込む（重要度に基づいて選択された特徴量のみを使用）
+selected_features_path = PROJECT_ROOT / 'docs' / 'report' / 'selected_features.json'
+if selected_features_path.exists():
+    import json
+    with open(selected_features_path, 'r', encoding='utf-8') as f:
+        selected_features_data = json.load(f)
+        selected_feature_keys = selected_features_data.get('selected_features', [])
+    print(f"選択された特徴量数: {len(selected_feature_keys)}")
+    print(f"削除された特徴量数: {selected_features_data.get('removed_count', 0)}")
+else:
+    # 選択された特徴量ファイルがない場合は、すべての特徴量を使用
+    selected_feature_keys = sorted(axis_samples[0]['features'].keys())
+    print(f"選択された特徴量ファイルが見つかりません。すべての特徴量を使用します。")
+
+# 特徴量キーを選択されたものに限定
+feature_keys = [key for key in sorted(axis_samples[0]['features'].keys()) if key in selected_feature_keys]
 print(f"特徴量の次元数: {len(feature_keys)}")
 
 X_axis = []
@@ -178,7 +215,9 @@ y_axis = []
 metadata_axis = []
 
 for sample in tqdm(axis_samples, desc="ベクトル化"):
-    feature_vector = features_to_vector(sample['features'])
+    # 選択された特徴量のみを使用してベクトル化
+    filtered_features = {k: v for k, v in sample['features'].items() if k in feature_keys}
+    feature_vector = features_to_vector(filtered_features, feature_keys=feature_keys)
     X_axis.append(feature_vector)
     y_axis.append(sample['label'])
     metadata_axis.append({

@@ -2,10 +2,10 @@
 
 **Document Management Information**
 - Document ID: DOC-04
-- Version: 1.6
+- Version: 1.7
 - Created: 2025-11-02
 - Last Updated: 2025-01-XX
-- Status: Updated (学習データ範囲拡大を反映)
+- Status: Updated (特徴量エンジニアリング大幅改善を反映)
 - Approver: Technical Lead
 
 ---
@@ -137,8 +137,16 @@
 （デフォルト: 1,000回分 × 40 = 40,000サンプル）
 
 例: 第6849回、パターンA1、数字5の場合
-  入力: 特徴量ベクトル（21次元）
-     - 形状特徴、位置特徴、関係性特徴、パターンID
+  入力: 特徴量ベクトル（約60-70次元、2025年1月時点）
+     - 形状特徴（4次元）
+     - 位置特徴（7次元）
+     - 関係性特徴（約34-35次元）
+       - 距離特徴量（9個）
+       - 重なり特徴量（7-8個、N3の場合は7個、N4の場合は8個）
+       - 方向性特徴量（17個）
+       - 裏数字特徴量（1個）
+     - 集約特徴（2次元）
+     - パターンID（5次元）
   出力: ラベル（0または1）
      1 = 数字5が当選番号に含まれた
      0 = 数字5が当選番号に含まれなかった
@@ -557,40 +565,179 @@ function calculateCentroid(grid: ChartGrid, number: number): { x: number; y: num
 
 #### カテゴリ3: 関係性特徴（Relation Features）
 
-候補数字とリハーサル数字の関係性に関する特徴。
+候補数字とリハーサル数字の関係性に関する特徴。2025年1月時点で、より詳細な分析を可能にするため、以下の特徴量が実装されている。
 
-**具体的な特徴量:**
-- **リハーサルとの距離**: 候補ラインとリハーサルラインの平均距離
-- **重なり度**: 候補とリハーサルが同じ位置にある回数
-- **角度**: 候補ラインとリハーサルラインの角度差
-- **裏数字関係**: 候補がリハーサルの裏数字である割合
+##### 3.3.1 距離特徴量（Distance Features）
 
-**計算例:**
+**基本的な距離特徴量:**
+- **リハーサルとの距離 (`rehearsal_distance`)**: 候補数字の各位置から最も近いリハーサル数字の位置までのユークリッド距離の平均値
 
-```typescript
-function calculateRehearsalDistance(
-  candidatePositions: {x: number, y: number}[],
-  rehearsalPositions: {x: number, y: number}[]
-): number {
-  if (candidatePositions.length === 0 || rehearsalPositions.length === 0) {
-    return Infinity;
-  }
-  
-  let totalDistance = 0;
-  for (const cPos of candidatePositions) {
-    let minDist = Infinity;
-    for (const rPos of rehearsalPositions) {
-      const dist = Math.sqrt(
-        Math.pow(cPos.x - rPos.x, 2) + Math.pow(cPos.y - rPos.y, 2)
-      );
-      minDist = Math.min(minDist, dist);
-    }
-    totalDistance += minDist;
-  }
-  
-  return totalDistance / candidatePositions.length;
-}
+**距離統計特徴量（2025年1月追加）:**
+外れ値の影響を軽減し、よりロバストな特徴量を提供するため、以下の統計量を計算：
+
+- **平均距離 (`rehearsal_distance_mean`)**: 平均距離（既存の`rehearsal_distance`と同等）
+- **中央値距離 (`rehearsal_distance_median`)**: 距離の中央値（外れ値に強い）
+- **25%タイル距離 (`rehearsal_distance_q25`)**: 距離の第1四分位数
+- **75%タイル距離 (`rehearsal_distance_q75`)**: 距離の第3四分位数
+- **最小距離 (`rehearsal_distance_min`)**: 最小距離
+- **最大距離 (`rehearsal_distance_max`)**: 最大距離（外れ値として評価可能）
+- **標準偏差 (`rehearsal_distance_std`)**: 距離の分布の広がり
+- **トリム平均 (`rehearsal_distance_trimmed_mean`)**: 最大値を除外した平均（外れ値除去）
+
+**計算ロジック:**
+```python
+# 各候補位置から最も近いリハーサル位置までの距離を計算
+distances = []
+for c_pos in candidate_positions:
+    min_dist = min(
+        sqrt((c_pos[0] - r_pos[0])² + (c_pos[1] - r_pos[1])²)
+        for r_pos in rehearsal_positions
+    )
+    distances.append(min_dist)
+
+# 統計量を計算
+mean = mean(distances)
+median = median(distances)
+q25 = percentile(distances, 25)
+q75 = percentile(distances, 75)
+std = std(distances)
+trimmed_mean = mean(distances[distances < max(distances)])
 ```
+
+##### 3.3.2 重なり特徴量（Overlap Features）
+
+**基本的な重なり特徴量:**
+- **重なり度 (`overlap_count`)**: 候補とリハーサルが同じ位置にある回数
+
+**桁ごとの重なり特徴量（2025年1月追加）:**
+リハーサル数字の各桁に対して、候補数字がどの桁に重なっているかを分析：
+
+- **桁ごとの重なり数 (`rehearsal_overlap_digit_0/1/2/3`)**: リハーサル数字の各桁（N3の場合は0-2、N4の場合は0-3）に対して、候補数字が重なっている位置数
+- **桁ごとの重なり総数 (`rehearsal_overlap_by_digit_count`)**: 全ての桁の重なり数の合計
+- **桁ごとの重なり割合 (`rehearsal_overlap_by_digit_ratio`)**: 重なり総数を桁数で割った値（0-1）
+- **全桁一致 (`rehearsal_full_match`)**: リハーサル数字の全桁が候補数字に重なっているか（1 or 0）
+- **部分一致桁数 (`rehearsal_partial_match`)**: リハーサル数字の何桁が候補数字に重なっているか（0-3 for N3, 0-4 for N4）
+
+**計算例（N3の場合、「631」がリハーサル数字）:**
+```python
+# リハーサル数字「631」の各桁の位置を取得
+digit_0_positions = get_digit_positions(grid, rows, cols, 6)  # 1桁目: 6
+digit_1_positions = get_digit_positions(grid, rows, cols, 3)  # 2桁目: 3
+digit_2_positions = get_digit_positions(grid, rows, cols, 1)  # 3桁目: 1
+
+# 候補数字の位置と各桁の位置の重なりを計算
+overlap_digit_0 = len(set(candidate_positions) & set(digit_0_positions))
+overlap_digit_1 = len(set(candidate_positions) & set(digit_1_positions))
+overlap_digit_2 = len(set(candidate_positions) & set(digit_2_positions))
+
+# 全桁一致判定
+full_match = 1.0 if all(count > 0 for count in [overlap_digit_0, overlap_digit_1, overlap_digit_2]) else 0.0
+
+# 部分一致桁数
+partial_match = sum(1 for count in [overlap_digit_0, overlap_digit_1, overlap_digit_2] if count > 0)
+```
+
+##### 3.3.3 方向性特徴量（Direction Features）（2025年1月追加）
+
+リハーサル数字の各位置から見て、候補数字がどの方向にあるかを8方向で分類：
+
+**8方向の定義:**
+- 0: 北（上）
+- 1: 北東（右上）
+- 2: 東（右）
+- 3: 南東（右下）
+- 4: 南（下）
+- 5: 南西（左下）
+- 6: 西（左）
+- 7: 北西（左上）
+
+**方向性特徴量:**
+- **方向ヒストグラム (`rehearsal_direction_0` ～ `rehearsal_direction_7`)**: 各方向の候補数字の出現数（各リハーサル位置から各候補位置への方向をカウント）
+- **方向割合 (`rehearsal_direction_ratio_0` ～ `rehearsal_direction_ratio_7`)**: 各方向の割合（正規化されたヒストグラム、0-1）
+- **主要方向 (`rehearsal_primary_direction`)**: 最も多い方向（0-7）
+- **方向集中度 (`rehearsal_direction_concentration`)**: 方向の集中度（エントロピーベース、0-1、1に近いほど集中）
+
+**計算ロジック:**
+```python
+# 各リハーサル位置から各候補位置への方向を計算
+histogram = [0] * 8
+for r_pos in rehearsal_positions:
+    for c_pos in candidate_positions:
+        direction = get_direction(r_pos, c_pos)  # 0-7
+        histogram[direction] += 1
+
+# 方向割合を計算
+total = sum(histogram)
+direction_ratio = [count / total for count in histogram] if total > 0 else [0.0] * 8
+
+# 主要方向
+primary_direction = argmax(histogram)
+
+# 方向集中度（エントロピーから計算）
+entropy = -sum(p * log2(p) for p in direction_ratio if p > 0)
+max_entropy = log2(8)  # 3
+concentration = 1.0 - (entropy / max_entropy)
+```
+
+##### 3.3.4 裏数字特徴量（Inverse Features）
+
+**裏数字関係 (`inverse_ratio`)**: 候補がリハーサルの裏数字である割合
+
+**実装の修正（2025年1月）:**
+以前の実装では、リハーサル位置と候補位置が同じ座標にないと計算されない問題があった。修正後は、リハーサル数字の各桁の裏数字の位置を取得し、その位置に候補数字があるかを確認するように変更された。
+
+**計算ロジック:**
+```python
+# リハーサル数字の各桁の裏数字の位置を取得
+inverse_positions = set()
+for r_pos in rehearsal_positions:
+    rehearsal_digit = grid[r_pos[0]][r_pos[1]]
+    inverse_digit = inverse(rehearsal_digit)  # 裏数字を計算（例: 6→1, 3→8, 1→6）
+    # グリッド内で裏数字の位置を検索
+    for row, col in grid:
+        if grid[row][col] == inverse_digit:
+            inverse_positions.add((row, col))
+
+# 候補位置と裏数字位置の重なりを計算
+overlap_count = len(set(candidate_positions) & inverse_positions)
+inverse_ratio = overlap_count / len(candidate_positions) if len(candidate_positions) > 0 else 0.0
+```
+
+**特徴量サマリー:**
+
+| 特徴量カテゴリ | 特徴量名 | 説明 | 次元数 |
+|---------------|---------|------|--------|
+| 距離特徴量 | `rehearsal_distance` | 平均距離（既存） | 1 |
+| | `rehearsal_distance_mean` | 平均距離 | 1 |
+| | `rehearsal_distance_median` | 中央値距離 | 1 |
+| | `rehearsal_distance_q25` | 25%タイル距離 | 1 |
+| | `rehearsal_distance_q75` | 75%タイル距離 | 1 |
+| | `rehearsal_distance_min` | 最小距離 | 1 |
+| | `rehearsal_distance_max` | 最大距離 | 1 |
+| | `rehearsal_distance_std` | 標準偏差 | 1 |
+| | `rehearsal_distance_trimmed_mean` | トリム平均 | 1 |
+| 重なり特徴量 | `overlap_count` | 重なり回数（既存） | 1 |
+| | `rehearsal_overlap_digit_0/1/2/3` | 各桁の重なり数 | 3-4 |
+| | `rehearsal_overlap_by_digit_count` | 桁ごとの重なり総数 | 1 |
+| | `rehearsal_overlap_by_digit_ratio` | 桁ごとの重なり割合 | 1 |
+| | `rehearsal_full_match` | 全桁一致 | 1 |
+| | `rehearsal_partial_match` | 部分一致桁数 | 1 |
+| 方向性特徴量 | `rehearsal_direction_0` ～ `rehearsal_direction_7` | 8方向のヒストグラム | 8 |
+| | `rehearsal_direction_ratio_0` ～ `rehearsal_direction_ratio_7` | 8方向の割合 | 8 |
+| | `rehearsal_primary_direction` | 主要方向 | 1 |
+| | `rehearsal_direction_concentration` | 方向集中度 | 1 |
+| 裏数字特徴量 | `inverse_ratio` | 裏数字の割合（修正版） | 1 |
+
+**合計特徴量数（カテゴリ3のみ）:**
+- 距離特徴量: 9個
+- 重なり特徴量: 7-8個（N3の場合は7個、N4の場合は8個）
+- 方向性特徴量: 17個
+- 裏数字特徴量: 1個
+- **合計: 約34-35個**（軸数字予測モデルの特徴量として使用）
+
+**実装モジュール:**
+- `notebooks/feature_extractor.py`: 特徴量計算関数
+- `notebooks/run_03_feature_engineering_axis_only.py`: 特徴量エンジニアリング実行スクリプト
 
 ---
 
@@ -623,7 +770,10 @@ function calculateRehearsalDistance(
     │ - 各数字の重心、端からの距離など
     ▼
 [カテゴリ3: 関係性特徴計算]
-    │ - 候補とリハーサルの距離、重なりなど
+    │ - 候補とリハーサルの距離統計（平均、中央値、Q25、Q75、最小、最大、標準偏差、トリム平均）
+    │ - 桁ごとの重なり（各桁の重なり数、全桁一致、部分一致）
+    │ - 方向性特徴量（8方向のヒストグラム、主要方向、集中度）
+    │ - 裏数字関係（修正版）
     ▼
 [カテゴリ4: 集約特徴計算]
     │ - 組み合わせ全体の統計量
@@ -930,10 +1080,14 @@ Notebook全体を実行する代わりに、問題のあるセルだけをテス
 - **特徴量（X）**: 
   - 形状特徴（4次元）: 最大連続長、曲がり回数、直線度、密集度
   - 位置特徴（7次元）: 重心X/Y座標、端からの距離、中心からの距離
-  - 関係性特徴（3次元）: リハーサルとの距離、重なり度、裏数字の割合
+  - 関係性特徴（約34-35次元、2025年1月追加）: 
+    - 距離特徴量（9個）: 平均、中央値、Q25、Q75、最小、最大、標準偏差、トリム平均
+    - 重なり特徴量（7-8個）: 基本的な重なり度、桁ごとの重なり（N3の場合は7個、N4の場合は8個）
+    - 方向性特徴量（17個）: 8方向のヒストグラム、8方向の割合、主要方向、集中度
+    - 裏数字特徴量（1個）: 裏数字の割合（修正版）
   - 集約特徴（2次元）: 分散度、偏り度
   - パターンID（5次元）: パターンID、one-hot encoding（A1/A2/B1/B2）
-  - **合計**: 約21次元
+  - **合計**: 約60-70次元（2025年1月時点）
 
 - **ラベル（y）**: 0または1（その数字が当選番号に含まれたか）
 
@@ -942,10 +1096,10 @@ Notebook全体を実行する代わりに、問題のあるセルだけをテス
 **組み合わせ予測モデル:**
 
 - **特徴量（X）**: 
-  - 各桁の特徴量（桁数 × 21次元）
+  - 各桁の特徴量（桁数 × 約60-70次元）
   - 組み合わせの集約特徴（30次元）
   - パターンID（5次元）
-  - **合計**: N3の場合約98次元、N4の場合約119次元
+  - **合計**: N3の場合約215-225次元、N4の場合約275-285次元（2025年1月時点）
 
 - **ラベル（y）**: 
   - ボックス: 0または1（組み合わせの数字セットが当選したか）
@@ -987,7 +1141,9 @@ from feature_extractor import extract_digit_features, add_pattern_id_features, f
 model_loader = load_model_loader(PROJECT_ROOT / 'data' / 'models')
 
 # 特徴量を抽出（予測表生成後）
-features = extract_digit_features(grid, rows, cols, digit, rehearsal_positions)
+features = extract_digit_features(
+    grid, rows, cols, digit, rehearsal_positions, rehearsal_digits
+)
 features = add_pattern_id_features(features, pattern)
 feature_vector = features_to_vector(features)
 
@@ -1205,6 +1361,7 @@ DATASET_CONFIGS = {
 | 1.3 | 2025-11-06 | 技術リード | 推論実装の詳細（4.5.1）、モデル学習手順（4.5.2）、CLIツールの使用方法を追加 |
 | 1.4 | 2025-11-06 | 技術リード | バグ修正とトラブルシューティング情報を追加（特徴量ベクトル不均一エラー、TypeScript型エラー、効率的なNotebook実行方法） |
 | 1.5 | 2025-11-06 | 技術リード | システム全体の流れセクション（1.5）を追加。データ準備から推論までの6ステップを順を追って説明 |
+| 1.6 | 2025-01-XX | 技術リード | 特徴量エンジニアリングの大幅改善: 距離統計特徴量（9個）、桁ごとの重なり特徴量（7-8個）、方向性特徴量（17個）を追加。`inverse_ratio`の実装を修正。合計約34-35個の新しい特徴量を追加し、軸数字予測モデルの特徴量次元数が約60-70次元に拡張。 |
 
 ---
 
