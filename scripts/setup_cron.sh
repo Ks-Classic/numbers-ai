@@ -17,20 +17,20 @@ echo "Pythonパス: $PYTHON_PATH"
 echo ""
 
 # cronジョブを設定
-CRON_CMD="0 15 * * 1-5 cd $PROJECT_ROOT && $PYTHON_PATH scripts/auto_update_past_results.py >> logs/cron.log 2>&1"
+CRON_CMD="0 15 * * 1-5 cd $PROJECT_ROOT && $PYTHON_PATH scripts/production/auto_update_past_results.py >> logs/cron.log 2>&1"
 
 echo "設定するcronジョブ:"
 echo "$CRON_CMD"
 echo ""
 
 # 既存のcronジョブを確認
-if crontab -l 2>/dev/null | grep -q "auto_update_past_results.py"; then
+if crontab -l 2>/dev/null | grep -q "scripts/production/auto_update_past_results.py"; then
     echo "既存のcronジョブが見つかりました。"
     read -p "既存のジョブを削除して新しく設定しますか？ (y/N): " -n 1 -r
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         # 既存のジョブを削除
-        crontab -l 2>/dev/null | grep -v "auto_update_past_results.py" | crontab -
+        crontab -l 2>/dev/null | grep -v "scripts/production/auto_update_past_results.py" | crontab -
         echo "既存のジョブを削除しました。"
     else
         echo "設定をキャンセルしました。"
@@ -44,7 +44,7 @@ fi
 echo "✓ cronジョブを設定しました。"
 echo ""
 echo "設定内容:"
-crontab -l | grep "auto_update_past_results.py"
+crontab -l | grep "scripts/production/auto_update_past_results.py"
 echo ""
 echo "注意: WSL環境では、cronサービスが起動していない場合があります。"
 echo "以下のコマンドでcronサービスを起動してください:"

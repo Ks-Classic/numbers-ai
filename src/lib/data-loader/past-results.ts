@@ -56,13 +56,14 @@ function parseCSV(csvContent: string): PastResult[] {
   
   // ヘッダー行をスキップ
   const headerLine = lines[0];
-  const expectedHeaders = ['round_number', 'draw_date', 'n3_winning', 'n4_winning', 'n3_rehearsal', 'n4_rehearsal'];
+  const expectedHeaders = ['round_number', 'draw_date', 'weekday', 'n3_winning', 'n4_winning', 'n3_rehearsal', 'n4_rehearsal'];
   const headers = headerLine.split(',').map(h => h.trim());
   
-  // ヘッダーの検証
-  if (!expectedHeaders.every(h => headers.includes(h))) {
+  // ヘッダーの検証（weekdayはオプション）
+  const requiredHeaders = ['round_number', 'draw_date', 'n3_winning', 'n4_winning', 'n3_rehearsal', 'n4_rehearsal'];
+  if (!requiredHeaders.every(h => headers.includes(h))) {
     throw new DataLoadError(
-      `CSVヘッダーが不正です。期待されるカラム: ${expectedHeaders.join(', ')}`
+      `CSVヘッダーが不正です。必須カラム: ${requiredHeaders.join(', ')}`
     );
   }
   
@@ -119,6 +120,7 @@ function parseCSVLine(line: string, headers: string[]): PastResult | null {
   
   const roundNumberStr = getValue('round_number');
   const drawDate = getValue('draw_date');
+  const weekdayStr = getValue('weekday');
   const n3Winning = getValue('n3_winning');
   const n4Winning = getValue('n4_winning');
   const n3Rehearsal = getValue('n3_rehearsal');
@@ -150,6 +152,21 @@ function parseCSVLine(line: string, headers: string[]): PastResult | null {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(drawDate)) {
     throw new Error(`日付形式が不正です: ${drawDate}`);
   }
+  
+  // weekdayのパース（オプション）
+  const parseWeekday = (value: string): number | null => {
+    if (!value || value === 'NULL' || value === 'null') {
+      return null;
+    }
+    const weekday = parseInt(value, 10);
+    if (isNaN(weekday) || weekday < 0 || weekday > 4) {
+      return null;
+    }
+    return weekday;
+  };
+  
+  // weekdayのパース（カラムが存在しない場合はnull）
+  const weekday = headers.includes('weekday') ? parseWeekday(weekdayStr) : null;
   
   // 当選番号のフォーマット検証
   if (!/^\d{3}$/.test(normalizedN3Winning)) {
@@ -183,6 +200,7 @@ function parseCSVLine(line: string, headers: string[]): PastResult | null {
   return {
     roundNumber,
     drawDate,
+    weekday,
     n3Winning: normalizedN3Winning,
     n4Winning: normalizedN4Winning,
     n3Rehearsal: n3RehearsalParsed,

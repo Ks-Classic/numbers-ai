@@ -29,6 +29,7 @@ import json
 from pathlib import Path
 from datetime import datetime, timedelta
 from typing import List, Dict, Optional, Tuple
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import urljoin
 
 try:
@@ -234,6 +235,57 @@ def is_draw_day(date: datetime = None) -> bool:
         return False
     
     return True
+
+
+def calculate_draw_date_from_round_diff(base_date: datetime, round_diff: int) -> datetime:
+    """
+    基準日と回号差から抽選日を計算（平日のみをカウント）
+    
+    Args:
+        base_date: 基準となる日付（既知の抽選日）
+        round_diff: 回号の差（新しい回号 - 基準回号）
+    
+    Returns:
+        計算された抽選日
+    """
+    if round_diff == 0:
+        return base_date
+    
+    # 回号差が正の場合は未来、負の場合は過去
+    current_date = base_date
+    count = 0
+    direction = 1 if round_diff > 0 else -1
+    
+    while count < abs(round_diff):
+        current_date += timedelta(days=direction)
+        if is_draw_day(current_date):
+            count += 1
+    
+    return current_date
+
+
+def calculate_weekday(draw_date: Optional[str]) -> Optional[int]:
+    """
+    日付から曜日を計算（0-4の整数）
+    
+    Args:
+        draw_date: 日付文字列（YYYY-MM-DD形式、NULL可）
+    
+    Returns:
+        曜日（0:月, 1:火, 2:水, 3:木, 4:金）、NULLの場合はNone
+    """
+    if not draw_date or draw_date == 'NULL' or not draw_date.strip():
+        return None
+    
+    try:
+        date_obj = datetime.strptime(draw_date, '%Y-%m-%d')
+        weekday = date_obj.weekday()
+        # ナンバーズは平日のみ抽選のため、0-4の値のみ
+        if weekday < 5:
+            return weekday
+        return None
+    except (ValueError, TypeError):
+        return None
 
 
 def fetch_with_gemini_api(query: str) -> Optional[str]:
@@ -496,9 +548,230 @@ def fetch_page(url: str, max_retries: int = 3) -> Optional[str]:
     return None
 
 
+def parse_mizuhobank_csv(csv_content: str, round_number: int, max_round: Optional[int] = None) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+    """
+    みずほ銀行のCSVファイルからN3とN4の当選番号を抽出（リハーサル番号はなし）
+    
+    lottery.jsの824-825行目を参考:
+    - N3: results[i - from][3][1] (4行目の2列目)
+    - N4: results[i - from][10][1] (11行目の2列目)
+    
+    Args:
+        csv_content: CSVファイルの内容（Shift_JISエンコーディング）
+        round_number: 回号
+        max_round: 取得する最大回号（Noneの場合は制限なし）
+        
+    Returns:
+        (n3_winning, n4_winning, draw_date) のタプル。見つからない場合はNone
+    """
+    # 最大回号のチェック
+    if max_round and round_number > max_round:
+        return None, None, None
+    
+    try:
+        # Shift_JISからUTF-8に変換
+        if isinstance(csv_content, bytes):
+            csv_text = csv_content.decode('shift_jis', errors='ignore')
+        else:
+            csv_text = csv_content
+        
+        # 全角数字を半角に変換（lottery.jsの処理を再現）
+        csv_text = re.sub(r'[０-９]', lambda m: str(ord(m.group(0)) - 0xFEE0), csv_text)
+        
+        # 行に分割
+        lines = csv_text.split('\n')
+        # 空行を除去
+        lines = [line.strip() for line in lines if line.strip()]
+        
+        if round_number <= 2705:
+            print(f"   デバッグ: 第{round_number}回のCSV行数: {len(lines)}")
+            print(f"   デバッグ: 最初の5行: {lines[:5]}")
+        
+        # プレフィックス行（A50など）をスキップ
+        # 注意: スキップ後も、元のCSVファイルの行番号で考える必要がある
+        # A50をスキップした後:
+        # - 元の2行目（ヘッダー）→ lines[0]
+        # - 元の4行目（N3）→ lines[2]（0-indexedで3行目）
+        # - 元の11行目（N4）→ lines[9]（0-indexedで10行目）
+        skip_prefix = False
+        if lines and lines[0].startswith('A5'):
+            skip_prefix = True
+            lines = lines[1:]
+            if round_number <= 2705:
+                print(f"   デバッグ: プレフィックス行をスキップしました")
+        
+        if len(lines) < 11:
+            print(f"   デバッグ: 第{round_number}回のCSV行数が不足しています（{len(lines)}行、必要: 11行以上）")
+            if round_number <= 2705:
+                print(f"   デバッグ: 全行内容: {lines}")
+            return None, None, None
+        
+        # ヘッダー行から回号と日付を抽出
+        # 形式: 第2701回ナンバーズ,数字選択式全国自治宝くじ,平成21年10月8日,...
+        header_line = lines[0] if len(lines) > 0 else ''
+        if round_number <= 2705:
+            print(f"   デバッグ: 第{round_number}回のヘッダー行: {header_line[:100]}")
+        
+        date_match = re.search(r'(平成|令和|昭和)(\d+|元)年(\d{1,2})月(\d{1,2})日', header_line)
+        draw_date = ''
+        if date_match:
+            era = date_match.group(1)
+            year_str = date_match.group(2)
+            month = date_match.group(3).zfill(2)
+            day = date_match.group(4).zfill(2)
+            
+            # 元号を西暦に変換
+            if era == '平成':
+                year = 1988 + (1 if year_str == '元' else int(year_str))
+            elif era == '令和':
+                year = 2018 + (1 if year_str == '元' else int(year_str))
+            elif era == '昭和':
+                year = 1925 + (1 if year_str == '元' else int(year_str))
+            else:
+                year = None
+            
+            if year:
+                draw_date = f"{year}-{month}-{day}"
+                if round_number <= 2705:
+                    print(f"   デバッグ: 第{round_number}回の日付: {draw_date}")
+        else:
+            if round_number <= 2705:
+                print(f"   デバッグ: 第{round_number}回の日付が見つかりません")
+        
+        # N3の当選番号を抽出
+        # 元のCSVファイルの4行目 = プレフィックススキップ後は lines[2]（0-indexedで3行目）
+        # 形式: ナンバーズ３抽せん数字,493
+        n3_winning = None
+        n3_line_idx = 2 if skip_prefix else 3  # プレフィックスをスキップした場合は2、そうでなければ3
+        if len(lines) > n3_line_idx:
+            n3_line = lines[n3_line_idx]
+            if round_number <= 2705:
+                print(f"   デバッグ: 第{round_number}回のN3行（インデックス{n3_line_idx}）: {n3_line}")
+            n3_parts = n3_line.split(',')
+            # CSVファイルでは「ナンバーズ51」がN3、「ナンバーズ52」がN4を表す
+            if len(n3_parts) >= 2 and ('ナンバーズ51' in n3_parts[0] or 'ナンバーズ３' in n3_parts[0]):
+                n3_winning = n3_parts[1].strip()
+                # 3桁の数字のみを抽出（先頭の0も含む）
+                n3_match = re.search(r'(\d{3})', n3_winning)
+                if n3_match:
+                    n3_winning = n3_match.group(1)
+                    if round_number <= 2705:
+                        print(f"   デバッグ: 第{round_number}回のN3抽出成功: {n3_winning}")
+                else:
+                    n3_winning = None
+                    if round_number <= 2705:
+                        print(f"   デバッグ: 第{round_number}回のN3から数字が見つかりません: {n3_winning}")
+            else:
+                if round_number <= 2705:
+                    print(f"   デバッグ: 第{round_number}回のN3行の形式が不正: {n3_line}")
+                    print(f"   デバッグ: N3行の分割結果: {n3_parts}")
+        
+        # N4の当選番号を抽出
+        # 元のCSVファイルの11行目 = プレフィックススキップ後は lines[9]（0-indexedで10行目）
+        # 形式: ナンバーズ４抽せん数字,1640
+        n4_winning = None
+        n4_line_idx = 9 if skip_prefix else 10  # プレフィックスをスキップした場合は9、そうでなければ10
+        if len(lines) > n4_line_idx:
+            n4_line = lines[n4_line_idx]
+            if round_number <= 2705:
+                print(f"   デバッグ: 第{round_number}回のN4行（インデックス{n4_line_idx}）: {n4_line}")
+            n4_parts = n4_line.split(',')
+            # CSVファイルでは「ナンバーズ51」がN3、「ナンバーズ52」がN4を表す
+            if len(n4_parts) >= 2 and ('ナンバーズ52' in n4_parts[0] or 'ナンバーズ４' in n4_parts[0]):
+                n4_winning = n4_parts[1].strip()
+                # 4桁の数字のみを抽出（先頭の0も含む）
+                n4_match = re.search(r'(\d{4})', n4_winning)
+                if n4_match:
+                    n4_winning = n4_match.group(1)
+                    if round_number <= 2705:
+                        print(f"   デバッグ: 第{round_number}回のN4抽出成功: {n4_winning}")
+                else:
+                    n4_winning = None
+                    if round_number <= 2705:
+                        print(f"   デバッグ: 第{round_number}回のN4から数字が見つかりません: {n4_winning}")
+            else:
+                if round_number <= 2705:
+                    print(f"   デバッグ: 第{round_number}回のN4行の形式が不正: {n4_line}")
+                    print(f"   デバッグ: N4行の分割結果: {n4_parts}")
+        
+        if round_number <= 2705:
+            print(f"   デバッグ: 第{round_number}回の最終結果: N3={n3_winning}, N4={n4_winning}, Date={draw_date}")
+        
+        return n3_winning, n4_winning, draw_date
+        
+    except Exception as e:
+        print(f"   デバッグ: 第{round_number}回のCSV解析エラー: {e}")
+        import traceback
+        traceback.print_exc()
+        return None, None, None
+
+
+def fetch_mizuhobank_csv(round_number: int, session: Optional[requests.Session] = None) -> Optional[str]:
+    """
+    みずほ銀行のCSVファイルを取得
+    
+    lottery.jsの920行目を参考:
+    url: path + 'A10' + typeData[type].prefix + ('0000' + index).slice(-4) + '.CSV'
+    ナンバーズの場合: /retail/takarakuji/numbers/csv/A1002701.CSV
+    
+    Args:
+        round_number: 回号
+        session: requests.Sessionオブジェクト（再利用用、Noneの場合は新規作成）
+        
+    Returns:
+        CSVファイルの内容（Shift_JISエンコーディング）、またはNone
+    """
+    csv_url = f'https://www.mizuhobank.co.jp/retail/takarakuji/numbers/csv/A100{round_number:04d}.CSV'
+    
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+    }
+    
+    # セッションが提供されていない場合は新規作成
+    if session is None:
+        session = requests.Session()
+        session.headers.update(headers)
+    
+    try:
+        if round_number <= 2705:
+            print(f"   デバッグ: CSVファイルを取得中: {csv_url}")
+        response = session.get(csv_url, timeout=30)
+        
+        if response.status_code == 404:
+            if round_number <= 2705:
+                print(f"   デバッグ: 404エラー - CSVファイルが見つかりません: {csv_url}")
+            return None
+        
+        # 403エラー（アクセス拒否）の場合もスキップ
+        if response.status_code == 403:
+            if round_number <= 2705:
+                print(f"   デバッグ: 403エラー - アクセスが拒否されました: {csv_url}")
+            return None
+        
+        response.raise_for_status()
+        
+        # Shift_JISエンコーディングで取得
+        response.encoding = 'shift_jis'
+        
+        if round_number <= 2705:
+            print(f"   デバッグ: CSVファイルを取得しました（{len(response.text)}文字）")
+        return response.text
+        
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code == 403:
+            if round_number <= 2705:
+                print(f"   デバッグ: 403エラー - アクセスが拒否されました: {csv_url}")
+            return None
+        raise
+    except Exception as e:
+        if round_number <= 2705:
+            print(f"   デバッグ: CSVファイル取得エラー: {e}")
+        return None
+
+
 def parse_mizuhobank_table(soup: BeautifulSoup, max_round: Optional[int] = None) -> Tuple[Dict[int, Dict[str, str]], Dict[int, Dict[str, str]]]:
     """
-    みずほ銀行のページからN3とN4の当選番号を抽出（リハーサル番号はなし）
+    みずほ銀行のHTMLページからN3とN4の当選番号と日付を抽出（リハーサル番号はなし）
     
     Args:
         soup: BeautifulSoupオブジェクト
@@ -510,147 +783,86 @@ def parse_mizuhobank_table(soup: BeautifulSoup, max_round: Optional[int] = None)
     n4_data = {}
     n3_data = {}
     
-    # 表を探す
+    # テーブルを探す
     tables = soup.find_all('table')
-    print(f"   デバッグ: 見つかったテーブル数: {len(tables)}")
     
-    for table_idx, table in enumerate(tables):
+    for table in tables:
         rows = table.find_all('tr')
-        print(f"   デバッグ: テーブル{table_idx + 1}の行数: {len(rows)}")
-        
-        # 最初のテーブルの最初の数行をデバッグ表示
-        if table_idx == 0 and len(rows) > 0:
-            for debug_row_idx in range(min(3, len(rows))):
-                debug_row = rows[debug_row_idx]
-                debug_cells = debug_row.find_all(['td', 'th'])
-                debug_cell_texts = [cell.get_text().strip() for cell in debug_cells]
-                debug_row_text = debug_row.get_text().strip()
-                print(f"   デバッグ: テーブル1の行{debug_row_idx + 1}: セル数={len(debug_cells)}, セル内容={debug_cell_texts[:6]}, 行テキスト={debug_row_text[:150]}")
         
         for row in rows:
             cells = row.find_all(['td', 'th'])
-            if len(cells) < 4:
+            if len(cells) < 5:  # 最低限の列数が必要
                 continue
             
-            # 回号を含むセルを探す
-            row_text = row.get_text()
-            round_match = re.search(r'第(\d+)回', row_text)
-            if not round_match:
-                continue
+            # 回号を探す（最初のセルまたは2番目のセル）
+            round_number = None
+            for i in range(min(2, len(cells))):
+                cell_text = cells[i].get_text().strip()
+                # 回号のパターンを探す（例: "第1234回" または "1234"）
+                round_match = re.search(r'第?(\d+)回?', cell_text)
+                if round_match:
+                    round_number = int(round_match.group(1))
+                    break
             
-            round_number = int(round_match.group(1))
+            if not round_number:
+                continue
             
             # 最大回号のチェック
             if max_round and round_number > max_round:
                 continue
             
-            # 抽せん日を探す
-            date_match = re.search(r'(\d{4})年(\d{1,2})月(\d{1,2})日', row_text)
-            draw_date = ''
-            if date_match:
-                year = date_match.group(1)
-                month = date_match.group(2).zfill(2)
-                day = date_match.group(3).zfill(2)
-                draw_date = f"{year}-{month}-{day}"
-            else:
-                # デバッグ: 日付が見つからない場合
-                if round_number <= 10:
-                    print(f"   デバッグ: 第{round_number}回の日付が見つかりません。行テキスト: {row_text[:100]}")
+            # 日付を探す（通常は回号の次のセル）
+            draw_date = None
+            date_cell_idx = 1 if round_number else 0
+            if date_cell_idx < len(cells):
+                date_text = cells[date_cell_idx].get_text().strip()
+                # 日付のパターンを探す（例: "2025/01/10" または "2025-01-10"）
+                date_match = re.search(r'(\d{4})[/\-年](\d{1,2})[/\-月](\d{1,2})', date_text)
+                if date_match:
+                    year = date_match.group(1)
+                    month = date_match.group(2).zfill(2)
+                    day = date_match.group(3).zfill(2)
+                    draw_date = f"{year}-{month}-{day}"
             
-            # N3とN4の当選番号を抽出
-            # 表の構造: 回別 | 抽せん日 | ナンバーズ3抽せん数字 | ナンバーズ4抽せん数字
-            try:
-                n3_winning = ''
-                n4_winning = ''
-                
-                # セルから数字を抽出（列の順序を確認）
-                # 一般的な構造: 回別 | 抽せん日 | N3 | N4
-                cell_texts = [cell.get_text().strip() for cell in cells]
-                
-                # デバッグ: 最初の数行のみ詳細表示
-                if round_number <= 3:
-                    print(f"   デバッグ: 第{round_number}回のセル内容: {cell_texts}")
-                    print(f"   デバッグ: 第{round_number}回の行テキスト全体: {row_text[:200]}")
-                
-                # セルから直接数字を探す（より確実な方法）
-                # 各セルを順番に確認
-                for i, cell_text in enumerate(cell_texts):
-                    # セル内の空白や改行を除去して数字を探す
-                    cell_text_clean = re.sub(r'\s+', '', cell_text)
-                    
-                    # 3桁の数字をN3の当選番号として探す（回号や日付のセルを除外）
-                    if len(cell_text_clean) == 3 and cell_text_clean.isdigit() and not n3_winning:
-                        # 最初の2セルは回号と日付の可能性が高いのでスキップ
-                        if i >= 2:
-                            n3_winning = cell_text_clean
-                            continue
-                    
-                    # 4桁の数字をN4の当選番号として探す
-                    if len(cell_text_clean) == 4 and cell_text_clean.isdigit() and not n4_winning:
-                        # 最初の2セルは回号と日付の可能性が高いのでスキップ
-                        if i >= 2:
-                            n4_winning = cell_text_clean
-                            continue
-                
-                # それでも見つからない場合は、行全体から抽出
-                if not n3_winning:
-                    # 空白を除去した行テキストから抽出
-                    row_text_clean = re.sub(r'\s+', '', row_text)
-                    n3_matches = re.findall(r'(\d{3})', row_text_clean)
-                    # 回号の数字（4桁以上）を除外
-                    for match in n3_matches:
-                        if match.isdigit() and len(match) == 3:
-                            # 回号の一部でないことを確認（前後に数字がない）
-                            match_pos = row_text_clean.find(match)
-                            if match_pos > 0 and match_pos < len(row_text_clean) - 3:
-                                prev_char = row_text_clean[match_pos - 1] if match_pos > 0 else ''
-                                next_char = row_text_clean[match_pos + 3] if match_pos + 3 < len(row_text_clean) else ''
-                                if not prev_char.isdigit() and not next_char.isdigit():
-                                    n3_winning = match
-                                    break
-                
-                if not n4_winning:
-                    # 空白を除去した行テキストから抽出
-                    row_text_clean = re.sub(r'\s+', '', row_text)
-                    n4_matches = re.findall(r'(\d{4})', row_text_clean)
-                    # 回号の数字（5桁以上）を除外
-                    for match in n4_matches:
-                        if match.isdigit() and len(match) == 4:
-                            # 回号の一部でないことを確認（前後に数字がない）
-                            match_pos = row_text_clean.find(match)
-                            if match_pos > 0 and match_pos < len(row_text_clean) - 4:
-                                prev_char = row_text_clean[match_pos - 1] if match_pos > 0 else ''
-                                next_char = row_text_clean[match_pos + 4] if match_pos + 4 < len(row_text_clean) else ''
-                                if not prev_char.isdigit() and not next_char.isdigit():
-                                    n4_winning = match
-                                    break
-                
-                # デバッグ: 抽出結果を表示
-                if round_number <= 3:
-                    print(f"   デバッグ: 第{round_number}回の抽出結果: N3={n3_winning}, N4={n4_winning}")
-                
-                # データを保存（リハーサル番号は空文字列）
-                if n3_winning:
-                    n3_data[round_number] = {
-                        'n3_winning': n3_winning,
-                        'n3_rehearsal': '',  # 4800回以前はリハーサル番号なし
-                        'draw_date': draw_date,
-                    }
-                
-                if n4_winning:
-                    n4_data[round_number] = {
-                        'n4_winning': n4_winning,
-                        'n4_rehearsal': '',  # 4800回以前はリハーサル番号なし
-                        'draw_date': draw_date,
-                    }
-                elif round_number <= 3:
-                    # デバッグ: データが抽出できなかった場合
-                    print(f"   デバッグ: 第{round_number}回のN4データが抽出できませんでした")
-                    
-            except (ValueError, IndexError) as e:
-                if round_number <= 3:
-                    print(f"   デバッグ: 第{round_number}回の処理でエラー: {e}")
-                continue
+            # N4当選番号を探す（4桁の数字）
+            n4_winning = None
+            for cell in cells:
+                cell_text = cell.get_text().strip()
+                # 4桁の数字を探す
+                n4_match = re.search(r'(\d{4})', cell_text)
+                if n4_match:
+                    n4_winning = n4_match.group(1)
+                    break
+            
+            # N3当選番号を探す（3桁の数字、N4の後に）
+            n3_winning = None
+            n4_found = False
+            for cell in cells:
+                cell_text = cell.get_text().strip()
+                if n4_winning and n4_winning in cell_text:
+                    n4_found = True
+                    continue
+                if n4_found:
+                    # 3桁の数字を探す
+                    n3_match = re.search(r'(\d{3})', cell_text)
+                    if n3_match:
+                        n3_winning = n3_match.group(1)
+                        break
+            
+            # データを保存
+            if n4_winning:
+                n4_data[round_number] = {
+                    'n4_winning': n4_winning,
+                    'n4_rehearsal': '',  # 4800回以前はリハーサル番号なし
+                    'draw_date': draw_date or '',
+                }
+            
+            if n3_winning:
+                n3_data[round_number] = {
+                    'n3_winning': n3_winning,
+                    'n3_rehearsal': '',  # 4800回以前はリハーサル番号なし
+                    'draw_date': draw_date or '',
+                }
     
     return n4_data, n3_data
 
@@ -701,10 +913,18 @@ def find_mizuhobank_pages(target_min_round: Optional[int] = None, target_max_rou
         if target_max_round >= 2701:
             min_range = max(2701, target_min_round)
             max_range = min(4800, target_max_round)
-            # 20回ごとの開始回号を計算
+            
+            # 2701回から始まる20回ごとの範囲を生成
+            # 2701, 2721, 2741, ... のように20回ごとに開始
             start_round = ((min_range - 1) // 20) * 20 + 1
+            # 2701未満の場合は2701に調整（念のため）
+            if start_round < 2701:
+                start_round = 2701
+            
+            # 終了回号を計算（20回ごとの最後の回号）
             end_round = ((max_range - 1) // 20) * 20 + 1
             
+            # 20回ごとにURLを生成
             for start in range(start_round, end_round + 1, 20):
                 if start > max_range:
                     break
@@ -855,21 +1075,26 @@ def find_mizuhobank_pages(target_min_round: Optional[int] = None, target_max_rou
     return found_pages
 
 
-def parse_n4_table(soup: BeautifulSoup, latest_only: bool = False) -> Dict[int, Dict[str, str]]:
+def parse_n4_table(soup: BeautifulSoup, latest_only: bool = False, url: Optional[str] = None) -> Dict[int, Dict[str, str]]:
     """
     N4の表データを抽出（4桁）
+    
+    N4テーブルの構造:
+    - 回号 | 千位(リ) | 百位(リ) | 十位(リ) | 一位(リ) | リ/本 | 千位(本) | 百位(本) | 十位(本) | 一位(本)
+    - 左側（セル1-4）: N4リハーサル（4桁）
+    - 右側（セル6-9）: N4当選番号（4桁）
     
     Args:
         soup: BeautifulSoupオブジェクト
         latest_only: Trueの場合、最新の1行のみを取得
+        url: ページのURL（テーブル構造の判定に使用）
         
     Returns:
         回号をキーとした辞書
     """
     results = {}
     
-    # 表を探す（N4リハーサル表）
-    # ページ内の「ナンバーズ4 リハーサル」というテキストを含む表を探す
+    # 表を探す（4桁の数字を含むテーブル = N4テーブル）
     tables = soup.find_all('table')
     
     for table in tables:
@@ -877,8 +1102,6 @@ def parse_n4_table(soup: BeautifulSoup, latest_only: bool = False) -> Dict[int, 
         
         for row in rows:
             cells = row.find_all(['td', 'th'])
-            if len(cells) < 10:
-                continue
             
             # 回号を含むセルを探す
             row_text = row.get_text()
@@ -888,37 +1111,45 @@ def parse_n4_table(soup: BeautifulSoup, latest_only: bool = False) -> Dict[int, 
             
             round_number = int(round_match.group(1))
             
-            # セルから数字を抽出
-            # 表の構造: 回号 | 千位(リ) | 百位(リ) | 十位(リ) | 一位(リ) | リ/本 | 千位(本) | 百位(本) | 十位(本) | 一位(本)
             try:
-                # リハーサル数字（4桁）
+                # N4テーブルは4桁の数字を含む（10列以上）
+                # 構造: 回号 | 千位(リ) | 百位(リ) | 十位(リ) | 一位(リ) | リ/本 | 千位(本) | 百位(本) | 十位(本) | 一位(本)
+                if len(cells) < 10:
+                    continue
+                
+                # 4桁の数字が含まれているか確認（セル1-4とセル6-9の両方に数字がある）
+                has_4_digits_left = False
+                has_4_digits_right = False
+                
+                # 左側の4桁（リハーサル）- セル1-4
                 n4_rehearsal_digits = []
-                for i in range(1, 5):  # 1-4番目のセル
+                for i in range(1, 5):
                     if i < len(cells):
                         cell_text = cells[i].get_text().strip()
-                        # 特殊表記に対応した数値抽出
                         digit = extract_number_from_cell(cell_text)
                         if digit:
                             n4_rehearsal_digits.append(digit)
                 
-                if len(n4_rehearsal_digits) != 4:
-                    continue
+                if len(n4_rehearsal_digits) == 4:
+                    has_4_digits_left = True
                 
-                n4_rehearsal = ''.join(n4_rehearsal_digits)
-                
-                # 当選番号（4桁）
+                # 右側の4桁（当選番号）- セル6-9
                 n4_winning_digits = []
-                for i in range(6, 10):  # 6-9番目のセル
+                for i in range(6, 10):
                     if i < len(cells):
                         cell_text = cells[i].get_text().strip()
-                        # 特殊表記に対応した数値抽出
                         digit = extract_number_from_cell(cell_text)
                         if digit:
                             n4_winning_digits.append(digit)
                 
-                if len(n4_winning_digits) != 4:
+                if len(n4_winning_digits) == 4:
+                    has_4_digits_right = True
+                
+                # 4桁の数字が両方ある場合のみN4テーブルとして処理
+                if not (has_4_digits_left and has_4_digits_right):
                     continue
                 
+                n4_rehearsal = ''.join(n4_rehearsal_digits)
                 n4_winning = ''.join(n4_winning_digits)
                 
                 results[round_number] = {
@@ -936,20 +1167,26 @@ def parse_n4_table(soup: BeautifulSoup, latest_only: bool = False) -> Dict[int, 
     return results
 
 
-def parse_n3_table(soup: BeautifulSoup, latest_only: bool = False) -> Dict[int, Dict[str, str]]:
+def parse_n3_table(soup: BeautifulSoup, latest_only: bool = False, url: Optional[str] = None) -> Dict[int, Dict[str, str]]:
     """
     N3の表データを抽出（3桁）
+    
+    N3テーブルの構造:
+    - 回号 | 百位(リ) | 十位(リ) | 一位(リ) | リ/本 | 百位(本) | 十位(本) | 一位(本)
+    - 左側（セル1-3）: N3リハーサル（3桁）
+    - 右側（セル5-7）: N3当選番号（3桁）
     
     Args:
         soup: BeautifulSoupオブジェクト
         latest_only: Trueの場合、最新の1行のみを取得
+        url: ページのURL（テーブル構造の判定に使用）
         
     Returns:
         回号をキーとした辞書
     """
     results = {}
     
-    # 表を探す（N3リハーサル表）
+    # 表を探す（3桁の数字を含むテーブル = N3テーブル）
     tables = soup.find_all('table')
     
     for table in tables:
@@ -957,8 +1194,6 @@ def parse_n3_table(soup: BeautifulSoup, latest_only: bool = False) -> Dict[int, 
         
         for row in rows:
             cells = row.find_all(['td', 'th'])
-            if len(cells) < 8:
-                continue
             
             # 回号を含むセルを探す
             row_text = row.get_text()
@@ -968,15 +1203,18 @@ def parse_n3_table(soup: BeautifulSoup, latest_only: bool = False) -> Dict[int, 
             
             round_number = int(round_match.group(1))
             
-            # セルから数字を抽出
-            # 表の構造: 回号 | 百位(リ) | 十位(リ) | 一位(リ) | リ/本 | 百位(本) | 十位(本) | 一位(本)
             try:
-                # リハーサル数字（3桁）
+                # N3テーブルは3桁の数字を含む（8列以上、ただし10列未満）
+                # 構造: 回号 | 百位(リ) | 十位(リ) | 一位(リ) | リ/本 | 百位(本) | 十位(本) | 一位(本)
+                # N4テーブルは10列なので、8列以上10列未満のテーブルをN3テーブルとして処理
+                if len(cells) < 8 or len(cells) >= 10:
+                    continue
+                
+                # 左側の3桁（リハーサル）- セル1-3
                 n3_rehearsal_digits = []
-                for i in range(1, 4):  # 1-3番目のセル
+                for i in range(1, 4):
                     if i < len(cells):
                         cell_text = cells[i].get_text().strip()
-                        # 特殊表記に対応した数値抽出
                         digit = extract_number_from_cell(cell_text)
                         if digit:
                             n3_rehearsal_digits.append(digit)
@@ -984,14 +1222,11 @@ def parse_n3_table(soup: BeautifulSoup, latest_only: bool = False) -> Dict[int, 
                 if len(n3_rehearsal_digits) != 3:
                     continue
                 
-                n3_rehearsal = ''.join(n3_rehearsal_digits)
-                
-                # 当選番号（3桁）
+                # 右側の3桁（当選番号）- セル5-7
                 n3_winning_digits = []
-                for i in range(5, 8):  # 5-7番目のセル
+                for i in range(5, 8):
                     if i < len(cells):
                         cell_text = cells[i].get_text().strip()
-                        # 特殊表記に対応した数値抽出
                         digit = extract_number_from_cell(cell_text)
                         if digit:
                             n3_winning_digits.append(digit)
@@ -999,6 +1234,7 @@ def parse_n3_table(soup: BeautifulSoup, latest_only: bool = False) -> Dict[int, 
                 if len(n3_winning_digits) != 3:
                     continue
                 
+                n3_rehearsal = ''.join(n3_rehearsal_digits)
                 n3_winning = ''.join(n3_winning_digits)
                 
                 results[round_number] = {
@@ -1016,7 +1252,7 @@ def parse_n3_table(soup: BeautifulSoup, latest_only: bool = False) -> Dict[int, 
     return results
 
 
-def combine_data(n4_data: Dict[int, Dict[str, str]], n3_data: Dict[int, Dict[str, str]], latest_round: int, max_rounds: int = 300, merge_mode: bool = False) -> List[Dict[str, str]]:
+def combine_data(n4_data: Dict[int, Dict[str, str]], n3_data: Dict[int, Dict[str, str]], latest_round: int, max_rounds: int = 300, merge_mode: bool = False, output_file: Optional[Path] = None) -> List[Dict[str, str]]:
     """
     N4とN3のデータを結合
     
@@ -1026,6 +1262,7 @@ def combine_data(n4_data: Dict[int, Dict[str, str]], n3_data: Dict[int, Dict[str
         latest_round: 最新の回号
         max_rounds: 取得する最大件数
         merge_mode: マージモードの場合、取得したデータをそのまま使用
+        output_file: CSVファイルパス（マージモード時に既存データの最新回号と日付を取得するために使用）
         
     Returns:
         結合したデータのリスト
@@ -1037,6 +1274,37 @@ def combine_data(n4_data: Dict[int, Dict[str, str]], n3_data: Dict[int, Dict[str
     
     if not available_rounds:
         return results
+    
+    # マージモードの場合は、取得したデータの最大回号を使用
+    if merge_mode and available_rounds:
+        latest_round = max(available_rounds)
+    
+    # マージモードの場合、既存データの最新回号と日付を取得して日付計算の基準とする
+    base_round = None
+    base_date = None
+    if merge_mode and output_file and output_file.exists():
+        existing_data = load_existing_csv(output_file)
+        if existing_data:
+            # 既存データから最新回号と日付を取得
+            existing_dict = {}
+            for row in existing_data:
+                try:
+                    round_num = int(row.get('round_number', 0))
+                    if round_num > 0:
+                        existing_dict[round_num] = row
+                except (ValueError, TypeError):
+                    continue
+            
+            if existing_dict:
+                base_round = max(existing_dict.keys())
+                base_row = existing_dict[base_round]
+                base_date_str = base_row.get('draw_date', '')
+                if base_date_str and base_date_str != 'NULL' and base_date_str.strip():
+                    try:
+                        base_date = datetime.strptime(base_date_str, '%Y-%m-%d')
+                        print(f"   既存データの基準: 第{base_round}回 ({base_date_str})")
+                    except (ValueError, TypeError):
+                        pass
     
     # マージモードの場合は、取得したデータをそのまま使用
     if merge_mode:
@@ -1060,16 +1328,6 @@ def combine_data(n4_data: Dict[int, Dict[str, str]], n3_data: Dict[int, Dict[str
     if missing_n4:
         print(f"   N4データがない回号: {sorted(missing_n4)[:10]}...（{len(missing_n4)}件）")
     
-    # 日付を計算するためのベース（最新回から逆算）
-    # ナンバーズは平日のみ抽選があるため、単純な日数差ではなく平日をカウントする必要がある
-    # 簡易版として、最新回から1日あたり1回として計算（実際には平日のみ）
-    today = datetime.now()
-    base_date = today
-    
-    # マージモードの場合は、取得したデータの最大回号を使用
-    if merge_mode and available_rounds:
-        latest_round = max(available_rounds)
-    
     for round_number in sorted(target_rounds, reverse=True):
         # N4データを取得
         n4_info = n4_data.get(round_number, {})
@@ -1088,6 +1346,20 @@ def combine_data(n4_data: Dict[int, Dict[str, str]], n3_data: Dict[int, Dict[str
         elif n3_info.get('draw_date'):
             draw_date = n3_info.get('draw_date')
         
+        # 4801回以降で日付が取得できていない場合、みずほ銀行から日付を取得を試行
+        if not draw_date and round_number >= REHEARSAL_AVAILABLE_FROM:
+            # みずほ銀行のCSVファイルから日付を取得
+            csv_content = fetch_mizuhobank_csv(round_number)
+            if csv_content:
+                _, _, mizuhobank_date = parse_mizuhobank_csv(csv_content, round_number)
+                if mizuhobank_date:
+                    draw_date = mizuhobank_date
+                    # 取得した日付をデータに保存（次回以降の参照用）
+                    if round_number in n4_data:
+                        n4_data[round_number]['draw_date'] = draw_date
+                    if round_number in n3_data:
+                        n3_data[round_number]['draw_date'] = draw_date
+        
         # N4またはN3のデータがなければスキップ（マージモードの場合はN3データのみでもOK）
         if not n4_winning and not n3_winning:
             continue
@@ -1101,17 +1373,27 @@ def combine_data(n4_data: Dict[int, Dict[str, str]], n3_data: Dict[int, Dict[str
             # 通常モードの場合はN4データ必須
             continue
         
-        # 日付が取得できていない場合のみ、推定値を計算
+        # 日付が取得できていない場合のみ、計算
         if not draw_date:
-            # 日付を計算（最新回から逆算、簡易版）
-            # 実際の日付はデータに含まれていないため、推定値を使用
-            days_back = latest_round - round_number
-            draw_date_obj = base_date - timedelta(days=days_back)
-            draw_date = draw_date_obj.strftime('%Y-%m-%d')
+            if merge_mode and base_round is not None and base_date is not None:
+                # マージモード: 既存データの最新回号と日付を基準に計算
+                round_diff = round_number - base_round
+                calculated_date = calculate_draw_date_from_round_diff(base_date, round_diff)
+                draw_date = calculated_date.strftime('%Y-%m-%d')
+            else:
+                # 通常モード: 最新回から逆算（簡易版、非推奨）
+                days_back = latest_round - round_number
+                draw_date_obj = datetime.now() - timedelta(days=days_back)
+                draw_date = draw_date_obj.strftime('%Y-%m-%d')
+        
+        # weekdayを計算
+        weekday = calculate_weekday(draw_date)
+        weekday_str = str(weekday) if weekday is not None else 'NULL'
         
         results.append({
             'round_number': round_number,
             'draw_date': draw_date,
+            'weekday': weekday_str,
             'n3_winning': n3_winning if n3_winning else '',
             'n4_winning': n4_winning,
             'n3_rehearsal': n3_rehearsal if n3_rehearsal else '',
@@ -1242,6 +1524,7 @@ def save_to_csv(data: List[Dict[str, str]], output_file: Path, merge: bool = Fal
     fieldnames = [
         'round_number',
         'draw_date',
+        'weekday',
         'n3_winning',
         'n4_winning',
         'n3_rehearsal',
@@ -1252,7 +1535,13 @@ def save_to_csv(data: List[Dict[str, str]], output_file: Path, merge: bool = Fal
     if merge and output_file.exists():
         existing_data = load_existing_csv(output_file)
         # 回号をキーとして既存データを辞書化
-        existing_dict = {int(row['round_number']): row for row in existing_data}
+        existing_dict = {}
+        for row in existing_data:
+            round_num = int(row['round_number'])
+            # weekdayカラムがない場合は空文字列を設定（後で計算される）
+            if 'weekday' not in row:
+                row['weekday'] = ''
+            existing_dict[round_num] = row
         
         # 新しいデータで既存データを更新または追加
         for row in data:
@@ -1265,13 +1554,31 @@ def save_to_csv(data: List[Dict[str, str]], output_file: Path, merge: bool = Fal
                     for key in fieldnames:
                         existing_value = existing_row.get(key, '')
                         new_value = row.get(key, '')
-                        # 既存値がNULLまたは空の場合、新しい値で更新
-                        if not existing_value or existing_value == 'NULL':
-                            if new_value:
+                        # 4801回以降のdraw_dateは常に更新（みずほ銀行から正しい日付を取得）
+                        if key == 'draw_date' and round_num >= REHEARSAL_AVAILABLE_FROM:
+                            if new_value and new_value != 'NULL':
                                 existing_row[key] = new_value
-                        # 既存値がある場合も、新しい値が空でなければ更新
-                        elif new_value:
-                            existing_row[key] = new_value
+                        # weekdayの場合は、既存値が空またはNULLの場合、新しい値で更新（draw_dateから計算）
+                        elif key == 'weekday':
+                            # 既存値が空またはNULLの場合、新しい値で更新
+                            if not existing_value or existing_value == 'NULL':
+                                if new_value and new_value != 'NULL':
+                                    existing_row[key] = new_value
+                                elif existing_row.get('draw_date'):
+                                    # draw_dateからweekdayを計算
+                                    calculated_weekday = calculate_weekday(existing_row.get('draw_date'))
+                                    if calculated_weekday is not None:
+                                        existing_row[key] = str(calculated_weekday)
+                                    else:
+                                        existing_row[key] = 'NULL'
+                        else:
+                            # 既存値がNULLまたは空の場合、新しい値で更新
+                            if not existing_value or existing_value == 'NULL':
+                                if new_value:
+                                    existing_row[key] = new_value
+                            # 既存値がある場合も、新しい値が空でなければ更新
+                            elif new_value:
+                                existing_row[key] = new_value
                     existing_dict[round_num] = existing_row
                 else:
                     # 通常のマージモード: 新しいデータで完全に置き換え
@@ -1282,6 +1589,19 @@ def save_to_csv(data: List[Dict[str, str]], output_file: Path, merge: bool = Fal
         
         # 回号順にソート
         data = [existing_dict[round_num] for round_num in sorted(existing_dict.keys(), reverse=True)]
+        
+        # 既存データにweekdayがない場合、draw_dateから計算して追加
+        for row in data:
+            if 'weekday' not in row or not row.get('weekday') or row.get('weekday') == 'NULL':
+                draw_date = row.get('draw_date', '')
+                if draw_date and draw_date != 'NULL':
+                    calculated_weekday = calculate_weekday(draw_date)
+                    if calculated_weekday is not None:
+                        row['weekday'] = str(calculated_weekday)
+                    else:
+                        row['weekday'] = 'NULL'
+                else:
+                    row['weekday'] = 'NULL'
     
     with open(output_file, 'w', newline='', encoding='utf-8') as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
@@ -1307,7 +1627,8 @@ def fetch_multiple_pages(
     target_min_round: Optional[int] = None,
     target_max_round: Optional[int] = None,
     output_file: Optional[Path] = None,
-    save_interval: int = 100  # 100件ごとにCSVに保存
+    save_interval: int = 100,  # 100回ごとにCSVに中間保存（回号ベース）
+    update_null: bool = False  # NULL値を更新するかどうか
 ) -> tuple[Dict[int, Dict[str, str]], Dict[int, Dict[str, str]]]:
     """
     複数のページからデータを取得
@@ -1318,8 +1639,8 @@ def fetch_multiple_pages(
         latest_round: 最新の回号（Noneの場合は自動取得）
         target_min_round: 取得対象の最小回号（指定された場合のみ）
         target_max_round: 取得対象の最大回号（指定された場合のみ）
-        output_file: CSVファイルパス（指定された場合、save_interval件ごとに保存）
-        save_interval: CSVに保存する間隔（件数）
+        output_file: CSVファイルパス（指定された場合、100回ごとに中間保存）
+        save_interval: CSVに保存する間隔（回数、現在は100回ごと）
         
     Returns:
         (n4_data, n3_data) のタプル
@@ -1348,173 +1669,211 @@ def fetch_multiple_pages(
         target_min = latest_round - max_rounds + 1
         target_max = latest_round
     
-    # 4800回以前のデータが必要な場合は、みずほ銀行のページから取得
+    # 4800回以前のデータが必要な場合
     if target_max <= REHEARSAL_AVAILABLE_FROM - 1:
-        print(f"   みずほ銀行のページから取得します（第{target_min}回 ～ 第{target_max}回）")
-        mizuhobank_pages = find_mizuhobank_pages(target_min_round=target_min, target_max_round=target_max)
+        # 1-2700回: HTMLページから取得、2701-4800回: CSVファイルから取得
+        needs_html = target_min <= 2700
+        needs_csv = target_max >= 2701
         
-        for page_url in mizuhobank_pages:
-            print(f"\n📥 みずほ銀行のページを取得中: {page_url}...")
-            html_content = fetch_page(page_url)
+        # 1-2700回: HTMLページから取得（並列処理）
+        if needs_html:
+            html_min = max(1, target_min)
+            html_max = min(2700, target_max)
+            print(f"   みずほ銀行のHTMLページから取得します（第{html_min}回 ～ 第{html_max}回）")
             
-            if not html_content:
-                # 404エラーの場合、そのページをスキップして続行
-                print(f"   ⚠ ページをスキップしました: {page_url}")
-                consecutive_errors += 1
+            # HTMLページのURLを生成
+            mizuhobank_html_pages = find_mizuhobank_pages(html_min, html_max)
+            
+            if mizuhobank_html_pages:
+                print(f"   ✓ {len(mizuhobank_html_pages)}件のHTMLページURLを生成しました")
                 
-                # 5回連続でエラーが発生した場合、それまでのデータを保存して終了
-                if consecutive_errors >= max_consecutive_errors:
-                    print(f"\n⚠ {max_consecutive_errors}回連続でエラーが発生したため、処理を終了します")
-                    if output_file and (n4_data or n3_data):
-                        print(f"\n💾 取得済みデータをCSVに保存します...")
-                        all_rounds = set(n4_data.keys()) | set(n3_data.keys())
-                        if all_rounds:
+                # セッションを作成（接続の再利用）
+                session = requests.Session()
+                session.headers.update({
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                })
+                
+                def fetch_and_parse_html_page(page_url: str) -> Tuple[Dict[int, Dict[str, str]], Dict[int, Dict[str, str]]]:
+                    """HTMLページを取得してパース（並列処理用）"""
+                    html_content = fetch_page(page_url)
+                    if not html_content:
+                        return {}, {}
+                    
+                    soup = BeautifulSoup(html_content, 'html.parser')
+                    page_n4_data, page_n3_data = parse_mizuhobank_table(soup, max_round=html_max)
+                    return page_n4_data, page_n3_data
+                
+                # 並列処理で取得（最大8並列）
+                max_workers = 8
+                with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                    future_to_url = {
+                        executor.submit(fetch_and_parse_html_page, page_url): page_url
+                        for page_url in mizuhobank_html_pages
+                    }
+                    
+                    for future in as_completed(future_to_url):
+                        page_url = future_to_url[future]
+                        try:
+                            page_n4_data, page_n3_data = future.result()
+                            
+                            # 取得対象範囲内のデータのみを追加
+                            filtered_n4_data = {
+                                round_num: data for round_num, data in page_n4_data.items()
+                                if html_min <= round_num <= html_max
+                            }
+                            filtered_n3_data = {
+                                round_num: data for round_num, data in page_n3_data.items()
+                                if html_min <= round_num <= html_max
+                            }
+                            
+                            n4_data.update(filtered_n4_data)
+                            n3_data.update(filtered_n3_data)
+                            
+                            if filtered_n4_data or filtered_n3_data:
+                                print(f"   ✓ {page_url}: N4={len(filtered_n4_data)}件、N3={len(filtered_n3_data)}件")
+                        except Exception as e:
+                            print(f"   ⚠ {page_url}の処理でエラー: {e}")
+                
+                session.close()
+                print(f"✓ HTMLページから取得完了: N4={len([r for r in n4_data.keys() if html_min <= r <= html_max])}件、N3={len([r for r in n3_data.keys() if html_min <= r <= html_max])}件")
+        
+        # 2701-4800回: CSVファイルから取得（並列処理）
+        if needs_csv:
+            csv_min = max(2701, target_min)
+            csv_max = min(4800, target_max)
+            print(f"   みずほ銀行のCSVファイルから取得します（第{csv_min}回 ～ 第{csv_max}回）")
+            print(f"   ⚡ 並列処理で高速化します（最大8並列）")
+            
+            # セッションを作成（接続の再利用）
+            session = requests.Session()
+            session.headers.update({
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            })
+            
+            def fetch_and_parse_round(round_num: int) -> Tuple[int, Optional[str], Optional[str], Optional[str], bool]:
+                """1回分のデータを取得してパース（並列処理用）"""
+                csv_content = fetch_mizuhobank_csv(round_num, session=session)
+                if not csv_content:
+                    return round_num, None, None, None, False
+                
+                n3_winning, n4_winning, draw_date = parse_mizuhobank_csv(
+                    csv_content, round_num, max_round=csv_max
+                )
+                return round_num, n3_winning, n4_winning, draw_date, True
+            
+            # 並列処理で取得（最大8並列、サーバー負荷を考慮）
+            max_workers = 8
+            total_rounds = csv_max - csv_min + 1
+            completed_count = 0
+            
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                # すべてのタスクを送信
+                future_to_round = {
+                    executor.submit(fetch_and_parse_round, round_num): round_num
+                    for round_num in range(csv_min, csv_max + 1)
+                }
+                
+                # 完了したタスクから順に処理
+                for future in as_completed(future_to_round):
+                    round_num = future_to_round[future]
+                    completed_count += 1
+                    
+                    try:
+                        round_num_result, n3_winning, n4_winning, draw_date, success = future.result()
+                        
+                        if not success:
+                            # 403エラーや404エラーは連続エラーカウントに含めない（一部のファイルが存在しないのは正常）
+                            continue
+                        
+                        # エラーが発生しなかった場合、カウンターをリセット
+                        consecutive_errors = 0
+                        
+                        # データを保存
+                        if n3_winning:
+                            n3_data[round_num_result] = {
+                                'n3_winning': n3_winning,
+                                'n3_rehearsal': '',  # 4800回以前はリハーサル番号なし
+                                'draw_date': draw_date,
+                            }
+                        
+                        if n4_winning:
+                            n4_data[round_num_result] = {
+                                'n4_winning': n4_winning,
+                                'n4_rehearsal': '',  # 4800回以前はリハーサル番号なし
+                                'draw_date': draw_date,
+                            }
+                        
+                        # 進捗表示（100回ごと、または最初の5回）
+                        if round_num_result % 100 == 0 or round_num_result <= csv_min + 5:
+                            print(f"   ✓ 第{round_num_result}回: N3={n3_winning or 'N/A'}, N4={n4_winning or 'N/A'} ({completed_count}/{total_rounds})")
+                        
+                        # 100回ごとにCSVに中間保存（回号ベース）
+                        if output_file and (round_num_result - csv_min + 1) % 100 == 0:
+                            all_rounds = set(n4_data.keys()) | set(n3_data.keys())
+                            current_count = len([r for r in all_rounds if target_min <= r <= round_num_result])
+                            
+                            print(f"\n💾 中間保存（第{round_num_result}回まで）: {current_count}件のデータをCSVに保存します...")
                             all_rounds_list = sorted(all_rounds, reverse=True)
                             latest_round_for_save = max(all_rounds_list) if all_rounds_list else latest_round
-                            temp_data = combine_data(n4_data, n3_data, latest_round_for_save, max_rounds=len(all_rounds_list), merge_mode=True)
+                            
+                            temp_data = combine_data(n4_data, n3_data, latest_round_for_save, max_rounds=len(all_rounds_list), merge_mode=True, output_file=output_file)
                             save_to_csv(temp_data, output_file, merge=True)
-                            print(f"✓ {len(temp_data)}件のデータを保存しました")
-                    return n4_data, n3_data
-                
-                continue
+                            print(f"✓ 中間保存完了（第{round_num_result}回まで、{current_count}件）\n")
+                        
+                        # サーバー負荷軽減のため、少し待機（並列処理なので短縮）
+                        if completed_count % 10 == 0:
+                            time.sleep(0.1)
+                            
+                    except Exception as e:
+                        print(f"   ⚠ 第{round_num}回の処理でエラー: {e}")
+                        consecutive_errors += 1
             
-            # エラーが発生しなかった場合、カウンターをリセット
-            consecutive_errors = 0
+            # セッションを閉じる
+            session.close()
             
-            print(f"✓ ページを取得しました ({len(html_content)}文字)")
-            
-            # HTMLをパース
-            soup = BeautifulSoup(html_content, 'html.parser')
-            
-            # みずほ銀行のページからデータを抽出
-            page_n4_data, page_n3_data = parse_mizuhobank_table(soup, max_round=target_max)
-            
-            # 取得対象範囲内のデータのみを追加
-            filtered_n4_data = {
-                round_num: data for round_num, data in page_n4_data.items()
-                if target_min <= round_num <= target_max
-            }
-            n4_data.update(filtered_n4_data)
-            print(f"✓ {len(filtered_n4_data)}件のN4データを抽出しました（累計: {len(n4_data)}件）")
-            
-            filtered_n3_data = {
-                round_num: data for round_num, data in page_n3_data.items()
-                if target_min <= round_num <= target_max
-            }
-            n3_data.update(filtered_n3_data)
-            print(f"✓ {len(filtered_n3_data)}件のN3データを抽出しました（累計: {len(n3_data)}件）")
-            
-            # 100件ごとにCSVに保存
-            if output_file:
-                all_rounds = set(n4_data.keys()) | set(n3_data.keys())
-                current_count = len([r for r in all_rounds if target_min <= r <= target_max])
-                
-                if current_count - last_save_count >= save_interval:
-                    print(f"\n💾 中間保存: {current_count}件のデータをCSVに保存します...")
-                    # データを結合
-                    all_rounds_list = sorted(all_rounds, reverse=True)
-                    latest_round_for_save = max(all_rounds_list) if all_rounds_list else latest_round
-                    
-                    temp_data = combine_data(n4_data, n3_data, latest_round_for_save, max_rounds=len(all_rounds_list), merge_mode=True)
-                    save_to_csv(temp_data, output_file, merge=True)
-                    last_save_count = current_count
-                    print(f"✓ 中間保存完了（{current_count}件）\n")
-            
-            # 必要な件数に達したか確認（N4とN3の両方を考慮）
-            target_rounds_in_data = set()
-            for r in n4_data.keys():
-                if target_min <= r <= target_max:
-                    target_rounds_in_data.add(r)
-            for r in n3_data.keys():
-                if target_min <= r <= target_max:
-                    target_rounds_in_data.add(r)
-            
-            # 目標範囲内の最小回号が取得できたか確認
-            if target_rounds_in_data:
-                min_fetched = min(target_rounds_in_data)
-                if min_fetched <= target_min and len(target_rounds_in_data) >= max_rounds:
-                    print(f"\n✓ 目標範囲内のデータが十分に取得できました（{len(target_rounds_in_data)}件 >= {max_rounds}件、最小回号: 第{min_fetched}回）")
-                    break
-            
-            # 次のページに進む前に少し待機
-            time.sleep(1)
+            print(f"✓ CSVファイルから取得完了: N4={len([r for r in n4_data.keys() if csv_min <= r <= csv_max])}件、N3={len([r for r in n3_data.keys() if csv_min <= r <= csv_max])}件")
         
-        # 最後に、残りのデータを保存（中間保存で保存されていない場合）
+        # 最後に、残りのデータを保存（100回の倍数でない場合）
         if output_file and (n4_data or n3_data):
             all_rounds = set(n4_data.keys()) | set(n3_data.keys())
             current_count = len([r for r in all_rounds if target_min <= r <= target_max])
             
-            # 最後に保存されていないデータがある場合、最終保存を実行
-            if current_count > last_save_count:
+            # 最後の100回の倍数で保存されていない場合のみ最終保存
+            if (target_max - target_min + 1) % 100 != 0:
                 print(f"\n💾 最終保存: {current_count}件のデータをCSVに保存します...")
                 all_rounds_list = sorted(all_rounds, reverse=True)
                 latest_round_for_save = max(all_rounds_list) if all_rounds_list else latest_round
                 
-                temp_data = combine_data(n4_data, n3_data, latest_round_for_save, max_rounds=len(all_rounds_list), merge_mode=True)
+                temp_data = combine_data(n4_data, n3_data, latest_round_for_save, max_rounds=len(all_rounds_list), merge_mode=True, output_file=output_file)
                 save_to_csv(temp_data, output_file, merge=True)
                 print(f"✓ 最終保存完了（{current_count}件）\n")
         
+        print(f"\n✓ みずほ銀行から取得完了: N4={len(n4_data)}件、N3={len(n3_data)}件")
         return n4_data, n3_data
     
     # 4801回以降のデータは、既存の方法（hpfree.com）を使用
     # 4800回以前のデータも含む場合は、両方から取得
-    needs_mizuhobank = target_min <= REHEARSAL_AVAILABLE_FROM - 1
     needs_hpfree = target_max >= REHEARSAL_AVAILABLE_FROM
     
-    if needs_mizuhobank:
-        # まず4800回以前をみずほ銀行から取得
-        print(f"   みずほ銀行のページから取得します（第{target_min}回 ～ 第{REHEARSAL_AVAILABLE_FROM - 1}回）")
-        mizuhobank_pages = find_mizuhobank_pages(target_min_round=target_min, target_max_round=REHEARSAL_AVAILABLE_FROM - 1)
-        
-        for page_url in mizuhobank_pages:
-            html_content = fetch_page(page_url)
-            if not html_content:
-                # 404エラーの場合、そのページをスキップして続行
-                consecutive_errors += 1
-                
-                # 5回連続でエラーが発生した場合、それまでのデータを保存して終了
-                if consecutive_errors >= max_consecutive_errors:
-                    print(f"\n⚠ {max_consecutive_errors}回連続でエラーが発生したため、処理を終了します")
-                    if output_file and (n4_data or n3_data):
-                        print(f"\n💾 取得済みデータをCSVに保存します...")
-                        all_rounds = set(n4_data.keys()) | set(n3_data.keys())
-                        if all_rounds:
-                            all_rounds_list = sorted(all_rounds, reverse=True)
-                            latest_round_for_save = max(all_rounds_list) if all_rounds_list else latest_round
-                            temp_data = combine_data(n4_data, n3_data, latest_round_for_save, max_rounds=len(all_rounds_list), merge_mode=True)
-                            save_to_csv(temp_data, output_file, merge=True)
-                            print(f"✓ {len(temp_data)}件のデータを保存しました")
-                    return n4_data, n3_data
-                
-                continue
-            
-            # エラーが発生しなかった場合、カウンターをリセット
-            consecutive_errors = 0
-            
-            soup = BeautifulSoup(html_content, 'html.parser')
-            page_n4_data, page_n3_data = parse_mizuhobank_table(soup, max_round=REHEARSAL_AVAILABLE_FROM - 1)
-            
-            filtered_n4_data = {
-                round_num: data for round_num, data in page_n4_data.items()
-                if target_min <= round_num <= REHEARSAL_AVAILABLE_FROM - 1
-            }
-            n4_data.update(filtered_n4_data)
-            
-            filtered_n3_data = {
-                round_num: data for round_num, data in page_n3_data.items()
-                if target_min <= round_num <= REHEARSAL_AVAILABLE_FROM - 1
-            }
-            n3_data.update(filtered_n3_data)
-            
-            time.sleep(1)
-        
-        # 4801回以降の取得範囲を更新
-        target_min = REHEARSAL_AVAILABLE_FROM
-    
-    # hpfree.comから取得（4801回以降）
     if needs_hpfree:
+        # 4801回以降の取得範囲を更新
+        if target_min <= REHEARSAL_AVAILABLE_FROM - 1:
+            target_min = REHEARSAL_AVAILABLE_FROM
+        
+        print(f"\n📥 hpfree.comから取得します（第{target_min}回 ～ 第{target_max}回）")
+        print(f"   ℹ️  当選番号とリハーサル数字をhpfree.comから取得し、")
+        print(f"   日付はみずほ銀行のCSVファイルから取得します。")
+        
         # 過去分のページを自動探索
         past_pages = find_past_pages(base_url)
+        
+        # 範囲指定の場合、必要なページを明示的に追加
+        # 2021年1月～6月（5599-5726回）のデータは rehearsal2021-1.html に含まれる
+        if target_min <= 5726 and target_max >= 5599:
+            rehearsal2021_1_url = f"{BASE_PAGE_URL}rehearsal2021-1.html"
+            if rehearsal2021_1_url not in past_pages:
+                past_pages.insert(0, rehearsal2021_1_url)
+                print(f"  ✓ 必要なページを追加: rehearsal2021-1.html")
         
         # 最新版ページも追加
         all_pages = [LATEST_PAGE_URL] + past_pages
@@ -1553,7 +1912,7 @@ def fetch_multiple_pages(
             soup = BeautifulSoup(html_content, 'html.parser')
             
             # N4データを抽出
-            page_n4_data = parse_n4_table(soup)
+            page_n4_data = parse_n4_table(soup, url=page_url)
             # 取得対象範囲内のデータのみを追加
             filtered_n4_data = {
                 round_num: data for round_num, data in page_n4_data.items()
@@ -1563,7 +1922,7 @@ def fetch_multiple_pages(
             print(f"✓ {len(filtered_n4_data)}件のN4データを抽出しました（累計: {len(n4_data)}件）")
             
             # N3データを抽出
-            page_n3_data = parse_n3_table(soup)
+            page_n3_data = parse_n3_table(soup, url=page_url)
             # 取得対象範囲内のデータのみを追加
             filtered_n3_data = {
                 round_num: data for round_num, data in page_n3_data.items()
@@ -1571,6 +1930,59 @@ def fetch_multiple_pages(
             }
             n3_data.update(filtered_n3_data)
             print(f"✓ {len(filtered_n3_data)}件のN3データを抽出しました（累計: {len(n3_data)}件）")
+            
+            # 4801回以降のデータについて、みずほ銀行から日付を取得（並列処理）
+            if target_min >= REHEARSAL_AVAILABLE_FROM:
+                rounds_needing_dates = []
+                for round_num in set(filtered_n4_data.keys()) | set(filtered_n3_data.keys()):
+                    if round_num >= REHEARSAL_AVAILABLE_FROM:
+                        # 既に日付が設定されていない場合のみ取得
+                        if not filtered_n4_data.get(round_num, {}).get('draw_date') and not filtered_n3_data.get(round_num, {}).get('draw_date'):
+                            rounds_needing_dates.append(round_num)
+                
+                if rounds_needing_dates:
+                    print(f"   📅 {len(rounds_needing_dates)}件の回号について、みずほ銀行から日付を取得します...")
+                    
+                    # セッションを作成（接続の再利用）
+                    date_session = requests.Session()
+                    date_session.headers.update({
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                    })
+                    
+                    def fetch_date_for_round(round_num: int) -> Tuple[int, Optional[str]]:
+                        """1回分の日付を取得（並列処理用）"""
+                        csv_content = fetch_mizuhobank_csv(round_num, session=date_session)
+                        if not csv_content:
+                            return round_num, None
+                        
+                        _, _, draw_date = parse_mizuhobank_csv(csv_content, round_num)
+                        return round_num, draw_date
+                    
+                    # 並列処理で日付を取得（最大8並列）
+                    max_workers = 8
+                    dates_fetched = 0
+                    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                        future_to_round = {
+                            executor.submit(fetch_date_for_round, round_num): round_num
+                            for round_num in rounds_needing_dates
+                        }
+                        
+                        for future in as_completed(future_to_round):
+                            round_num = future_to_round[future]
+                            try:
+                                round_num_result, draw_date = future.result()
+                                if draw_date:
+                                    # 取得した日付をデータに保存
+                                    if round_num_result in n4_data:
+                                        n4_data[round_num_result]['draw_date'] = draw_date
+                                    if round_num_result in n3_data:
+                                        n3_data[round_num_result]['draw_date'] = draw_date
+                                    dates_fetched += 1
+                            except Exception as e:
+                                print(f"   ⚠ 第{round_num}回の日付取得でエラー: {e}")
+                    
+                    date_session.close()
+                    print(f"   ✓ {dates_fetched}件の日付を取得しました")
             
             # 必要な件数に達したか確認（N4とN3の両方を考慮）
             target_rounds_in_data = set()
@@ -1600,7 +2012,7 @@ def fetch_multiple_pages(
                     latest_round_for_save = max(all_rounds_list) if all_rounds_list else latest_round
                     
                     temp_data = combine_data(n4_data, n3_data, latest_round_for_save, max_rounds=len(all_rounds_list), merge_mode=True)
-                    save_to_csv(temp_data, output_file, merge=True)
+                    save_to_csv(temp_data, output_file, merge=True, update_null=update_null)
                     last_save_count = current_count
                     print(f"✓ 中間保存完了（{current_count}件）\n")
             
@@ -1619,7 +2031,7 @@ def fetch_multiple_pages(
                 latest_round_for_save = max(all_rounds_list) if all_rounds_list else latest_round
                 
                 temp_data = combine_data(n4_data, n3_data, latest_round_for_save, max_rounds=len(all_rounds_list), merge_mode=True)
-                save_to_csv(temp_data, output_file, merge=True)
+                save_to_csv(temp_data, output_file, merge=True, update_null=update_null)
                 print(f"✓ 最終保存完了（{current_count}件）\n")
     
     return n4_data, n3_data
@@ -1768,7 +2180,8 @@ def main():
             latest_round=None,
             target_min_round=target_min_round,
             target_max_round=target_max_round,
-            output_file=output_file  # 100件ごとにCSVに保存
+            output_file=output_file,  # 100件ごとにCSVに保存
+            update_null=True  # 範囲指定モードでは常にNULL値を更新
         )
         
         print(f"✓ 範囲指定のデータを取得: N4={len(n4_data)}件、N3={len(n3_data)}件")
@@ -1832,7 +2245,8 @@ def main():
             latest_round=None,
             target_min_round=min_null,
             target_max_round=max_null,
-            output_file=output_file  # 100件ごとにCSVに保存
+            output_file=output_file,  # 100件ごとにCSVに保存
+            update_null=update_null_mode  # NULL値を更新するかどうか
         )
         
         # NULL値がある回号のみをフィルタリング
@@ -1870,40 +2284,106 @@ def main():
         max_missing = max(missing_rounds)
         
         print(f"\n📥 欠番の回号を取得します（第{min_missing}回 ～ 第{max_missing}回）...")
+        print(f"   ℹ️  みずほ銀行から当選番号と日付を取得します。")
         
-        # 欠番の回号を含む範囲のデータを取得
-        n4_data, n3_data = fetch_multiple_pages(
-            base_url,
-            len(missing_rounds),  # 欠番の数だけ取得
-            latest_round=None,
-            target_min_round=min_missing,
-            target_max_round=max_missing,
-            output_file=output_file  # 100件ごとにCSVに保存
-        )
+        # みずほ銀行から直接取得
+        n4_data = {}
+        n3_data = {}
+        
+        # セッションを作成（接続の再利用）
+        session = requests.Session()
+        session.headers.update({
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        })
+        
+        def fetch_round_from_mizuhobank(round_num: int) -> Tuple[int, Optional[str], Optional[str], Optional[str]]:
+            """1回分のデータをみずほ銀行から取得（並列処理用）"""
+            # まずCSVファイルから取得を試行
+            csv_content = fetch_mizuhobank_csv(round_num, session=session)
+            if csv_content:
+                n3_winning, n4_winning, draw_date = parse_mizuhobank_csv(csv_content, round_num)
+                if n3_winning or n4_winning:
+                    return round_num, n3_winning, n4_winning, draw_date
+            
+            # CSVファイルが取得できない場合、HTMLページから取得を試行（4800回以前のみ）
+            if round_num <= 4800:
+                # HTMLページのURLを生成
+                html_pages = find_mizuhobank_pages(round_num, round_num)
+                if html_pages:
+                    html_content = fetch_page(html_pages[0])
+                    if html_content:
+                        soup = BeautifulSoup(html_content, 'html.parser')
+                        page_n4_data, page_n3_data = parse_mizuhobank_table(soup, max_round=round_num)
+                        if round_num in page_n4_data or round_num in page_n3_data:
+                            n4_info = page_n4_data.get(round_num, {})
+                            n3_info = page_n3_data.get(round_num, {})
+                            return (
+                                round_num,
+                                n3_info.get('n3_winning'),
+                                n4_info.get('n4_winning'),
+                                n4_info.get('draw_date') or n3_info.get('draw_date')
+                            )
+            
+            return round_num, None, None, None
+        
+        # 並列処理で取得（最大8並列）
+        max_workers = 8
+        completed_count = 0
+        total_rounds = len(missing_rounds)
+        
+        print(f"   ⚡ 並列処理で高速化します（最大{max_workers}並列）")
+        
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            future_to_round = {
+                executor.submit(fetch_round_from_mizuhobank, round_num): round_num
+                for round_num in missing_rounds
+            }
+            
+            for future in as_completed(future_to_round):
+                round_num = future_to_round[future]
+                completed_count += 1
+                
+                try:
+                    round_num_result, n3_winning, n4_winning, draw_date = future.result()
+                    
+                    if n3_winning:
+                        n3_data[round_num_result] = {
+                            'n3_winning': n3_winning,
+                            'n3_rehearsal': '',  # みずほ銀行にはリハーサル数字がない
+                            'draw_date': draw_date or '',
+                        }
+                    
+                    if n4_winning:
+                        n4_data[round_num_result] = {
+                            'n4_winning': n4_winning,
+                            'n4_rehearsal': '',  # みずほ銀行にはリハーサル数字がない
+                            'draw_date': draw_date or '',
+                        }
+                    
+                    # 進捗表示（50回ごと、または最初の5回）
+                    if completed_count % 50 == 0 or completed_count <= 5:
+                        print(f"   ✓ 第{round_num_result}回: N3={n3_winning or 'N/A'}, N4={n4_winning or 'N/A'}, Date={draw_date or 'N/A'} ({completed_count}/{total_rounds})")
+                    
+                    # サーバー負荷軽減のため、少し待機
+                    if completed_count % 10 == 0:
+                        time.sleep(0.1)
+                        
+                except Exception as e:
+                    print(f"   ⚠ 第{round_num}回の処理でエラー: {e}")
+        
+        session.close()
         
         # 欠番の回号のみをフィルタリング
         filtered_n4_data = {r: n4_data[r] for r in missing_rounds if r in n4_data}
         filtered_n3_data = {r: n3_data[r] for r in missing_rounds if r in n3_data}
         
-        # デバッグ情報: 取得したデータの回号範囲を表示
-        if n4_data or n3_data:
-            all_fetched_rounds = sorted(set(n4_data.keys()) | set(n3_data.keys()))
-            print(f"   取得したデータの回号範囲: 第{min(all_fetched_rounds)}回 ～ 第{max(all_fetched_rounds)}回（{len(all_fetched_rounds)}件）")
-            print(f"   取得したデータの回号（最初の10件）: {all_fetched_rounds[:10]}")
-            print(f"   欠番の回号（最初の10件）: {missing_rounds[:10]}")
-            print(f"   一致する回号: {sorted(set(all_fetched_rounds) & set(missing_rounds))[:10]}")
-        
         n4_data = filtered_n4_data
         n3_data = filtered_n3_data
         
-        print(f"✓ 欠番のデータを取得: N4={len(n4_data)}件、N3={len(n3_data)}件")
+        print(f"\n✓ みずほ銀行から取得完了: N4={len(n4_data)}件、N3={len(n3_data)}件")
         
         if not n4_data and not n3_data:
             print("⚠ 欠番のデータが取得できませんでした")
-            print("   考えられる原因:")
-            print("   - 欠番の回号のデータがWebページに存在しない可能性があります")
-            print("   - データが別のページに存在する可能性があります")
-            print("   - ページの構造が変更された可能性があります")
             sys.exit(1)
         
         # 取得したデータの範囲を使用
@@ -1920,8 +2400,8 @@ def main():
             if html_content:
                 soup = BeautifulSoup(html_content, 'html.parser')
                 # 最新の1行のみ取得
-                n4_data = parse_n4_table(soup, latest_only=True)
-                n3_data = parse_n3_table(soup, latest_only=True)
+                n4_data = parse_n4_table(soup, latest_only=True, url=LATEST_PAGE_URL)
+                n3_data = parse_n3_table(soup, latest_only=True, url=LATEST_PAGE_URL)
                 print(f"✓ 最新データを取得: N4={len(n4_data)}件、N3={len(n3_data)}件")
                 
                 # 取得したデータの回号を使用（実際に取得できた回号）
@@ -1986,7 +2466,7 @@ def main():
     # データを結合
     print("\n🔗 データを結合中...")
     # 欠番を埋めるモードまたはマージモードの場合は、取得したデータをそのまま使用
-    data = combine_data(n4_data, n3_data, latest_round, max_rounds, merge_mode=merge_mode or fill_gaps_mode)
+    data = combine_data(n4_data, n3_data, latest_round, max_rounds, merge_mode=merge_mode or fill_gaps_mode, output_file=output_file)
     print(f"✓ {len(data)}件のデータを結合しました")
     
     if not data:
@@ -2013,8 +2493,8 @@ def main():
         # 範囲指定モードの場合、fetch_multiple_pages内で既に中間保存が行われている
         was_intermediate_save_used = True
     elif fill_gaps_mode:
-        # 欠番を埋めるモードの場合、fetch_multiple_pages内で既に中間保存が行われている
-        was_intermediate_save_used = True
+        # 欠番を埋めるモードの場合、みずほ銀行から直接取得しているため中間保存は行われていない
+        was_intermediate_save_used = False
     elif update_null_mode:
         # NULL値を更新するモードの場合、fetch_multiple_pages内で既に中間保存が行われている
         was_intermediate_save_used = True

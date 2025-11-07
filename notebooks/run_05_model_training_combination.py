@@ -29,7 +29,7 @@ MODELS_DIR = DATA_DIR / 'models'
 
 # 設定ファイルをインポート
 import sys
-sys.path.append(str(PROJECT_ROOT / 'notebooks'))
+sys.path.append(str(PROJECT_ROOT / 'core'))
 from config import XGB_PARAMS, MODEL_VERSION
 
 print(f"プロジェクトルート: {PROJECT_ROOT}")

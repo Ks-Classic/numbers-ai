@@ -188,7 +188,7 @@ function applyPatternExpansion(
   const nums = [...sourceList];
   
   // A1/A2: 欠番補足あり（0〜9全追加）
-  // B1/B2: 欠番補足なし（0のみ追加）
+  // B1/B2: 欠番補足なし（0も含めて、すべて欠番補足しない）
   if (pattern === ('A1' as Pattern) || pattern === ('A2' as Pattern)) {
     // パターンA1/A2: 0〜9の欠番をすべて追加
     for (let digit = 0; digit <= 9; digit++) {
@@ -196,12 +196,8 @@ function applyPatternExpansion(
         nums.push(digit);
       }
     }
-  } else {
-    // パターンB1/B2: 0が含まれていなければ0を1つ追加
-    if (!nums.includes(0)) {
-      nums.push(0);
-    }
   }
+  // B1/B2の場合は何も追加しない（sourceListをそのまま使用）
   
   // 昇順ソート（重複は許容）
   nums.sort((a, b) => a - b);

@@ -35,7 +35,7 @@ export const sampleAxisCandidates: AxisCandidate[] = [
     rehearsal_score: 0.90,
     reason: "リハーサル相関性高",
     score: 952,
-    source: 'B1', // 欠番補足なし（0のみ追加）、中心0配置なし
+    source: 'B1', // 欠番補足なし（0も含めて、すべて欠番補足しない）、中心0配置なし
     candidates: {
       box: [
         { number: "245", score: 967, probability: 0.231, reason: "パターンB最適化パターン", source: 'B1' },
@@ -106,7 +106,7 @@ export const sampleAxisCandidates: AxisCandidate[] = [
     rehearsal_score: 0.59,
     reason: "補完パターン",
     score: 875,
-    source: 'B1', // 欠番補足なし（0のみ追加）、中心0配置なし
+    source: 'B1', // 欠番補足なし（0も含めて、すべて欠番補足しない）、中心0配置なし
     candidates: {
       box: [
         { number: "089", score: 898, probability: 0.231, reason: "パターンB最適化パターン", source: 'B1' },

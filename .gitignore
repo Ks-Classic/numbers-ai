@@ -1,7 +1,7 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
-/node_modules
+node_modules/
 /.pnp
 .pnp.*
 .yarn/*
@@ -46,3 +46,14 @@ next-env.d.ts
 # OCR tools (scripts directory only)
 scripts/venv/
 scripts/ocr_results/
+
+# Python virtual environments
+venv/
+env/
+.venv/
+api/venv/
+notebooks/venv/
+
+# CUBE data (analysis purposes only, too many files for Git)
+data/extreme_cubes/
+data/analysis/

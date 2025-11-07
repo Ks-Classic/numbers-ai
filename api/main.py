@@ -13,10 +13,10 @@ import sys
 
 # プロジェクトルートのパスを設定
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-sys.path.append(str(PROJECT_ROOT / 'notebooks'))
+sys.path.append(str(PROJECT_ROOT / 'core'))
 
 from model_loader import load_model_loader
-from chart_generator import load_keisen_master, generate_chart
+from chart_generator import load_keisen_master, generate_chart, ChartGenerationError
 from feature_extractor import (
     extract_digit_features,
     extract_combination_features,
@@ -26,6 +26,21 @@ from feature_extractor import (
 )
 import pandas as pd
 import numpy as np
+import json
+import logging
+import traceback
+
+# ログ設定
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+logger = logging.getLogger(__name__)
+
+# CUBE生成用のインポート
+sys.path.append(str(PROJECT_ROOT / 'scripts'))
+from generate_extreme_cube import generate_extreme_cube
 
 app = FastAPI(title="Numbers AI Prediction API", version="1.0.0")
 
@@ -424,4 +439,185 @@ async def reload_models_and_data():
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"再読み込みエラー: {str(e)}")
+
+
+def load_keisen_master_by_type(keisen_type: str) -> dict:
+    """罫線マスターデータを読み込む（種類指定）
+    
+    Args:
+        keisen_type: 'current'（現罫線）または'new'（新罫線）
+    
+    Returns:
+        罫線マスターデータ
+    """
+    if keisen_type == 'new':
+        keisen_path = DATA_DIR / 'keisen_master_new.json'
+    else:
+        keisen_path = DATA_DIR / 'keisen_master.json'
+    
+    if not keisen_path.exists():
+        raise FileNotFoundError(f"罫線マスターファイルが見つかりません: {keisen_path}")
+    
+    with open(keisen_path, 'r', encoding='utf-8') as f:
+        return json.load(f)
+
+
+@app.get("/api/cube/{round_number}")
+async def get_cubes(round_number: int):
+    """
+    指定回号で10個のCUBEを生成する
+    
+    - 通常CUBE: 現罫線 × 4パターン（A1, A2, B1, B2） × N3/N4 = 8個
+    - 極CUBE: 現罫線 × 1パターン + 新罫線 × 1パターン = 2個
+    - 合計: 10個のCUBE
+    
+    Args:
+        round_number: 回号
+    
+    Returns:
+        CUBEデータの辞書
+    """
+    global df
+    
+    logger.info(f"CUBE生成リクエスト受信: 回号={round_number}")
+    
+    try:
+        if df is None:
+            logger.error("データが読み込まれていません")
+            raise HTTPException(status_code=500, detail="データが読み込まれていません")
+        
+        # データを読み込む
+        try:
+            load_data_and_models(force_reload=False)
+            logger.info("データ/モデルの読み込み完了")
+        except Exception as e:
+            logger.warning(f"データ/モデルの再読み込みに失敗しました（既存データを使用）: {e}")
+            logger.warning(traceback.format_exc())
+        
+        # 罫線マスターデータを読み込む
+        logger.info("罫線マスターデータを読み込み中...")
+        try:
+            keisen_master_current = load_keisen_master_by_type('current')
+            logger.info("現罫線マスターデータの読み込み完了")
+        except Exception as e:
+            logger.error(f"現罫線マスターデータの読み込みに失敗: {e}")
+            logger.error(traceback.format_exc())
+            raise HTTPException(status_code=500, detail=f"現罫線マスターデータの読み込みに失敗: {str(e)}")
+        
+        try:
+            keisen_master_new = load_keisen_master_by_type('new')
+            logger.info("新罫線マスターデータの読み込み完了")
+        except Exception as e:
+            logger.error(f"新罫線マスターデータの読み込みに失敗: {e}")
+            logger.error(traceback.format_exc())
+            raise HTTPException(status_code=500, detail=f"新罫線マスターデータの読み込みに失敗: {str(e)}")
+        
+        cubes = []
+        
+        # 通常CUBE: 現罫線 × 4パターン（A1, A2, B1, B2）
+        patterns = ['A1', 'A2', 'B1', 'B2']
+        targets = ['n3', 'n4']
+        
+        logger.info("通常CUBE（現罫線）の生成を開始...")
+        for target in targets:
+            for pattern in patterns:
+                try:
+                    logger.debug(f"現罫線 {target} {pattern} のCUBE生成中...")
+                    grid, rows, cols = generate_chart(
+                        df, keisen_master_current, round_number, pattern, target
+                    )
+                    cubes.append({
+                        'id': f'current_normal_{target}_{pattern}',
+                        'keisen_type': 'current',
+                        'cube_type': 'normal',
+                        'target': target,
+                        'pattern': pattern,
+                        'grid': grid,
+                        'rows': rows,
+                        'cols': cols
+                    })
+                    logger.debug(f"現罫線 {target} {pattern} のCUBE生成完了")
+                except Exception as e:
+                    logger.warning(f"現罫線 {target} {pattern} のCUBE生成に失敗: {e}")
+                    logger.warning(traceback.format_exc())
+        
+        # 通常CUBE: 新罫線 × 4パターン（A1, A2, B1, B2）
+        logger.info("通常CUBE（新罫線）の生成を開始...")
+        for target in targets:
+            for pattern in patterns:
+                try:
+                    logger.debug(f"新罫線 {target} {pattern} のCUBE生成中...")
+                    grid, rows, cols = generate_chart(
+                        df, keisen_master_new, round_number, pattern, target
+                    )
+                    cubes.append({
+                        'id': f'new_normal_{target}_{pattern}',
+                        'keisen_type': 'new',
+                        'cube_type': 'normal',
+                        'target': target,
+                        'pattern': pattern,
+                        'grid': grid,
+                        'rows': rows,
+                        'cols': cols
+                    })
+                    logger.debug(f"新罫線 {target} {pattern} のCUBE生成完了")
+                except Exception as e:
+                    logger.warning(f"新罫線 {target} {pattern} のCUBE生成に失敗: {e}")
+                    logger.warning(traceback.format_exc())
+        
+        # 極CUBE: 現罫線 × 1パターン（N3のみ）
+        logger.info("極CUBE（現罫線）の生成を開始...")
+        try:
+            grid, rows, cols = generate_extreme_cube(
+                df, keisen_master_current, round_number
+            )
+            cubes.append({
+                'id': 'current_extreme_n3',
+                'keisen_type': 'current',
+                'cube_type': 'extreme',
+                'target': 'n3',
+                'pattern': None,
+                'grid': grid,
+                'rows': rows,
+                'cols': cols
+            })
+            logger.info("極CUBE（現罫線）の生成完了")
+        except Exception as e:
+            logger.warning(f"現罫線 極CUBE の生成に失敗: {e}")
+            logger.warning(traceback.format_exc())
+        
+        # 極CUBE: 新罫線 × 1パターン（N3のみ）
+        logger.info("極CUBE（新罫線）の生成を開始...")
+        try:
+            grid, rows, cols = generate_extreme_cube(
+                df, keisen_master_new, round_number
+            )
+            cubes.append({
+                'id': 'new_extreme_n3',
+                'keisen_type': 'new',
+                'cube_type': 'extreme',
+                'target': 'n3',
+                'pattern': None,
+                'grid': grid,
+                'rows': rows,
+                'cols': cols
+            })
+            logger.info("極CUBE（新罫線）の生成完了")
+        except Exception as e:
+            logger.warning(f"新罫線 極CUBE の生成に失敗: {e}")
+            logger.warning(traceback.format_exc())
+        
+        logger.info(f"CUBE生成完了: {len(cubes)}個のCUBEを生成しました")
+        
+        return {
+            'round_number': round_number,
+            'cubes': cubes
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"CUBE生成中に予期しないエラーが発生しました: {e}")
+        logger.error(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"CUBE生成エラー: {str(e)}")
 

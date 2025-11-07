@@ -16,7 +16,7 @@ warnings.filterwarnings('ignore')
 # 設定ファイルをインポート
 import sys
 PROJECT_ROOT = Path(__file__).parent.parent if '__file__' in globals() else Path.cwd()
-sys.path.append(str(PROJECT_ROOT / 'notebooks'))
+sys.path.append(str(PROJECT_ROOT / 'core'))
 from config import TRAIN_SIZE, BASE_ROUND_AUTO, BASE_ROUND, MIN_ROUND, TRAIN_DATA_CSV
 
 # プロジェクトルートのパスを設定

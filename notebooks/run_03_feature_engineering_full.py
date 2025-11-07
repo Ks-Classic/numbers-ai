@@ -25,7 +25,7 @@ MODELS_DIR.mkdir(exist_ok=True)
 
 # 設定ファイルをインポート
 import sys
-sys.path.append(str(PROJECT_ROOT / 'notebooks'))
+sys.path.append(str(PROJECT_ROOT / 'core'))
 from config import TRAIN_SIZE, TRAIN_DATA_CSV, MAX_COMBINATIONS_PER_DIGIT
 
 # モジュールをインポート

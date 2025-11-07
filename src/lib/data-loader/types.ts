@@ -15,6 +15,10 @@ export interface PastResult {
   roundNumber: RoundNumber;
   /** 抽選日（YYYY-MM-DD形式） */
   drawDate: string;
+  /** 曜日（0-4の整数、NULL可）
+   * 0: 月曜日、1: 火曜日、2: 水曜日、3: 木曜日、4: 金曜日
+   */
+  weekday: number | null;
   /** N3当選番号（3桁文字列、例: "149"） */
   n3Winning: string;
   /** N4当選番号（4桁文字列、例: "6757"） */
