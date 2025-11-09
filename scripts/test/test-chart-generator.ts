@@ -5,8 +5,8 @@
  *   pnpm test:chart-generator
  */
 
-import { generateChart } from '../src/lib/chart-generator/index';
-import type { Pattern } from '../src/types/prediction';
+import { generateChart } from '@/lib/chart-generator';
+import type { Pattern } from '@/types/prediction';
 
 /**
  * グリッドを表示する（デバッグ用）

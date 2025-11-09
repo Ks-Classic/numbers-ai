@@ -23,14 +23,14 @@
  *   npm run test:patterns -- 6758 debug
  */
 
-import { generateChart } from '../src/lib/chart-generator';
+import { generateChart } from '@/lib/chart-generator';
 import { 
   getPreviousResult, 
   getPreviousPreviousResult,
   getPredictedDigits,
   type ColumnName
-} from '../src/lib/data-loader';
-import type { Pattern, Target } from '../src/types/prediction';
+} from '@/lib/data-loader';
+import type { Pattern, Target } from '@/types/prediction';
 
 interface TestResult {
   pattern: Pattern;

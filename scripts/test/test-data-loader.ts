@@ -12,7 +12,7 @@ import {
   getPreviousPreviousResult,
   loadKeisenMaster,
   getPredictedDigits,
-} from '../src/lib/data-loader/index';
+} from '@/lib/data-loader';
 
 async function main() {
   console.log('='.repeat(80));
