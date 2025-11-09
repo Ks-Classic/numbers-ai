@@ -1,4 +1,9 @@
 {
+<<<<<<< HEAD
+	"devDependencies": {
+		"tsx": "^4.20.6"
+	}
+=======
   "name": "numbers-ai",
   "version": "0.1.0",
   "private": true,
@@ -51,4 +56,5 @@
     "tsx": "^4.7.0",
     "typescript": "^5"
   }
+>>>>>>> 07b50d4505d6e04308d3b4f6e7a4b43ec121f750
 }
