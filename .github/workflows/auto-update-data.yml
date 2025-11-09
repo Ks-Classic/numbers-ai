@@ -1,0 +1,59 @@
+name: データ自動更新
+
+on:
+  schedule:
+    # 平日15:00（JST）に実行（UTCでは6:00）
+    - cron: '0 6 * * 1-5'
+  workflow_dispatch: # 手動実行も可能
+
+permissions:
+  contents: write # コミット・プッシュに必要
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: リポジトリをチェックアウト
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Python環境をセットアップ
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 依存パッケージをインストール
+        run: |
+          pip install requests beautifulsoup4 python-dotenv
+
+      - name: データを更新
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          SERP_API_KEY: ${{ secrets.SERP_API_KEY }}
+        run: |
+          cd scripts/production
+          python3 fetch_past_results.py --merge
+
+      - name: 変更をコミット・プッシュ
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          
+          # 変更があるか確認
+          if [ -n "$(git status --porcelain data/past_results.csv)" ]; then
+            git add data/past_results.csv
+            git commit -m "chore: データ自動更新 [skip ci]"
+            git push
+            echo "✓ データを更新してコミットしました"
+          else
+            echo "ℹ️  更新するデータがありませんでした"
+          fi
+
+      - name: 更新結果を通知（オプション）
+        if: failure()
+        run: |
+          echo "データ更新に失敗しました"
+          # 必要に応じてSlack通知などを追加
+

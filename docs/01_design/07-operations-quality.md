@@ -244,10 +244,13 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=DUMMY_xxx
 
 ### 6.1 概要
 
-本番環境へのデプロイは、以下の2つのコンポーネントで構成されます：
+本番環境へのデプロイは、以下のコンポーネントで構成されます：
 
 1. **Next.jsフロントエンド**: Vercelにデプロイ
-2. **FastAPIバックエンド**: 別プラットフォーム（Railway/Cloud Run/Render）にデプロイ
+   - **CUBE生成機能**: FastAPIサーバー不要（TypeScriptで完全実装）
+   - **AI推論機能**: FastAPIサーバーが必要（別プラットフォームにデプロイ）
+
+**重要**: CUBE生成機能（`/cube`ページ）はFastAPIサーバーに依存しません。TypeScriptで実装されており、Next.js API Route（`/api/cube/[roundNumber]`）で実行されます。
 
 ### 6.2 FastAPIサーバーのデプロイ
 
@@ -330,9 +333,10 @@ app.add_middleware(
    - Build Command: `pnpm build`
    - Region: `hnd1` (東京)
 
-4. **環境変数の設定**
+4. **環境変数の設定（AI推論機能を使用する場合のみ）**
    - プロジェクト設定 → 「Environment Variables」
    - `FASTAPI_URL`: FastAPIサーバーのURL（フェーズ1で取得）
+     - **注意**: CUBE生成機能のみ使用する場合は不要
    - Environment: Production, Preview, Development すべてにチェック
 
 5. **初回デプロイ**
@@ -340,12 +344,34 @@ app.add_middleware(
    - デプロイ完了を待機（数分）
    - デプロイURLを取得（例: `https://numbers-ai.vercel.app`）
 
-6. **FastAPIサーバーのCORS設定を更新**
+6. **FastAPIサーバーのCORS設定を更新（AI推論機能を使用する場合のみ）**
    - フェーズ3で更新したCORS設定にVercel URLを追加
    - FastAPIサーバーを再デプロイ
 
-7. **Vercelを再デプロイ**
+7. **Vercelを再デプロイ（環境変数更新後）**
    - 環境変数更新後、再デプロイを実行
+
+### 6.4.1 CUBE生成機能のデプロイ（FastAPI不要）
+
+**CUBE生成機能はFastAPIサーバーに依存しません。**
+
+**必要なデータファイル:**
+- `data/past_results.csv`: 過去当選番号データ（Gitリポジトリに含まれている必要がある）
+- `data/keisen_master.json`: 現罫線マスターデータ
+- `data/keisen_master_new.json`: 新罫線マスターデータ
+
+**デプロイ手順:**
+1. 上記のデータファイルがGitリポジトリに含まれていることを確認
+2. `vercel.json`の設定を確認（既に設定済み）
+3. GitHubにプッシュすると自動的にデプロイが開始される
+4. デプロイ完了後、`/cube`ページで動作確認
+
+**動作確認:**
+- `/cube`ページにアクセス
+- 回号を入力してCUBEを生成
+- 通常CUBE（16個）と極CUBE（2個）が表示されることを確認
+
+詳細は[04-04-01_CUBE生成機能Vercelデプロイチェックリスト](../02_todo/04_operations/04-04-01_CUBE生成機能Vercelデプロイチェックリスト.md)を参照。
 
 ### 6.5 動作確認
 

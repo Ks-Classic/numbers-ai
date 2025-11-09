@@ -1,4 +1,8 @@
-# CUBE生成機能 Vercelデプロイチェックリスト
+# 04-04-01 CUBE生成機能 Vercelデプロイチェックリスト
+
+## 概要
+
+CUBE生成機能はFastAPIサーバーに依存せず、TypeScriptで完全に実装されています。Next.js API Route（`/api/cube/[roundNumber]`）で実行されるため、Vercelにデプロイするだけで動作します。
 
 ## デプロイ前の確認事項
 
@@ -26,6 +30,12 @@ Vercelの無料プランでは、プロジェクト全体で100MBの制限があ
 ```bash
 du -sh data/past_results.csv data/keisen_master.json data/keisen_master_new.json
 ```
+
+**現在のサイズ（参考）:**
+- `data/past_results.csv`: 約252KB
+- `data/keisen_master.json`: 約24KB
+- `data/keisen_master_new.json`: 約24KB
+- **合計**: 約300KB（問題なし）
 
 ### 3. `.gitignore`の確認
 
@@ -72,14 +82,20 @@ git push origin main
 3. 「Deployments」タブで最新のデプロイを確認
 4. デプロイが成功していることを確認
 
+**注意**: CUBE生成機能のみ使用する場合は、環境変数`FASTAPI_URL`の設定は不要です。
+
 ### 3. 動作確認
 
 1. デプロイされたURLにアクセス（例: `https://numbers-ai.vercel.app`）
 2. `/cube`ページにアクセス
 3. 回号を入力してCUBEを生成
 4. 以下を確認：
-   - [ ] 通常CUBE（8個）が表示される
+   - [ ] 通常CUBE（16個）が表示される
+     - 現罫線 × 4パターン（A1, A2, B1, B2） × N3/N4 = 8個
+     - 新罫線 × 4パターン（A1, A2, B1, B2） × N3/N4 = 8個
    - [ ] 極CUBE（2個）が表示される
+     - 現罫線 × 1パターン（N3のみ）
+     - 新罫線 × 1パターン（N3のみ）
    - [ ] 各CUBEのコピーボタンが動作する
    - [ ] 前回・前々回の当選番号が表示される（N3、N4）
    - [ ] 抽出数字が正しく表示される
@@ -149,9 +165,66 @@ Error: File size exceeds limit
 - [ ] パフォーマンスが許容範囲内（API Routeの実行時間が10秒以内）
 - [ ] モバイルデバイスでも正常に動作する
 
-## 参考リンク
+## 重要なポイント
 
-- [Vercelデプロイガイド](./VERCEL_DEPLOY.md)
-- [CUBE生成システム設計書](./docs/01_design/10-cube-automation-design.md)
-- [CUBE生成ルール](./docs/01_design/CUBE生成ルール.md)
+### ✅ FastAPIサーバー不要
+
+CUBE生成機能は**完全にTypeScriptで実装**されており、FastAPIサーバーに依存しません：
+
+- **API Route**: `src/app/api/cube/[roundNumber]/route.ts`
+- **生成ロジック**: `src/lib/cube-generator/`
+- **データローダー**: `src/lib/data-loader.ts`
+
+### ✅ 環境変数不要
+
+CUBE生成機能のみ使用する場合は、環境変数の設定は不要です。
+
+### ⚠️ データ自動更新について
+
+**現状**: ローカル環境では自動更新が設定されていますが、**Vercelデプロイ時は自動更新が動作しません**。
+
+**ローカル環境での自動更新:**
+- `scripts/production/auto_update_past_results.py`がcronジョブで平日15:00に実行される
+- WSL環境でのcron設定が必要
+
+**Vercelデプロイ時の対応（推奨: GitHub Actions）:**
+
+✅ **GitHub Actions（無料・簡単）** - 推奨
+- `.github/workflows/auto-update-data.yml`を作成済み
+- 平日15:00（JST）に自動実行
+- データ更新後、自動的にGitHubにコミット
+- Vercelが自動的に再デプロイ（GitHub連携時）
+
+**セットアップ手順:**
+1. GitHubリポジトリの「Settings」→「Secrets and variables」→「Actions」を開く
+2. 必要に応じてAPIキーを設定（オプション）:
+   - `GEMINI_API_KEY`: Gemini APIキー（フォールバック用）
+   - `SERP_API_KEY`: SerpAPIキー（フォールバック用）
+3. `.github/workflows/auto-update-data.yml`が既に作成されているので、そのまま動作します
+4. 初回実行は手動で「Actions」タブから実行可能
+
+**その他の方法:**
+- **Vercel Cron Jobs**: 無料プランでは1日1回まで（平日15:00の定期実行には不十分）
+- **外部cronサービス**: EasyCron、Cron-job.orgなど（無料プランあり）
+- **手動更新**: 必要に応じて手動でデータを更新
+
+詳細は [04-05_データ自動更新とCUBE生成自動化.md](./04-05_データ自動更新とCUBE生成自動化.md) を参照。
+
+### ✅ 生成されるCUBE
+
+1. **通常CUBE（16個）**:
+   - 現罫線 × 4パターン（A1, A2, B1, B2） × N3/N4 = 8個
+   - 新罫線 × 4パターン（A1, A2, B1, B2） × N3/N4 = 8個
+
+2. **極CUBE（2個）**:
+   - 現罫線 × 1パターン（N3のみ）
+   - 新罫線 × 1パターン（N3のみ）
+
+**合計**: 18個のCUBEが生成されます
+
+## 関連ドキュメント
+
+- [07-operations-quality.md](../../01_design/07-operations-quality.md): 運用・品質管理書（本番デプロイ手順を含む）
+- [10-cube-automation-design.md](../../01_design/10-cube-automation-design.md): CUBE生成システム設計書
+- [CUBE生成ルール.md](../../01_design/CUBE生成ルール.md): CUBE生成アルゴリズムの詳細仕様
 
