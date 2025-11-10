@@ -1,11 +1,12 @@
 """通常CUBE生成の各ステップを可視化（A1～B2の全パターン）"""
 
 import sys
+import os
 import argparse
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).parent.parent
-sys.path.append(str(PROJECT_ROOT / 'notebooks'))
+sys.path.insert(0, str(PROJECT_ROOT.resolve() / 'core'))
 
 from chart_generator import (
     load_keisen_master,
@@ -25,6 +26,14 @@ from typing import List, Optional, Literal
 Pattern = Literal['A1', 'A2', 'B1', 'B2']
 Target = Literal['n3', 'n4']
 
+def number_to_circle(num: int) -> str:
+    """数字を丸数字に変換（①～⑳）"""
+    circle_numbers = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩',
+                     '⑪', '⑫', '⑬', '⑭', '⑮', '⑯', '⑰', '⑱', '⑲', '⑳']
+    if 1 <= num <= len(circle_numbers):
+        return circle_numbers[num - 1]
+    return str(num)
+
 def print_grid(grid, rows, cols, title=""):
     """グリッドをアスキーアートで表示"""
     if title:
@@ -34,15 +43,18 @@ def print_grid(grid, rows, cols, title=""):
     
     print("      ", end="")
     for col in range(1, cols + 1):
-        print(f"列{col:2d} ", end="")
+        print(f"{number_to_circle(col)} ", end="")
     print()
     
     for row in range(1, rows + 1):
-        print(f"行{row}: ", end="")
+        print(f"{number_to_circle(row)}: ", end="")
         for col in range(1, cols + 1):
             val = grid[row][col]
             if val is None:
                 print("  . ", end="")
+            elif isinstance(val, (list, tuple)):
+                # リストやタプルの場合は最初の要素を表示（デバッグ用）
+                print(f" {val[0] if len(val) > 0 else '?':2d} ", end="")
             else:
                 print(f" {val:2d} ", end="")
         print()
@@ -78,14 +90,52 @@ def visualize_normal_cube_steps(
     }
     print(f"  → {pattern}パターン: {pattern_desc[pattern]}")
     
-    # ステップ3: メイン行の組み立て
-    main_rows = build_main_rows(nums)
-    print(f"\n【ステップ3】メイン行の組み立て")
+    # ステップ3: tempList生成
+    # tempListを「4桁単位で最小値から順に重複せずに選択」のルールで生成
+    temp_list = []
+    remaining = nums.copy()
+    
+    # 4桁単位で処理
+    while len(remaining) > 0:
+        chunk = []
+        # 重複しない最小値から順に選ぶ
+        unique_elements = sorted(list(set(remaining)))
+        for digit in unique_elements:
+            if len(chunk) < 4 and digit in remaining:
+                chunk.append(digit)
+                remaining.remove(digit)
+        
+        # 4桁に満たない場合、残りから最小値から順に埋める（重複してもOK）
+        # 「最小値から順に」は0～9まで重複せずに順番に埋めていく（連続していなくてもOK）
+        if len(chunk) < 4 and len(remaining) > 0:
+            while len(chunk) < 4 and len(remaining) > 0:
+                # chunkの最後の数字を取得（なければ-1）
+                last_digit = chunk[-1] if chunk else -1
+                # 最後の数字の次の最小値（0～9の順序で）を残りから選ぶ
+                candidates = [d for d in remaining if d > last_digit]
+                if candidates:
+                    next_digit = min(candidates)
+                else:
+                    # last_digitより大きい数字がない場合は、残りから最小値を選ぶ
+                    next_digit = min(remaining)
+                chunk.append(next_digit)
+                remaining.remove(next_digit)
+        
+        temp_list.extend(chunk)
+    
+    print(f"\n【ステップ3】tempList生成")
+    print(f"  tempList: {temp_list}")
+    
+    # ステップ4: メイン行の組み立て
+    # デバッグ出力を無効化
+    os.environ['DEBUG_CHART'] = 'false'
+    main_rows, temp_list_from_build = build_main_rows(nums)
+    print(f"\n【ステップ4】メイン行の組み立て")
     for i, row in enumerate(main_rows):
         print(f"  メイン行{i}: {row}")
     print(f"  → メイン行数: {len(main_rows)}本")
     
-    # ステップ4: グリッド初期配置
+    # ステップ5: グリッド初期配置
     rows = len(main_rows) * 2  # メイン行N本の場合、2*N行必要
     cols = 8
     grid = [[None] * (cols + 1) for _ in range(rows + 1)]  # 1-indexed
@@ -98,10 +148,10 @@ def visualize_normal_cube_steps(
             if col <= cols:
                 grid[row][col] = val
     
-    print_grid(grid, rows, cols, f"【ステップ4】グリッド初期配置（メイン行を奇数行の奇数列に配置）")
+    print_grid(grid, rows, cols, f"【ステップ5】グリッド初期配置（メイン行を奇数行の奇数列に配置）")
     print(f"  → 行数: {rows}行（メイン行{len(main_rows)}本 × 2）")
     
-    # ステップ5: メイン行配置後の余りマスルール（裏数字適用前）
+    # ステップ6: メイン行配置後の余りマスルール（裏数字適用前）
     grid_before_remaining = [[row[:] for row in grid]]
     apply_main_row_remaining_copy(grid, rows, cols)
     
@@ -116,16 +166,17 @@ def visualize_normal_cube_steps(
             break
     
     if changed:
-        print_grid(grid, rows, cols, "【ステップ5】メイン行配置後の余りマスルール適用後（裏数字適用前）")
+        print_grid(grid, rows, cols, "【ステップ6】メイン行配置後の余りマスルール適用後（裏数字適用前）")
         print("  → メイン行内で空いているマスを真上のマスからコピー")
     else:
-        print(f"\n【ステップ5】メイン行配置後の余りマスルール適用後（裏数字適用前）")
+        print(f"\n【ステップ6】メイン行配置後の余りマスルール適用後（裏数字適用前）")
         print("  → 変更なし（すべてのメイン行が埋まっています）")
     
-    # ステップ5.5: パターンA2/B2中心0配置
+    # ステップ6.5: パターンA2/B2中心0配置
+    center_zero_pos = None
     if pattern in ['A2', 'B2']:
         grid_before_center = [[row[:] for row in grid]]
-        place_center_zero(grid, rows, cols)
+        center_zero_pos = place_center_zero(grid, rows, cols)
         
         changed = False
         for row in range(1, rows + 1):
@@ -137,18 +188,18 @@ def visualize_normal_cube_steps(
                 break
         
         if changed:
-            print_grid(grid, rows, cols, f"【ステップ5.5】中心0配置（{pattern}パターン固有）")
+            print_grid(grid, rows, cols, f"【ステップ6.5】中心0配置（{pattern}パターン固有）")
             print("  → 中心のマス（行中央、列中央）に0を配置")
         else:
-            print(f"\n【ステップ5.5】中心0配置（{pattern}パターン固有）")
+            print(f"\n【ステップ6.5】中心0配置（{pattern}パターン固有）")
             print("  → 変更なし（中心マスは既に埋まっています）")
     
-    # ステップ6: 裏数字ルール（縦パス）
-    print(f"\n【ステップ6】裏数字ルール適用（縦パス）")
+    # ステップ7: 裏数字ルール（縦パス）
+    print(f"\n【ステップ7】裏数字ルール適用（縦パス）")
     print("  → 上から下へ順に処理し、nullかつ上に値がある場合に裏数字を配置")
     
     grid_before_vertical = [[row[:] for row in grid]]
-    apply_vertical_inverse(grid, rows, cols)
+    apply_vertical_inverse(grid, rows, cols, center_zero_pos)
     
     changed = False
     for row in range(1, rows + 1):
@@ -164,8 +215,8 @@ def visualize_normal_cube_steps(
     else:
         print("  → 変更なし")
     
-    # ステップ7: 裏数字ルール（横パス）
-    print(f"\n【ステップ7】裏数字ルール適用（横パス）")
+    # ステップ8: 裏数字ルール（横パス）
+    print(f"\n【ステップ8】裏数字ルール適用（横パス）")
     print("  → 左から右へ順に処理し、nullかつ左に値がある場合に裏数字を配置")
     
     grid_before_horizontal = [[row[:] for row in grid]]
@@ -185,8 +236,8 @@ def visualize_normal_cube_steps(
     else:
         print("  → 変更なし")
     
-    # ステップ8: 余りマスルール（真上のマスをコピー）
-    print(f"\n【ステップ8】余りマスルール適用（真上のマスをコピー）")
+    # ステップ9: 余りマスルール（真上のマスをコピー）
+    print(f"\n【ステップ9】余りマスルール適用（真上のマスをコピー）")
     print("  → 空いているマスを真上のマスからコピー（収束まで繰り返し）")
     
     grid_before_remaining = [[row[:] for row in grid]]
