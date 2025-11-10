@@ -60,6 +60,10 @@ BASE_PAGE_URL = 'https://www.hpfree.com/numbers/'
 MIZUHO_BASE_URL = 'https://www.mizuhobank.co.jp/takarakuji/check/numbers/backnumber/'
 MIZUHO_INDEX_URL = 'https://www.mizuhobank.co.jp/takarakuji/check/numbers/backnumber/index.html'
 
+# みずほ銀行の最新データページURL（日付が含まれている）
+MIZUHO_LATEST_N4_URL = 'https://www.mizuhobank.co.jp/takarakuji/check/numbers/numbers4/index.html'
+MIZUHO_LATEST_N3_URL = 'https://www.mizuhobank.co.jp/takarakuji/check/numbers/numbers3/index.html'
+
 # リハーサル番号が取得可能になる回号
 REHEARSAL_AVAILABLE_FROM = 4801
 
@@ -1086,13 +1090,15 @@ def combine_data(n4_data: Dict[int, Dict[str, str]], n3_data: Dict[int, Dict[str
     
     # 日付を計算するためのベース（最新回から逆算）
     # ナンバーズは平日のみ抽選があるため、単純な日数差ではなく平日をカウントする必要がある
-    # 簡易版として、最新回から1日あたり1回として計算（実際には平日のみ）
-    today = datetime.now()
-    base_date = today
-    
     # マージモードの場合は、取得したデータの最大回号を使用
     if merge_mode and available_rounds:
         latest_round = max(available_rounds)
+        # 最新回の日付を基準にする（既存CSVから取得、または今日の日付から逆算）
+        # 既存CSVから最新回の日付を取得できる場合はそれを使用
+        base_date = datetime.now()
+    else:
+        # 通常モードの場合も、最新回の日付を基準にする
+        base_date = datetime.now()
     
     for round_number in sorted(target_rounds, reverse=True):
         # N4データを取得
@@ -2009,41 +2015,63 @@ def main():
             else:
                 n4_data, n3_data = {}, {}
         elif max_rounds <= 10:
-            # 最新N件取得: 最新版ページから最新のN回分を取得（N <= 10）
-            print(f"📥 マージモード: 最新版ページから最新の{max_rounds}回分を取得します...")
-            html_content = fetch_page(LATEST_PAGE_URL)
-            if html_content:
-                soup = BeautifulSoup(html_content, 'html.parser')
-                # 最新のN行を取得（latest_only=Falseで全件取得し、上位N件を使用）
-                n4_data = parse_n4_table(soup, latest_only=False)
-                n3_data = parse_n3_table(soup, latest_only=False)
+            # 最新N件取得: みずほ銀行の最新ページから日付付きで取得（優先）、失敗時はhpfree.comから取得
+            print(f"📥 マージモード: 最新の{max_rounds}回分を取得します（みずほ銀行優先）...")
+            
+            # まずみずほ銀行の最新ページから取得を試みる（日付が含まれている）
+            n4_data = {}
+            n3_data = {}
+            
+            print(f"   みずほ銀行の最新ページから取得を試みます...")
+            n4_html = fetch_page(MIZUHO_LATEST_N4_URL)
+            n3_html = fetch_page(MIZUHO_LATEST_N3_URL)
+            
+            if n4_html:
+                soup = BeautifulSoup(n4_html, 'html.parser')
+                mizuhobank_n4_data, _ = parse_mizuhobank_table(soup)
+                n4_data.update(mizuhobank_n4_data)
+                print(f"   ✓ みずほ銀行からN4データを取得: {len(mizuhobank_n4_data)}件")
+            
+            if n3_html:
+                soup = BeautifulSoup(n3_html, 'html.parser')
+                _, mizuhobank_n3_data = parse_mizuhobank_table(soup)
+                n3_data.update(mizuhobank_n3_data)
+                print(f"   ✓ みずほ銀行からN3データを取得: {len(mizuhobank_n3_data)}件")
+            
+            # みずほ銀行から取得できなかった場合、hpfree.comから取得（フォールバック）
+            if not n4_data and not n3_data:
+                print(f"   ⚠ みずほ銀行から取得できなかったため、hpfree.comから取得します...")
+                html_content = fetch_page(LATEST_PAGE_URL)
+                if html_content:
+                    soup = BeautifulSoup(html_content, 'html.parser')
+                    # 最新のN行を取得（latest_only=Falseで全件取得し、上位N件を使用）
+                    n4_data = parse_n4_table(soup, latest_only=False)
+                    n3_data = parse_n3_table(soup, latest_only=False)
+            
+            # N4とN3の両方の回号を統合して、最新のN件を取得
+            all_rounds = set(n4_data.keys()) | set(n3_data.keys())
+            if all_rounds:
+                sorted_rounds = sorted(all_rounds, reverse=True)
+                target_rounds = sorted_rounds[:max_rounds]
                 
-                # N4とN3の両方の回号を統合して、最新のN件を取得
-                all_rounds = set(n4_data.keys()) | set(n3_data.keys())
-                if all_rounds:
-                    sorted_rounds = sorted(all_rounds, reverse=True)
-                    target_rounds = sorted_rounds[:max_rounds]
-                    
-                    # 対象回号のデータのみを抽出
-                    n4_data = {r: n4_data[r] for r in target_rounds if r in n4_data}
-                    n3_data = {r: n3_data[r] for r in target_rounds if r in n3_data}
-                    
-                    print(f"✓ 最新{max_rounds}件のデータを取得: N4={len(n4_data)}件、N3={len(n3_data)}件")
-                    print(f"   取得した回号: {sorted(target_rounds, reverse=True)}")
-                else:
-                    print("⚠ データが取得できませんでした")
+                # 対象回号のデータのみを抽出
+                n4_data = {r: n4_data[r] for r in target_rounds if r in n4_data}
+                n3_data = {r: n3_data[r] for r in target_rounds if r in n3_data}
                 
-                # 取得したデータの回号を使用（実際に取得できた回号）
-                if all_rounds:
-                    actual_latest_round = max(all_rounds)
-                else:
-                    actual_latest_round = latest_round
-                
-                latest_round = actual_latest_round
-                if all_rounds:
-                    print(f"実際に取得した回号範囲: 第{min(target_rounds)}回 ～ 第{latest_round}回")
+                print(f"✓ 最新{max_rounds}件のデータを取得: N4={len(n4_data)}件、N3={len(n3_data)}件")
+                print(f"   取得した回号: {sorted(target_rounds, reverse=True)}")
             else:
-                n4_data, n3_data = {}, {}
+                print("⚠ データが取得できませんでした")
+            
+            # 取得したデータの回号を使用（実際に取得できた回号）
+            if all_rounds:
+                actual_latest_round = max(all_rounds)
+            else:
+                actual_latest_round = latest_round
+            
+            latest_round = actual_latest_round
+            if all_rounds:
+                print(f"実際に取得した回号範囲: 第{min(target_rounds)}回 ～ 第{latest_round}回")
         else:
             # 大量取得時（max_rounds > 10）: 既存CSVの最古回号より前のデータを取得
             if min_existing_round is not None:
