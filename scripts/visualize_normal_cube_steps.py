@@ -248,9 +248,9 @@ def visualize_normal_cube_steps(
     else:
         print("  → 変更なし")
     
-    # ステップ9: 8列×8行の場合の最終調整
-    if rows == 8 and cols == 8:
-        print(f"\n【ステップ9】8列×8行の場合の最終調整")
+    # ステップ9: 8列×8行の場合の最終調整（0配置パターンのみ）
+    if rows == 8 and cols == 8 and pattern in ['A2', 'B2']:
+        print(f"\n【ステップ9】8列×8行の場合の最終調整（{pattern}パターンのみ）")
         print("  → 5列5行目を0に強制置き換え")
         print("  → 5列4行目を5に強制置き換え")
         

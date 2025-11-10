@@ -619,8 +619,8 @@ def generate_chart(
         if 'step7' in step_callbacks:
             step_callbacks['step7'](grid, rows, cols)
         
-        # ステップ8: 8列×8行の場合の最終調整
-        if rows == 8 and cols == 8:
+        # ステップ8: 8列×8行の場合の最終調整（0配置パターンのみ）
+        if rows == 8 and cols == 8 and pattern in ['A2', 'B2']:
             # 5列5行目を0に強制置き換え
             grid[5][5] = 0
             # 5列4行目を5に強制置き換え
