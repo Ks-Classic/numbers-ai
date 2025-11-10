@@ -69,14 +69,16 @@ export async function generateChart(
     // ステップ5.5: パターンA2/B2中心0配置
     // メイン行配置後の余りマスルールの後に実行することで、
     // 余りマスルールで補完された数字が中心0配置で上書きされないようにする
+    let centerZeroPos: [number, number] | null = null;
     let centerZeroPlaced = false;
     if (pattern === ('A2' as Pattern) || pattern === ('B2' as Pattern)) {
-      centerZeroPlaced = placeCenterZero(grid, rows, cols);
+      centerZeroPos = placeCenterZero(grid, rows, cols);
+      centerZeroPlaced = centerZeroPos !== null;
     }
     
     // ステップ6-8: 裏数字・余りマスルール
     // ステップ6: 縦パス（上から下へ裏数字を配置）
-    applyVerticalInverse(grid, rows, cols);
+    applyVerticalInverse(grid, rows, cols, centerZeroPos);
     // ステップ7: 横パス（左から右へ裏数字を配置）
     applyHorizontalInverse(grid, rows, cols);
     // ステップ8: 余りマスルール（裏数字適用後の空マスを上からコピー）
@@ -495,37 +497,67 @@ function initializeGrid(
 /**
  * パターンA2/B2の中心0配置
  * 
- * 中心マス群を (row昇順, col昇順) で走査し、
- * 最初に見つかる空白マスに0を1つ配置する。
+ * 行数に応じて対角線上に0を配置する。
+ * 
+ * - 8行: 5行5列目
+ * - 10行: 6行6列目
+ * - 12行: 7行7列目
+ * 
  * 実装・表示・配列すべて1-indexedで統一（配列のインデックス1から使用）。
  * 
  * @param grid グリッド
  * @param rows 行数（1-indexedでの行数）
  * @param cols 列数（1-indexedでの列数、常に8）
- * @returns 0が配置されたかどうか
+ * @returns 0が配置された位置 [row, col]、配置されなかった場合はnull
  */
-function placeCenterZero(grid: ChartGrid, rows: number, cols: number): boolean {
-  // 中心行・列を計算（1-indexed）
-  const centerRows = [
-    Math.floor((rows + 1) / 2),
-    Math.ceil((rows + 1) / 2)
-  ];
-  const centerCols = [
-    Math.floor((cols + 1) / 2),
-    Math.ceil((cols + 1) / 2)
-  ];
+function placeCenterZero(grid: ChartGrid, rows: number, cols: number): [number, number] | null {
+  // 行数に応じて対角線上の位置を決定
+  let centerRow: number;
+  let centerCol: number;
   
-  // 中心マス群を走査（配列のインデックス1から使用）
-  for (const r of centerRows) {
+  if (rows === 8) {
+    centerRow = 5;
+    centerCol = 5;
+  } else if (rows === 10) {
+    centerRow = 6;
+    centerCol = 6;
+  } else if (rows === 12) {
+    centerRow = 7;
+    centerCol = 7;
+  } else {
+    // その他の行数の場合は従来のロジック（後方互換性のため）
+    if (rows >= 10) {
+      centerRow = 6;
+    } else if (rows >= 4) {
+      centerRow = 4;
+    } else {
+      centerRow = rows;
+    }
+    
+    // 中心列を計算（1-indexed）
+    const centerCols = [
+      Math.floor((cols + 1) / 2),  // 4列目
+      Math.ceil((cols + 1) / 2)    // 5列目
+    ];
+    
+    // 中心行の中心列を走査（列昇順）
     for (const c of centerCols) {
-      if (grid[r][c] === null) {
-        grid[r][c] = 0;
-        return true; // 1つ配置したら終了
+      if (grid[centerRow][c] === null) {
+        grid[centerRow][c] = 0;
+        return [centerRow, c]; // 配置した位置を返す
       }
     }
+    
+    return null; // 配置できなかった（すでにすべて埋まっていた）
   }
   
-  return false; // 配置できなかった（すでにすべて埋まっていた）
+  // 対角線上の位置に0を配置
+  if (grid[centerRow][centerCol] === null) {
+    grid[centerRow][centerCol] = 0;
+    return [centerRow, centerCol]; // 配置した位置を返す
+  }
+  
+  return null; // 配置できなかった（すでに埋まっていた）
 }
 
 /**
@@ -544,14 +576,17 @@ function inverse(n: number): number {
  * 上から下へ順に処理し、nullかつ上に値がある場合に裏数字を配置する。
  * 更新がなくなるまで繰り返す。
  * 
- * 注意: 4列目（中心0配置で0が入る可能性がある列）で値が0の場合は、
- *       その下のマスには裏数字を入れない。
- * 
  * @param grid グリッド
  * @param rows 行数
  * @param cols 列数
+ * @param centerZeroPos 中心0配置の位置 [row, col]、nullの場合は通常通り処理
  */
-function applyVerticalInverse(grid: ChartGrid, rows: number, cols: number): void {
+function applyVerticalInverse(
+  grid: ChartGrid, 
+  rows: number, 
+  cols: number,
+  centerZeroPos: [number, number] | null = null
+): void {
   let updated = true;
   
   while (updated) {
@@ -560,9 +595,12 @@ function applyVerticalInverse(grid: ChartGrid, rows: number, cols: number): void
     // 行1から開始（1-indexed）。配列のインデックス1から使用
     for (let row = 1; row <= rows; row++) {
       for (let col = 1; col <= cols; col++) {
-        // 4列目で値が0のマスの下には裏数字を入れない
-        if (col === 4 && row > 1 && grid[row - 1][col] === 0) {
-          continue;
+        // 中心0配置で追加した0の下には裏数字を入れない
+        if (centerZeroPos !== null) {
+          const [centerRow, centerCol] = centerZeroPos;
+          if (col === centerCol && row > centerRow && grid[centerRow][centerCol] === 0) {
+            continue;
+          }
         }
         
         if (grid[row][col] === null && row > 1 && grid[row - 1][col] !== null) {
@@ -580,9 +618,6 @@ function applyVerticalInverse(grid: ChartGrid, rows: number, cols: number): void
  * 左から右へ順に処理し、nullかつ左に値がある場合に裏数字を配置する。
  * 更新がなくなるまで繰り返す。
  * 
- * 注意: 4列目（中心0配置で0が入る可能性がある列）で値が0の場合は、
- *       その右のマスには裏数字を入れない。
- * 
  * @param grid グリッド
  * @param rows 行数
  * @param cols 列数
@@ -596,11 +631,6 @@ function applyHorizontalInverse(grid: ChartGrid, rows: number, cols: number): vo
     // 行1から開始（1-indexed）。配列のインデックス1から使用
     for (let row = 1; row <= rows; row++) {
       for (let col = 1; col <= cols; col++) {
-        // 4列目で値が0のマスの右には裏数字を入れない
-        if (col === 4 && grid[row][col - 1] === 0) {
-          continue;
-        }
-        
         if (grid[row][col] === null && col > 1 && grid[row][col - 1] !== null) {
           grid[row][col] = inverse(grid[row][col - 1]!);
           updated = true;
@@ -761,4 +791,5 @@ function applyRemainingCopy(grid: ChartGrid, rows: number, cols: number): void {
     }
   }
 }
+
 

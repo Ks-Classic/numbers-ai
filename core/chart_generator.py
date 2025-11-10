@@ -146,8 +146,7 @@ def extract_predicted_digits(
         # source_listに追加
         source_list.extend(predicted_digits)
     
-    # 昇順ソート
-    source_list.sort()
+    # ソートしない（桁順を保持：百の位→十の位→一の位の順）
     
     return source_list
 
@@ -179,74 +178,119 @@ def apply_pattern_expansion(source_list: List[int], pattern: Pattern) -> List[in
     return nums
 
 
-def build_main_rows(nums: List[int]) -> List[List[int]]:
+def build_main_rows(nums: List[int]) -> Tuple[List[List[int]], List[int]]:
     """メイン行を組み立てる
     
-    仕様: docs/01_design/CUBE生成ルール.md の「4. メイン行の組み立て」
-    
-    アルゴリズム:
-    1) temp_list ← nums（コピー）
-    2) main_rows ← []
-    3) while temp_list が空でない:
-       - unique_digits ← temp_list のユニークを昇順で取得
-       - if |unique_digits| ≥ 4:
-         - members ← unique_digits[0..3]（構成メンバー）
-         - new_row ← temp_list を先頭から走査し、members の各値を1個ずつ取り出して順に格納
-         - main_rows.push(new_row)（4要素）
-       - else (|unique_digits| < 4):
-         - new_row ← unique_digits の全てをベースとする
-         - 重要: 最大値を繰り返し追加しない。unique_digits の要素数分だけを new_row とする
-         - new_row で使った数字を、temp_list から削除する
-         - main_rows.push(new_row)（1〜3要素）
+    仕様: 各メイン行に必ず4つまで数字を入れる
+    - 最後のメイン行以外は必ず4つ
+    - 最後のメイン行だけは残りの数字をすべて入れる（4つ未満でもOK）
+    - tempListは最小値順にソート済み（4桁単位で最小値から順に選択するため）
+    - 4桁単位で最小値から順に重複せずに選択（連続していなくても良い、例：0,1,2,5）
+    - 4桁埋めたら次の最小値から繰り返し
+    - 4桁埋まらなかったら、次の未消費の最小値から埋めていく
+    - tempListは事前に並べ替え済みなので、メイン行作成時は先頭から順に取るだけ
+    - 行をまたぐ連続は許容（前の行の最後と次の行の最初が同じでもOK）
+    - 元数字リストに存在する数分だけ使用可能（同じ数字が複数回出現する場合は、その分だけ使用）
     
     Args:
-        nums: 元数字リスト
+        nums: 元数字リスト（ソート済み）
     
     Returns:
-        メイン行の配列（各行は1〜4要素）
+        (メイン行の配列, temp_list) のタプル
     """
+    import os
+    DEBUG = os.environ.get('DEBUG_CHART', 'false').lower() == 'true'
+    
     main_rows: List[List[int]] = []
-    temp_list = nums.copy()
+    # tempListを「4桁単位で最小値から順に重複せずに選択」のルールで並べ替え
+    temp_list = []
+    remaining = nums.copy()
+    
+    # 4桁単位で処理
+    while len(remaining) > 0:
+        chunk = []
+        # 重複しない最小値から順に選ぶ
+        unique_elements = sorted(list(set(remaining)))
+        for digit in unique_elements:
+            if len(chunk) < 4 and digit in remaining:
+                chunk.append(digit)
+                remaining.remove(digit)
+        
+        # 4桁に満たない場合、残りから最小値から順に埋める（重複してもOK）
+        # 「最小値から順に」は0～9まで重複せずに順番に埋めていく（連続していなくてもOK）
+        if len(chunk) < 4 and len(remaining) > 0:
+            while len(chunk) < 4 and len(remaining) > 0:
+                # chunkの最後の数字を取得（なければ-1）
+                last_digit = chunk[-1] if chunk else -1
+                # 最後の数字の次の最小値（0～9の順序で）を残りから選ぶ
+                # 残りにlast_digitより大きい数字がある場合は、その中から最小値を選ぶ
+                # 残りにlast_digitより大きい数字がない場合は、残りから最小値を選ぶ
+                candidates = [d for d in remaining if d > last_digit]
+                if candidates:
+                    next_digit = min(candidates)
+                else:
+                    # last_digitより大きい数字がない場合は、残りから最小値を選ぶ
+                    next_digit = min(remaining)
+                chunk.append(next_digit)
+                remaining.remove(next_digit)
+        
+        temp_list.extend(chunk)
+    
+    # temp_listのコピーを保存（メイン行組み立てで消費されるため）
+    original_temp_list = temp_list.copy()
+    
+    row_index = 0
+    
+    if DEBUG:
+        print('[build_main_rows] ========================================')
+        print(f'[build_main_rows] 開始: nums = {nums}')
+        print(f'[build_main_rows] 初期 temp_list = {temp_list.copy()}')
     
     while len(temp_list) > 0:
-        # ユニーク値を昇順で取得
-        unique_digits = sorted(list(set(temp_list)))
+        new_row: List[int] = []
         
-        if len(unique_digits) >= 4:
-            # 4種類以上の場合: 最初の4種類を構成メンバーとして使用
-            members = unique_digits[:4]
-            new_row: List[int] = []
-            
-            # temp_listから順に取り出してnew_rowに格納
-            for member in members:
-                idx = temp_list.index(member)
-                if idx == -1:
-                    raise ChartGenerationError(
-                        f'メイン行組み立てエラー: 数字{member}が見つかりません'
-                    )
-                digit = temp_list[idx]
-                new_row.append(digit)
-                temp_list.pop(idx)
-            
-            main_rows.append(new_row)
-        else:
-            # 4種類未満の場合: ユニーク値のみを使用（最大値を繰り返し追加しない）
-            # 余りマスは apply_main_row_remaining_copy で補完される
-            new_row: List[int] = list(unique_digits)
-            
-            # temp_listから使用した数字を削除
-            # 各数字を1個ずつ削除（重複を考慮）
-            for digit in new_row:
-                idx = temp_list.index(digit)
-                if idx != -1:
-                    temp_list.pop(idx)
-            
-            main_rows.append(new_row)
+        # 最後のメイン行かどうかを判定（残りの数字が4つ以下なら最後の行）
+        is_last_row = len(temp_list) <= 4
+        target_count = len(temp_list) if is_last_row else 4
+        
+        # tempListは最小値順にソート済み
+        # 4桁単位で最小値から順に重複せずに選択（連続していなくても良い、例：0,1,2,5）
+        # 4桁埋めたら次の最小値から繰り返し
+        # 4桁埋まらなかったら、次の未消費の最小値から埋めていく
+        # tempListは事前に並べ替え済みなので、先頭から順に取るだけ
+        
+        if DEBUG:
+            print(f'[build_main_rows] ----------------------------------------')
+            print(f'[build_main_rows] 【行{row_index}の処理開始】')
+            print(f'[build_main_rows] temp_list = {temp_list.copy()}')
+            print(f'[build_main_rows] is_last_row = {is_last_row}, target_count = {target_count}')
+        
+        # tempListの先頭から順に取るだけ（既にソート済み）
+        new_row = temp_list[:target_count]
+        temp_list = temp_list[target_count:]
+        
+        if DEBUG:
+            print(f'[build_main_rows]   ✓ 数字{new_row}を選択（先頭から{target_count}個）')
+            print(f'[build_main_rows]   残りのtemp_list = {temp_list.copy()}')
+        
+        if DEBUG:
+            print(f'[build_main_rows] 【行{row_index}の処理完了】')
+            print(f'[build_main_rows] 完成したnew_row = {new_row}')
+            print(f'[build_main_rows] 残りのtemp_list = {temp_list.copy()}')
+        
+        main_rows.append(new_row)
+        row_index += 1
+    
+    if DEBUG:
+        print('[build_main_rows] ========================================')
+        print('[build_main_rows] 最終結果:')
+        for idx, row in enumerate(main_rows):
+            print(f'[build_main_rows]   行{idx}: {row}')
     
     if len(main_rows) == 0:
         raise ChartGenerationError('メイン行が1本も生成されませんでした')
     
-    return main_rows
+    return main_rows, original_temp_list
 
 
 def initialize_grid(rows: int, cols: int, main_rows: List[List[int]]) -> List[List[Optional[int]]]:
@@ -343,11 +387,14 @@ def place_center_zero(
     grid: List[List[Optional[int]]],
     rows: int,
     cols: int
-) -> bool:
+) -> Optional[Tuple[int, int]]:
     """パターンA2/B2の中心0配置
     
-    中心マス群を (row昇順, col昇順) で走査し、
-    最初に見つかる空白マスに0を1つ配置する。
+    行数に応じて対角線上に0を配置する。
+    
+    - 8行: 5行5列目
+    - 10行: 6行6列目
+    - 12行: 7行7列目
     
     Args:
         grid: グリッド（1-indexed）
@@ -355,26 +402,47 @@ def place_center_zero(
         cols: 列数（1-indexed、常に8）
     
     Returns:
-        0が配置されたかどうか
+        0が配置された位置 (row, col) のタプル、配置されなかった場合はNone
     """
-    # 中心行・列を計算（1-indexed）
-    center_rows = [
-        (rows + 1) // 2,
-        (rows + 2) // 2
-    ]
-    center_cols = [
-        (cols + 1) // 2,
-        (cols + 2) // 2
-    ]
-    
-    # 中心マス群を走査（配列のインデックス1から使用）
-    for r in center_rows:
+    # 行数に応じて対角線上の位置を決定
+    if rows == 8:
+        center_row = 5
+        center_col = 5
+    elif rows == 10:
+        center_row = 6
+        center_col = 6
+    elif rows == 12:
+        center_row = 7
+        center_col = 7
+    else:
+        # その他の行数の場合は従来のロジック（後方互換性のため）
+        if rows >= 10:
+            center_row = 6
+        elif rows >= 4:
+            center_row = 4
+        else:
+            center_row = rows
+        
+        # 中心列を計算（1-indexed）
+        center_cols = [
+            (cols + 1) // 2,  # 4列目
+            (cols + 2) // 2   # 5列目
+        ]
+        
+        # 中心行の中心列を走査（列昇順）
         for c in center_cols:
-            if grid[r][c] is None:
-                grid[r][c] = 0
-                return True  # 1つ配置したら終了
+            if grid[center_row][c] is None:
+                grid[center_row][c] = 0
+                return (center_row, c)  # 配置した位置を返す
+        
+        return None  # 配置できなかった（すでにすべて埋まっていた）
     
-    return False  # 配置できなかった（すでにすべて埋まっていた）
+    # 対角線上の位置に0を配置
+    if grid[center_row][center_col] is None:
+        grid[center_row][center_col] = 0
+        return (center_row, center_col)  # 配置した位置を返す
+    
+    return None  # 配置できなかった（すでに埋まっていた）
 
 
 def inverse(n: int) -> int:
@@ -392,12 +460,19 @@ def inverse(n: int) -> int:
 def apply_vertical_inverse(
     grid: List[List[Optional[int]]],
     rows: int,
-    cols: int
+    cols: int,
+    center_zero_pos: Optional[Tuple[int, int]] = None
 ) -> None:
     """裏数字ルール（縦パス）を適用する
     
     上から下へ順に処理し、nullかつ上に値がある場合に裏数字を配置する。
     更新がなくなるまで繰り返す。
+    
+    Args:
+        grid: グリッド（1-indexed）
+        rows: 行数（1-indexed）
+        cols: 列数（1-indexed）
+        center_zero_pos: 中心0配置の位置 (row, col)、Noneの場合は通常通り処理
     """
     updated = True
     
@@ -407,6 +482,12 @@ def apply_vertical_inverse(
         # 行1から開始（1-indexed）
         for row in range(1, rows + 1):
             for col in range(1, cols + 1):
+                # 中心0配置で追加した0の下には裏数字を入れない
+                if center_zero_pos is not None:
+                    center_row, center_col = center_zero_pos
+                    if col == center_col and row > center_row and grid[center_row][center_col] == 0:
+                        continue
+                
                 if grid[row][col] is None and row > 1 and grid[row - 1][col] is not None:
                     grid[row][col] = inverse(grid[row - 1][col])
                     updated = True
@@ -502,7 +583,7 @@ def generate_chart(
             step_callbacks['step2'](nums, pattern)
         
         # ステップ3: メイン行の組み立て
-        main_rows = build_main_rows(nums)
+        main_rows, temp_list = build_main_rows(nums)
         if 'step3' in step_callbacks:
             step_callbacks['step3'](main_rows)
         
@@ -519,13 +600,14 @@ def generate_chart(
             step_callbacks['step5'](grid, rows, cols)
         
         # ステップ5.5: パターンA2/B2中心0配置
+        center_zero_pos = None
         if pattern in ['A2', 'B2']:
-            place_center_zero(grid, rows, cols)
+            center_zero_pos = place_center_zero(grid, rows, cols)
             if 'step5_5' in step_callbacks:
                 step_callbacks['step5_5'](grid, rows, cols)
         
         # ステップ6-7: 裏数字ルール
-        apply_vertical_inverse(grid, rows, cols)
+        apply_vertical_inverse(grid, rows, cols, center_zero_pos)
         if 'step6' in step_callbacks:
             step_callbacks['step6'](grid, rows, cols)
         

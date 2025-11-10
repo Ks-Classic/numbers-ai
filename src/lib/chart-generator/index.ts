@@ -62,14 +62,16 @@ export async function generateChart(
     // ステップ5.5: パターンA2/B2中心0配置
     // メイン行配置後の余りマスルールの後に実行することで、
     // 余りマスルールで補完された数字が中心0配置で上書きされないようにする
+    let centerZeroPos: [number, number] | null = null;
     let centerZeroPlaced = false;
     if (pattern === ('A2' as Pattern) || pattern === ('B2' as Pattern)) {
-      centerZeroPlaced = placeCenterZero(grid, rows, cols);
+      centerZeroPos = placeCenterZero(grid, rows, cols);
+      centerZeroPlaced = centerZeroPos !== null;
     }
     
     // ステップ6-8: 裏数字・余りマスルール
     // ステップ6: 縦パス（上から下へ裏数字を配置）
-    applyVerticalInverse(grid, rows, cols);
+    applyVerticalInverse(grid, rows, cols, centerZeroPos);
     // ステップ7: 横パス（左から右へ裏数字を配置）
     applyHorizontalInverse(grid, rows, cols);
     // ステップ8: 余りマスルール（裏数字適用後の空マスを上からコピー）
@@ -168,8 +170,7 @@ async function extractPredictedDigits(
     sourceList.push(...predictedDigits);
   }
   
-  // 昇順ソート
-  sourceList.sort((a, b) => a - b);
+  // ソートしない（桁順を保持：百の位→十の位→一の位の順）
   
   return sourceList;
 }
@@ -208,14 +209,67 @@ function applyPatternExpansion(
 /**
  * メイン行を組み立てる
  * 
- * 仕様: docs/元ネタ/表作成ルール.,md の「4. メイン行の組み立て（vFinal 3.0）」
+ * 仕様: 各メイン行に必ず4つまで数字を入れる
+ * - 最後のメイン行以外は必ず4つ
+ * - 最後のメイン行だけは残りの数字をすべて入れる（4つ未満でもOK）
+ * - tempListは最小値順にソート済み（4桁単位で最小値から順に選択するため）
+ * - 4桁単位で最小値から順に重複せずに選択（連続していなくても良い、例：0,1,2,5）
+ * - 4桁埋めたら次の最小値から繰り返し
+ * - 4桁埋まらなかったら、次の未消費の最小値から埋めていく
+ * - tempListは事前に並べ替え済みなので、メイン行作成時は先頭から順に取るだけ
+ * - 行をまたぐ連続は許容（前の行の最後と次の行の最初が同じでもOK）
+ * - 元数字リストに存在する数分だけ使用可能（同じ数字が複数回出現する場合は、その分だけ使用）
  * 
- * @param nums 元数字リスト
+ * @param nums 元数字リスト（ソート済み）
  * @returns メイン行の配列
  */
 function buildMainRows(nums: number[]): MainRow[] {
   const mainRows: MainRow[] = [];
-  let tempList = [...nums];
+  // tempListを「4桁単位で最小値から順に重複せずに選択」のルールで並べ替え
+  let tempList: number[] = [];
+  let remaining = [...nums];
+  
+  // 4桁単位で処理
+  while (remaining.length > 0) {
+    const chunk: number[] = [];
+    // 重複しない最小値から順に選ぶ
+    const uniqueElements = [...new Set(remaining)].sort((a, b) => a - b);
+    for (const digit of uniqueElements) {
+      if (chunk.length < 4) {
+        const index = remaining.indexOf(digit);
+        if (index !== -1) {
+          chunk.push(digit);
+          remaining.splice(index, 1);
+        }
+      }
+    }
+    
+    // 4桁に満たない場合、残りから最小値から順に埋める（重複してもOK）
+    // 「最小値から順に」は0～9まで重複せずに順番に埋めていく（連続していなくてもOK）
+    if (chunk.length < 4 && remaining.length > 0) {
+      while (chunk.length < 4 && remaining.length > 0) {
+        // chunkの最後の数字を取得（なければ-1）
+        const lastDigit = chunk.length > 0 ? chunk[chunk.length - 1] : -1;
+        // 最後の数字の次の最小値（0～9の順序で）を残りから選ぶ
+        // 残りにlastDigitより大きい数字がある場合は、その中から最小値を選ぶ
+        // 残りにlastDigitより大きい数字がない場合は、残りから最小値を選ぶ
+        const candidates = remaining.filter(d => d > lastDigit);
+        let nextDigit: number;
+        if (candidates.length > 0) {
+          nextDigit = Math.min(...candidates);
+        } else {
+          // lastDigitより大きい数字がない場合は、残りから最小値を選ぶ
+          nextDigit = Math.min(...remaining);
+        }
+        const index = remaining.indexOf(nextDigit);
+        chunk.push(nextDigit);
+        remaining.splice(index, 1);
+      }
+    }
+    
+    tempList.push(...chunk);
+  }
+  
   let rowIndex = 0;
   
   // デバッグ出力（開発時のみ）
@@ -227,74 +281,33 @@ function buildMainRows(nums: number[]): MainRow[] {
   }
   
   while (tempList.length > 0) {
-    // ユニーク値を昇順で取得
-    const uniqueDigits = [...new Set(tempList)].sort((a, b) => a - b);
+    let newRow: number[] = [];
+    
+    // 最後のメイン行かどうかを判定（残りの数字が4つ以下なら最後の行）
+    const isLastRow = tempList.length <= 4;
+    const targetCount = isLastRow ? tempList.length : 4;
+    
+    // tempListは最小値順にソート済み
+    // 4桁単位で最小値から順に重複せずに選択（連続していなくても良い、例：0,1,2,5）
+    // 4桁埋めたら次の最小値から繰り返し
+    // 4桁埋まらなかったら、次の未消費の最小値から埋めていく
+    // tempListは事前に並べ替え済みなので、先頭から順に取るだけ
     
     if (DEBUG) {
-      console.log(`[buildMainRows] 行${rowIndex}: uniqueDigits =`, uniqueDigits);
+      console.log(`[buildMainRows] 行${rowIndex}: tempList =`, tempList);
+      console.log(`[buildMainRows] 行${rowIndex}: isLastRow =`, isLastRow);
+      console.log(`[buildMainRows] 行${rowIndex}: targetCount =`, targetCount);
     }
     
-    if (uniqueDigits.length >= 4) {
-      // 4種類以上の場合: 最初の4種類を構成メンバーとして使用
-      const members = uniqueDigits.slice(0, 4);
-      const newRow: number[] = [];
-      
-      if (DEBUG) {
-        console.log(`[buildMainRows] 行${rowIndex}: members =`, members);
-        console.log(`[buildMainRows] 行${rowIndex}: tempList =`, tempList);
-      }
-      
-      // tempListから順に取り出してnewRowに格納
-      for (let i = 0; i < 4; i++) {
-        const idx = tempList.indexOf(members[i]);
-        if (idx === -1) {
-          throw new ChartGenerationError(
-            `メイン行組み立てエラー: 数字${members[i]}が見つかりません`
-          );
-        }
-        const digit = tempList[idx];
-        newRow.push(digit);
-        tempList.splice(idx, 1);
-        
-        if (DEBUG) {
-          console.log(`[buildMainRows] 行${rowIndex}: members[${i}] = ${members[i]}, indexOf = ${idx}, tempList[${idx}] = ${digit}, 削除後のtempList =`, tempList);
-        }
-      }
-      
-      if (DEBUG) {
-        console.log(`[buildMainRows] 行${rowIndex}: newRow =`, newRow);
-      }
-      
-      mainRows.push({ elements: newRow, rowIndex: rowIndex++ });
-    } else {
-      // 4種類未満の場合: ユニーク値のみを使用（最大値を繰り返し追加しない）
-      // 余りマスは applyMainRowRemainingCopy で補完される
-      const newRow: number[] = [...uniqueDigits];
-      
-      if (DEBUG) {
-        console.log(`[buildMainRows] 行${rowIndex}: uniqueDigits =`, uniqueDigits);
-        console.log(`[buildMainRows] 行${rowIndex}: tempList =`, tempList);
-      }
-      
-      // tempListから使用した数字を削除
-      // 各数字を1個ずつ削除（重複を考慮）
-      for (const digit of newRow) {
-        const idx = tempList.indexOf(digit);
-        if (idx !== -1) {
-          tempList.splice(idx, 1);
-          
-          if (DEBUG) {
-            console.log(`[buildMainRows] 行${rowIndex}: digit = ${digit}, indexOf = ${idx}, tempList[${idx}] = ${digit}, 削除後のtempList =`, tempList);
-          }
-        }
-      }
-      
-      if (DEBUG) {
-        console.log(`[buildMainRows] 行${rowIndex}: newRow =`, newRow);
-      }
-      
-      mainRows.push({ elements: newRow, rowIndex: rowIndex++ });
+    // tempListの先頭から順に取るだけ（既にソート済み）
+    newRow = tempList.splice(0, targetCount);
+    
+    if (DEBUG) {
+      console.log(`[buildMainRows] 行${rowIndex}: newRow =`, newRow);
+      console.log(`[buildMainRows] 行${rowIndex}: 残りのtempList =`, tempList);
     }
+    
+    mainRows.push({ elements: newRow, rowIndex: rowIndex++ });
   }
   
   if (mainRows.length === 0) {
@@ -376,37 +389,67 @@ function initializeGrid(
 /**
  * パターンA2/B2の中心0配置
  * 
- * 中心マス群を (row昇順, col昇順) で走査し、
- * 最初に見つかる空白マスに0を1つ配置する。
+ * 行数に応じて対角線上に0を配置する。
+ * 
+ * - 8行: 5行5列目
+ * - 10行: 6行6列目
+ * - 12行: 7行7列目
+ * 
  * 実装・表示・配列すべて1-indexedで統一（配列のインデックス1から使用）。
  * 
  * @param grid グリッド
  * @param rows 行数（1-indexedでの行数）
  * @param cols 列数（1-indexedでの列数、常に8）
- * @returns 0が配置されたかどうか
+ * @returns 0が配置された位置 [row, col]、配置されなかった場合はnull
  */
-function placeCenterZero(grid: ChartGrid, rows: number, cols: number): boolean {
-  // 中心行・列を計算（1-indexed）
-  const centerRows = [
-    Math.floor((rows + 1) / 2),
-    Math.ceil((rows + 1) / 2)
-  ];
-  const centerCols = [
-    Math.floor((cols + 1) / 2),
-    Math.ceil((cols + 1) / 2)
-  ];
+function placeCenterZero(grid: ChartGrid, rows: number, cols: number): [number, number] | null {
+  // 行数に応じて対角線上の位置を決定
+  let centerRow: number;
+  let centerCol: number;
   
-  // 中心マス群を走査（配列のインデックス1から使用）
-  for (const r of centerRows) {
+  if (rows === 8) {
+    centerRow = 5;
+    centerCol = 5;
+  } else if (rows === 10) {
+    centerRow = 6;
+    centerCol = 6;
+  } else if (rows === 12) {
+    centerRow = 7;
+    centerCol = 7;
+  } else {
+    // その他の行数の場合は従来のロジック（後方互換性のため）
+    if (rows >= 10) {
+      centerRow = 6;
+    } else if (rows >= 4) {
+      centerRow = 4;
+    } else {
+      centerRow = rows;
+    }
+    
+    // 中心列を計算（1-indexed）
+    const centerCols = [
+      Math.floor((cols + 1) / 2),  // 4列目
+      Math.ceil((cols + 1) / 2)    // 5列目
+    ];
+    
+    // 中心行の中心列を走査（列昇順）
     for (const c of centerCols) {
-      if (grid[r][c] === null) {
-        grid[r][c] = 0;
-        return true; // 1つ配置したら終了
+      if (grid[centerRow][c] === null) {
+        grid[centerRow][c] = 0;
+        return [centerRow, c]; // 配置した位置を返す
       }
     }
+    
+    return null; // 配置できなかった（すでにすべて埋まっていた）
   }
   
-  return false; // 配置できなかった（すでにすべて埋まっていた）
+  // 対角線上の位置に0を配置
+  if (grid[centerRow][centerCol] === null) {
+    grid[centerRow][centerCol] = 0;
+    return [centerRow, centerCol]; // 配置した位置を返す
+  }
+  
+  return null; // 配置できなかった（すでに埋まっていた）
 }
 
 /**
@@ -428,8 +471,14 @@ function inverse(n: number): number {
  * @param grid グリッド
  * @param rows 行数
  * @param cols 列数
+ * @param centerZeroPos 中心0配置の位置 [row, col]、nullの場合は通常通り処理
  */
-function applyVerticalInverse(grid: ChartGrid, rows: number, cols: number): void {
+function applyVerticalInverse(
+  grid: ChartGrid, 
+  rows: number, 
+  cols: number,
+  centerZeroPos: [number, number] | null = null
+): void {
   let updated = true;
   
   while (updated) {
@@ -438,6 +487,14 @@ function applyVerticalInverse(grid: ChartGrid, rows: number, cols: number): void
     // 行1から開始（1-indexed）。配列のインデックス1から使用
     for (let row = 1; row <= rows; row++) {
       for (let col = 1; col <= cols; col++) {
+        // 中心0配置で追加した0の下には裏数字を入れない
+        if (centerZeroPos !== null) {
+          const [centerRow, centerCol] = centerZeroPos;
+          if (col === centerCol && row > centerRow && grid[centerRow][centerCol] === 0) {
+            continue;
+          }
+        }
+        
         if (grid[row][col] === null && row > 1 && grid[row - 1][col] !== null) {
           grid[row][col] = inverse(grid[row - 1][col]!);
           updated = true;
@@ -626,4 +683,6 @@ function applyRemainingCopy(grid: ChartGrid, rows: number, cols: number): void {
     }
   }
 }
+
+
 
