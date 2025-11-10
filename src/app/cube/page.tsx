@@ -63,10 +63,21 @@ export default function CubePage() {
         throw new Error(data.error || 'データ更新に失敗しました');
       }
 
-      toast.success(data.message || 'データ更新を開始しました');
+      // 成功メッセージに詳細情報を含める
+      const message = data.workflowUrl 
+        ? `${data.message}\n\nGitHub Actionsの実行状況: ${data.workflowUrl}`
+        : data.message || 'データ更新を開始しました';
+      
+      toast.success(message);
+      
+      // ワークフローURLがある場合、コンソールにも出力
+      if (data.workflowUrl) {
+        console.log('GitHub ActionsワークフローURL:', data.workflowUrl);
+      }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'データ更新に失敗しました';
       toast.error(errorMessage);
+      console.error('データ更新エラー:', err);
     } finally {
       setUpdatingData(false);
     }
