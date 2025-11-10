@@ -2018,26 +2018,30 @@ def main():
                 n4_data = parse_n4_table(soup, latest_only=False)
                 n3_data = parse_n3_table(soup, latest_only=False)
                 
-                # 回号順にソートして最新のN件のみを取得
-                if n4_data:
-                    sorted_n4_rounds = sorted(n4_data.keys(), reverse=True)
-                    n4_data = {r: n4_data[r] for r in sorted_n4_rounds[:max_rounds]}
-                if n3_data:
-                    sorted_n3_rounds = sorted(n3_data.keys(), reverse=True)
-                    n3_data = {r: n3_data[r] for r in sorted_n3_rounds[:max_rounds]}
-                
-                print(f"✓ 最新{max_rounds}件のデータを取得: N4={len(n4_data)}件、N3={len(n3_data)}件")
+                # N4とN3の両方の回号を統合して、最新のN件を取得
+                all_rounds = set(n4_data.keys()) | set(n3_data.keys())
+                if all_rounds:
+                    sorted_rounds = sorted(all_rounds, reverse=True)
+                    target_rounds = sorted_rounds[:max_rounds]
+                    
+                    # 対象回号のデータのみを抽出
+                    n4_data = {r: n4_data[r] for r in target_rounds if r in n4_data}
+                    n3_data = {r: n3_data[r] for r in target_rounds if r in n3_data}
+                    
+                    print(f"✓ 最新{max_rounds}件のデータを取得: N4={len(n4_data)}件、N3={len(n3_data)}件")
+                    print(f"   取得した回号: {sorted(target_rounds, reverse=True)}")
+                else:
+                    print("⚠ データが取得できませんでした")
                 
                 # 取得したデータの回号を使用（実際に取得できた回号）
-                if n4_data:
-                    actual_latest_round = max(n4_data.keys())
-                elif n3_data:
-                    actual_latest_round = max(n3_data.keys())
+                if all_rounds:
+                    actual_latest_round = max(all_rounds)
                 else:
                     actual_latest_round = latest_round
                 
                 latest_round = actual_latest_round
-                print(f"実際に取得した回号範囲: 第{min(n4_data.keys() | n3_data.keys()) if (n4_data or n3_data) else 'N/A'}回 ～ 第{latest_round}回")
+                if all_rounds:
+                    print(f"実際に取得した回号範囲: 第{min(target_rounds)}回 ～ 第{latest_round}回")
             else:
                 n4_data, n3_data = {}, {}
         else:
