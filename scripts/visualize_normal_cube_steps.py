@@ -42,13 +42,14 @@ def print_grid(grid, rows, cols, title=""):
         print('='*70)
     
     # 列番号の表示（通常の数値、データ列と同じ幅に統一）
-    print("      ", end="")
+    # 行見出しと同じ開始位置（5文字）に合わせる
+    print("     ", end="")
     for col in range(1, cols + 1):
         print(f" {col:2d} ", end="")
     print()
     
     # 区切り線を追加（データ列と同じ幅に統一）
-    print("      ", end="")
+    print("     ", end="")
     for col in range(1, cols + 1):
         print("----", end="")
     print()
