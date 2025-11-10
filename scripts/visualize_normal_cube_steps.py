@@ -55,7 +55,8 @@ def print_grid(grid, rows, cols, title=""):
     
     # グリッドの表示
     for row in range(1, rows + 1):
-        print(f"{row}: ", end="")
+        # 行見出しを列見出しの開始位置に合わせる（6文字幅）
+        print(f"{row:2d}:  ", end="")
         for col in range(1, cols + 1):
             val = grid[row][col]
             if val is None:
