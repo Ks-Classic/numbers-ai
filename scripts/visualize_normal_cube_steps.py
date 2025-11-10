@@ -248,9 +248,21 @@ def visualize_normal_cube_steps(
     else:
         print("  → 変更なし")
     
-    # ステップ9: 8列×8行の場合の最終調整（0配置パターンのみ）
+    # ステップ9: 8行を超える場合は9行以降を削除して8行にする
+    if rows > 8 and cols == 8:
+        print(f"\n【ステップ9】8行を超える場合の行数調整")
+        print(f"  → 現在の行数: {rows}行")
+        print(f"  → 9行目以降を削除して8行に調整")
+        
+        grid_before_cut = [[row[:] for row in grid]]
+        grid = grid[:9]  # grid[0]からgrid[8]まで（1-8行目）
+        rows = 8
+        
+        print_grid(grid, rows, cols, "  行数調整後（8行にカット）")
+    
+    # ステップ10: 8列×8行の場合の最終調整（0配置パターンのみ）
     if rows == 8 and cols == 8 and pattern in ['A2', 'B2']:
-        print(f"\n【ステップ9】8列×8行の場合の最終調整（{pattern}パターンのみ）")
+        print(f"\n【ステップ10】8列×8行の場合の最終調整（{pattern}パターンのみ）")
         print("  → 5列5行目を0に強制置き換え")
         print("  → 5列4行目を5に強制置き換え")
         

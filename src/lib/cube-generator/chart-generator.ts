@@ -82,7 +82,14 @@ export async function generateChart(
     // ステップ7: 横パス（左から右へ裏数字を配置）
     applyHorizontalInverse(grid, rows, cols);
     
-    // ステップ8: 8列×8行の場合の最終調整（0配置パターンのみ）
+    // ステップ8: 8行を超える場合は9行以降を削除して8行にする
+    if (rows > 8 && cols === 8) {
+      // 9行目以降を削除（grid[0]は未使用、grid[1]からgrid[8]までを保持）
+      grid = grid.slice(0, 9); // grid[0]からgrid[8]まで（1-8行目）
+      rows = 8;
+    }
+    
+    // ステップ9: 8列×8行の場合の最終調整（0配置パターンのみ）
     if (rows === 8 && cols === 8 && (pattern === 'A2' || pattern === 'B2')) {
       // 5列5行目を0に強制置き換え
       grid[5][5] = 0;
