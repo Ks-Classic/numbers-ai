@@ -2,12 +2,14 @@
 
 **Document Management Information**
 - Document ID: DOC-01
-- Version: 5.0
+- Version: 5.2
 - Created: 2025-08-21
 - Last Updated: 2025-01-XX
 - Status: Ready for Implementation
 
 **変更履歴:**
+- v5.2 (2025-01-XX): 8行を超える場合の行数調整と最終調整を追加、余りマスルール（裏数字適用後）を削除
+- v5.1 (2025-01-XX): Python版とTypeScript版の使い分けを明確化、FastAPIのCUBE生成エンドポイントが非推奨であることを記載
 - v5.0 (2025-01-XX): 通常CUBEと極CUBEを統合、シンプル化
 - v4.1 (2025-11-04): メイン行組み立てロジックを更新、メイン行配置後の余りマスルールを追加
 - v4.0 (2025-11-04): 列も1,3,5,7列に変更、行・列は1から始まる
@@ -80,28 +82,55 @@
 
 通常CUBEと極CUBEで同じロジック。
 
-- 基本思想:
-  1) メイン行は1〜4要素を持つ（4要素未満の場合も許容）
-  2) リストに残った数字は、一つも無駄にしない
-  3) 可能な限り「4種類の数字で構成する」という原則を守る
-  4) 4要素未満のメイン行の余りマスは、後続の「メイン行配置後の余りマスルール」で補完される
+### 4.1 基本ルール
 
-- アルゴリズム:
-  1) `temp_list ← source_list`（コピー）
-  2) `main_rows ← []`
-  3) while `temp_list` が空でない:
-     - `unique_digits ← temp_list` のユニークを昇順で取得
-     - if `|unique_digits| ≥ 4`:
-       - `members ← unique_digits[0..3]`（構成メンバー）
-       - `new_row ← temp_list` を先頭から走査し、`members` の各値を1個ずつ取り出して順に格納
-       - `main_rows.push(new_row)`（4要素）
-     - else (`|unique_digits| < 4`):
-       - `new_row ← unique_digits` の全てをベースとする
-       - **重要**: 最大値を繰り返し追加しない。`unique_digits` の要素数分だけを `new_row` とする
-       - `new_row` で使った数字を、`temp_list` から削除する
-       - `main_rows.push(new_row)`（1〜3要素）
+**ルール: tempListは既にソート済みなので、4桁単位で最小値から順に重複せずに選択**
 
-- 結果: `main_rows` は1本以上、各行は1〜4要素。全数字を消費。
+- メイン行は1〜4要素を持つ（4要素未満の場合も許容）
+- 最後のメイン行以外は必ず4つ
+- 最後のメイン行だけは残りの数字をすべて入れる（4つ未満でもOK）
+- **tempListは既にソート済み（apply_pattern_expansionでソート済み）**
+- **4桁単位で最小値から順に重複せずに選択**
+- **4桁埋めたら次の最小値から繰り返し**
+- **4桁埋まらなかったら、次の未消費の最小値から埋めていく**
+- **同じ行内での連続は回避**: 直前の数字と同じ場合はスキップして次を探す
+- **行をまたぐ連続は許容**: 前の行の最後と次の行の最初が同じでもOK
+- **数字の重複使用**: 元数字リストに存在する数分だけ使用可能（同じ数字が複数回出現する場合は、その分だけ使用）
+
+### 4.2 アルゴリズム
+
+```
+1) temp_list ← nums.copy()（numsのコピー、既にソート済み）
+   - numsは元の数字リストとして保持（変更しない）
+   - temp_listは処理中に消費されていくリスト（数字を選択したら削除）
+2) main_rows ← []
+3) while temp_list が空でない:
+   - 最後のメイン行かどうかを判定（残りの数字が4つ以下なら最後の行）
+   - target_count ← 最後の行なら残りすべて、そうでなければ4
+   - new_row ← []
+   - while new_row.length < target_count and temp_list.length > 0:
+     - prev_digit ← new_row の最後の要素（なければ null）
+     - temp_list を先頭から走査し、prev_digit と異なる数字を探す
+     - 見つかったら new_row に追加し、temp_list から削除
+     - 見つからなければ（すべて同じ数字の場合）、仕方なく同じ数字を追加
+   - main_rows.push(new_row)
+4) 結果: main_rows は1本以上、各行は1〜4要素。全数字を消費。
+```
+
+### 4.3 具体例
+
+**例1: B2パターン**
+- `nums = [0, 1, 3, 5, 5, 6, 6, 9, 9]`（既にソート済み）
+- メイン行0: `[0, 1, 3, 5]` ← tempListから先頭から4つ選択（5の次に5が来るが、同じ行内なのでスキップして次へ）
+- メイン行1: `[5, 6, 9, 6]` ← tempListから先頭から4つ選択（5は前の行の最後と同じだが、行をまたいでいるのでOK。6の次に6が来るが、同じ行内なのでスキップして9を取る。その後6を取る）
+- メイン行2: `[9]` ← 残りすべて
+
+**例2: A2パターン**
+- `nums = [0, 1, 2, 3, 4, 5, 5, 6, 6, 7, 8, 9, 9]`（既にソート済み）
+- メイン行0: `[0, 1, 2, 3]` ← tempListから先頭から4つ選択
+- メイン行1: `[4, 5, 6, 5]` ← tempListから先頭から4つ選択（5の次に5が来るが、同じ行内なのでスキップして6を取る。その後5を取る）
+- メイン行2: `[6, 7, 8, 9]` ← tempListから先頭から4つ選択（6は前の行の最後と同じだが、行をまたいでいるのでOK）
+- メイン行3: `[9]` ← 残りすべて
 
 **極CUBEの特別処理**: メイン行が3本を超える場合は、4本目以降の数字を3本目に統合（最大3本まで）。
 
@@ -180,6 +209,13 @@
 5. 中心0配置（A2/B2のみ、§5）
 6. 裏数字ルール（縦パス・収束まで、§6.1）
 7. 裏数字ルール（横パス・収束まで、§6.2）
+8. **8行を超える場合の行数調整**: 8行を超える場合は9行目以降を削除して8行にする（全パターン共通）
+9. **8列×8行の場合の最終調整**: 0配置パターン（A2/B2）のみ、5列5行目を0に、5列4行目を5に強制置き換え
+
+**注意**: 
+- ステップ8は全パターン（A1/A2/B1/B2）に適用される
+- ステップ9は0配置パターン（A2/B2）のみに適用される
+- 余りマスルール（裏数字適用後）は削除済み（ステップ7の後に実行されていたが、現在は削除）
 
 ### 極CUBE生成の実行順序
 
@@ -194,7 +230,46 @@
 
 ## 10. 実装ファイル
 
-### 通常CUBE生成
+### TypeScript版（本番Webアプリ用途）
+
+#### 通常CUBE生成
+
+**ファイル**: `src/lib/cube-generator/chart-generator.ts`  
+**関数**: `generateChart()`
+
+```typescript
+export async function generateChart(
+  roundNumber: number,
+  pattern: Pattern,
+  target: Target,
+  keisenMasterType: KeisenMasterType = 'current'
+): Promise<ChartData>
+```
+
+**用途**: 
+- 本番Webアプリ（`/cube`ページ）
+- 予測アプリ（`/predict`ページ）
+- Next.js API Route（`/api/cube/[roundNumber]`）
+
+#### 極CUBE生成
+
+**ファイル**: `src/lib/cube-generator/extreme-cube.ts`  
+**関数**: `generateExtremeCube()`
+
+```typescript
+export async function generateExtremeCube(
+  roundNumber: number,
+  keisenMasterType: KeisenMasterType = 'current'
+): Promise<{ grid: ChartGrid; rows: number; cols: number }>
+```
+
+**用途**: 
+- 本番Webアプリ（`/cube`ページ）
+- Next.js API Route（`/api/cube/[roundNumber]`）
+
+### Python版（開発・分析用途）
+
+#### 通常CUBE生成
 
 **ファイル**: `core/chart_generator.py`  
 **関数**: `generate_chart()`
@@ -210,7 +285,13 @@ def generate_chart(
     """通常CUBEを生成する"""
 ```
 
-### 極CUBE生成
+**用途**: 
+- 可視化・デバッグツール（`scripts/tools/visualization/`）
+- バッチ処理（`scripts/production/`）
+- データ分析・特徴量エンジニアリング（`notebooks/`, `scripts/tools/training/`）
+- ノートブックでの対話的分析
+
+#### 極CUBE生成
 
 **ファイル**: `scripts/production/generate_extreme_cube.py`  
 **関数**: `generate_extreme_cube()`
@@ -221,8 +302,26 @@ def generate_extreme_cube(
     keisen_master: dict,
     round_number: int
 ) -> Tuple[List[List[Optional[int]]], int, int]:
-    """極CUBEを生成する（専用ロジック）"""
+    """極CUBEを生成する"""
 ```
+
+**用途**: 
+- バッチ処理（極CUBEの一括生成）
+- 可視化・デバッグツール（`scripts/tools/visualization/visualize_extreme_cube_steps.py`）
+
+### 使い分けの指針
+
+| 用途 | 推奨実装 | 理由 |
+|------|---------|------|
+| **本番Webアプリ** | TypeScript版 | Vercelでそのまま動作、デプロイ不要 |
+| **可視化・デバッグ** | Python版 | ターミナルから直接実行、ステップごとの可視化が容易 |
+| **バッチ処理** | Python版 | データ分析ライブラリとの統合が容易 |
+| **データ分析** | Python版 | Pandas、NumPyとの統合が容易 |
+| **ノートブック** | Python版 | Jupyterでの対話的分析に適している |
+
+**注意**: 
+- FastAPIサーバーのCUBE生成エンドポイント（`api/main.py`の`/api/cube/{round_number}`）は**非推奨**。TypeScript版に移行済み。
+- FastAPIサーバー自体はAI推論エンドポイント（`/api/predict`）のために必要。
 
 ---
 
