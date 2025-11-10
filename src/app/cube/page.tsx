@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { fetchCubes, gridToTSV, type CubeData, type CubesResponse } from '@/lib/cube-api';
-import { Copy, Loader2, Grid3x3, Zap, Check } from 'lucide-react';
+import { Copy, Loader2, Grid3x3, Zap, Check, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function CubePage() {
@@ -19,6 +19,7 @@ export default function CubePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copiedCubeId, setCopiedCubeId] = useState<string | null>(null);
+  const [updatingData, setUpdatingData] = useState(false);
 
   const handleGenerate = async () => {
     if (!roundNumber || roundNumber < 1) {
@@ -46,7 +47,30 @@ export default function CubePage() {
     }
   };
 
-  const handleCopy = async (cube: CubeData) => {
+  const handleUpdateData = async () => {
+    setUpdatingData(true);
+    try {
+      const response = await fetch('/api/update-data', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'データ更新に失敗しました');
+      }
+
+      toast.success(data.message || 'データ更新を開始しました');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'データ更新に失敗しました';
+      toast.error(errorMessage);
+    } finally {
+      setUpdatingData(false);
+    }
+  };
     try {
       const tsv = gridToTSV(cube.grid, cube.rows, cube.cols);
       await navigator.clipboard.writeText(tsv);
@@ -101,6 +125,35 @@ export default function CubePage() {
     <div className="min-h-screen bg-background p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
         <h1 className="text-3xl md:text-4xl font-bold mb-8">CUBE生成</h1>
+
+        {/* データ更新ボタン */}
+        <Card className="p-4 mb-6 bg-blue-50 border-2 border-blue-200 shadow-md">
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-blue-900 mb-1">最新の当選番号データ</p>
+              <p className="text-xs text-blue-700">最新の当選番号データを取得して更新します</p>
+            </div>
+            <Button
+              onClick={handleUpdateData}
+              disabled={updatingData}
+              variant="outline"
+              size="sm"
+              className="ml-4 border-blue-300 text-blue-700 hover:bg-blue-100"
+            >
+              {updatingData ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  更新中...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  データ更新
+                </>
+              )}
+            </Button>
+          </div>
+        </Card>
 
         {/* 回号入力フォーム */}
         <Card className="p-6 mb-8 bg-white border-2 border-slate-200 shadow-md">
