@@ -236,6 +236,30 @@ def is_draw_day(date: datetime = None) -> bool:
     return True
 
 
+def calculate_weekday(draw_date: Optional[str]) -> Optional[int]:
+    """
+    日付から曜日を計算（0-4の整数）
+    
+    Args:
+        draw_date: 日付文字列（YYYY-MM-DD形式、NULL可）
+    
+    Returns:
+        曜日（0:月, 1:火, 2:水, 3:木, 4:金）、NULLの場合はNone
+    """
+    if not draw_date or draw_date == 'NULL' or not draw_date.strip():
+        return None
+    
+    try:
+        date_obj = datetime.strptime(draw_date, '%Y-%m-%d')
+        weekday = date_obj.weekday()
+        # ナンバーズは平日のみ抽選のため、0-4の値のみ
+        if weekday < 5:
+            return weekday
+        return None
+    except (ValueError, TypeError):
+        return None
+
+
 def fetch_with_gemini_api(query: str) -> Optional[str]:
     """
     Gemini APIを使用して情報を取得する
@@ -1109,9 +1133,14 @@ def combine_data(n4_data: Dict[int, Dict[str, str]], n3_data: Dict[int, Dict[str
             draw_date_obj = base_date - timedelta(days=days_back)
             draw_date = draw_date_obj.strftime('%Y-%m-%d')
         
+        # weekdayを計算
+        weekday = calculate_weekday(draw_date)
+        weekday_str = str(weekday) if weekday is not None else 'NULL'
+        
         results.append({
             'round_number': round_number,
             'draw_date': draw_date,
+            'weekday': weekday_str,
             'n3_winning': n3_winning if n3_winning else '',
             'n4_winning': n4_winning,
             'n3_rehearsal': n3_rehearsal if n3_rehearsal else '',
@@ -1242,17 +1271,33 @@ def save_to_csv(data: List[Dict[str, str]], output_file: Path, merge: bool = Fal
     fieldnames = [
         'round_number',
         'draw_date',
+        'weekday',
         'n3_winning',
         'n4_winning',
         'n3_rehearsal',
         'n4_rehearsal'
     ]
     
-    # マージモードの場合、既存データを読み込む
+    # 既存CSVファイルがある場合、weekdayカラムが存在するか確認
+    has_weekday_column = False
+    existing_data = None
     if merge and output_file.exists():
         existing_data = load_existing_csv(output_file)
+        if existing_data and 'weekday' in existing_data[0]:
+            has_weekday_column = True
+    
+    # マージモードの場合、既存データを読み込む
+    if merge and output_file.exists() and existing_data:
         # 回号をキーとして既存データを辞書化
         existing_dict = {int(row['round_number']): row for row in existing_data}
+        
+        # 既存データにweekdayカラムがない場合、draw_dateから計算
+        if not has_weekday_column:
+            for round_num, existing_row in existing_dict.items():
+                draw_date_val = existing_row.get('draw_date', '')
+                if draw_date_val and draw_date_val != 'NULL':
+                    weekday = calculate_weekday(draw_date_val)
+                    existing_row['weekday'] = str(weekday) if weekday is not None else 'NULL'
         
         # 新しいデータで既存データを更新または追加
         for row in data:
@@ -1272,6 +1317,12 @@ def save_to_csv(data: List[Dict[str, str]], output_file: Path, merge: bool = Fal
                         # 既存値がある場合も、新しい値が空でなければ更新
                         elif new_value:
                             existing_row[key] = new_value
+                    # weekdayが更新された場合、再計算
+                    if 'weekday' in fieldnames:
+                        draw_date_val = existing_row.get('draw_date', '')
+                        if draw_date_val and draw_date_val != 'NULL':
+                            weekday = calculate_weekday(draw_date_val)
+                            existing_row['weekday'] = str(weekday) if weekday is not None else 'NULL'
                     existing_dict[round_num] = existing_row
                 else:
                     # 通常のマージモード: 新しいデータで完全に置き換え
@@ -1292,6 +1343,12 @@ def save_to_csv(data: List[Dict[str, str]], output_file: Path, merge: bool = Fal
             csv_row = {}
             for key in fieldnames:
                 value = row.get(key, '')
+                # weekdayカラムが存在しない場合、draw_dateから計算
+                if key == 'weekday' and not value:
+                    draw_date_val = row.get('draw_date', '')
+                    if draw_date_val and draw_date_val != 'NULL':
+                        weekday = calculate_weekday(draw_date_val)
+                        value = str(weekday) if weekday is not None else 'NULL'
                 csv_row[key] = value if value else 'NULL'
             
             writer.writerow(csv_row)
@@ -1630,7 +1687,9 @@ def main():
         sys.exit(1)
     
     # 引数解析
-    output_file = Path(__file__).parent.parent / 'data' / 'past_results.csv'
+    # プロジェクトルートを取得（scripts/production/から3階層上がプロジェクトルート）
+    project_root = Path(__file__).parent.parent.parent
+    output_file = project_root / 'data' / 'past_results.csv'
     max_rounds = 300
     merge_mode = False  # マージモード（自動実行時のみ）
     fill_gaps_mode = False  # 欠番を埋めるモード
