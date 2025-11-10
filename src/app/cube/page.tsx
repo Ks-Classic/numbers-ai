@@ -71,6 +71,8 @@ export default function CubePage() {
       setUpdatingData(false);
     }
   };
+
+  const handleCopy = async (cube: CubeData) => {
     try {
       const tsv = gridToTSV(cube.grid, cube.rows, cube.cols);
       await navigator.clipboard.writeText(tsv);
