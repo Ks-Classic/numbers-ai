@@ -1995,8 +1995,40 @@ def main():
                 print(f"実際に取得した回号: 第{latest_round}回")
             else:
                 n4_data, n3_data = {}, {}
+        elif max_rounds <= 10:
+            # 最新N件取得: 最新版ページから最新のN回分を取得（N <= 10）
+            print(f"📥 マージモード: 最新版ページから最新の{max_rounds}回分を取得します...")
+            html_content = fetch_page(LATEST_PAGE_URL)
+            if html_content:
+                soup = BeautifulSoup(html_content, 'html.parser')
+                # 最新のN行を取得（latest_only=Falseで全件取得し、上位N件を使用）
+                n4_data = parse_n4_table(soup, latest_only=False)
+                n3_data = parse_n3_table(soup, latest_only=False)
+                
+                # 回号順にソートして最新のN件のみを取得
+                if n4_data:
+                    sorted_n4_rounds = sorted(n4_data.keys(), reverse=True)
+                    n4_data = {r: n4_data[r] for r in sorted_n4_rounds[:max_rounds]}
+                if n3_data:
+                    sorted_n3_rounds = sorted(n3_data.keys(), reverse=True)
+                    n3_data = {r: n3_data[r] for r in sorted_n3_rounds[:max_rounds]}
+                
+                print(f"✓ 最新{max_rounds}件のデータを取得: N4={len(n4_data)}件、N3={len(n3_data)}件")
+                
+                # 取得したデータの回号を使用（実際に取得できた回号）
+                if n4_data:
+                    actual_latest_round = max(n4_data.keys())
+                elif n3_data:
+                    actual_latest_round = max(n3_data.keys())
+                else:
+                    actual_latest_round = latest_round
+                
+                latest_round = actual_latest_round
+                print(f"実際に取得した回号範囲: 第{min(n4_data.keys() | n3_data.keys()) if (n4_data or n3_data) else 'N/A'}回 ～ 第{latest_round}回")
+            else:
+                n4_data, n3_data = {}, {}
         else:
-            # 大量取得時: 既存CSVの最古回号より前のデータを取得
+            # 大量取得時（max_rounds > 10）: 既存CSVの最古回号より前のデータを取得
             if min_existing_round is not None:
                 # 既存CSVがある場合: 最古回号より前のデータを取得
                 target_min_round = min_existing_round - max_rounds

@@ -35,7 +35,7 @@ jobs:
           SERP_API_KEY: ${{ secrets.SERP_API_KEY }}
         run: |
           cd scripts/production
-          python3 fetch_past_results.py --merge
+          python3 fetch_past_results.py --merge --limit 3
           echo "データ更新スクリプト実行完了"
 
       - name: 変更をコミット・プッシュ
