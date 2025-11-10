@@ -2126,9 +2126,10 @@ def main():
     elif update_null_mode:
         # NULL値を更新するモードの場合、fetch_multiple_pages内で既に中間保存が行われている
         was_intermediate_save_used = True
-    elif merge_mode and max_rounds > 1:
-        # マージモード（大量取得）の場合、fetch_multiple_pages内で既に中間保存が行われている
+    elif merge_mode and max_rounds > 10:
+        # マージモード（大量取得、max_rounds > 10）の場合、fetch_multiple_pages内で既に中間保存が行われている
         was_intermediate_save_used = True
+    # max_rounds <= 10の場合は、fetch_multiple_pagesを呼び出していないため、中間保存は行われていない
     
     if was_intermediate_save_used:
         print("\n💾 中間保存で既にCSVに保存済みのため、最終保存をスキップします")
