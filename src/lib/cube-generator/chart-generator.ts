@@ -84,6 +84,14 @@ export async function generateChart(
     // ステップ8: 余りマスルール（裏数字適用後の空マスを上からコピー）
     applyRemainingCopy(grid, rows, cols);
     
+    // ステップ9: 8列×8行の場合の最終調整
+    if (rows === 8 && cols === 8) {
+      // 5列5行目を0に強制置き換え
+      grid[5][5] = 0;
+      // 5列4行目を5に強制置き換え
+      grid[4][5] = 5;
+    }
+    
     return {
       grid,
       rows,
