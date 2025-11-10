@@ -41,15 +41,21 @@ def print_grid(grid, rows, cols, title=""):
         print(f"{title}")
         print('='*70)
     
-    # 列番号の表示（幅を統一）
+    # 列番号の表示（通常の数値）
     print("      ", end="")
     for col in range(1, cols + 1):
-        print(f"  {number_to_circle(col)}", end="")
+        print(f"  {col}", end="")
+    print()
+    
+    # 区切り線を追加
+    print("      ", end="")
+    for col in range(1, cols + 1):
+        print("---", end="")
     print()
     
     # グリッドの表示
     for row in range(1, rows + 1):
-        print(f"{number_to_circle(row)}: ", end="")
+        print(f"{row}: ", end="")
         for col in range(1, cols + 1):
             val = grid[row][col]
             if val is None:
