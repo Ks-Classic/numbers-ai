@@ -306,19 +306,32 @@ XGBoostモデルに学習させる
 
 ステップ3: メイン行の組み立て
   - mainRows = []
-  - while nums が空でない:
-    - uniqueDigits = nums のユニーク値（昇順）
-    - if uniqueDigits.length >= 4:
-      - members = uniqueDigits[0..3]
-      - newRow = nums から members の各値を1個ずつ取り出して配列化
-      - mainRows.push(newRow)
-      - nums から newRow で使った数字を削除
-    - else:
-      - newRow = uniqueDigits の全要素
-      - while newRow.length < 4:
-        - newRow.push(max(uniqueDigits))
-      - mainRows.push(newRow)
-      - nums から newRow で使った数字を削除
+  - tempList = nums.copy()（既にソート済み）
+  - while tempList が空でない:
+    - 最後のメイン行かどうかを判定（残りの数字が4つ以下なら最後の行）
+    - targetCount = 最後の行なら残りすべて、そうでなければ4
+    - newRow = []
+    - while newRow.length < targetCount and tempList.length > 0:
+      - prevDigit = newRow の最後の要素（なければ null）
+      - tempList を先頭から走査し、prevDigit と異なる数字を探す
+      - 見つかったら newRow に追加し、tempList から削除
+      - 見つからなければ（すべて同じ数字の場合）、仕方なく同じ数字を追加
+    - mainRows.push(newRow)
+  
+  **ルール**: tempListは既にソート済みなので、4桁単位で最小値から順に重複せずに選択。
+  - tempListは既にソート済み（applyPatternExpansionでソート済み）
+  - 4桁単位で最小値から順に重複せずに選択
+  - 4桁埋めたら次の最小値から繰り返し
+  - 4桁埋まらなかったら、次の未消費の最小値から埋めていく
+  - 同じ行内での連続は回避（直前の数字と同じ場合はスキップして次を探す）
+  - 行をまたぐ連続は許容（前の行の最後と次の行の最初が同じでもOK）
+  - 元数字リストに存在する数分だけ使用可能（同じ数字が複数回出現する場合は、その分だけ使用）
+  
+  **例**: nums = [0, 1, 2, 3, 4, 5, 5, 6, 6, 7, 8, 9, 9]
+  - メイン行0: [0, 1, 2, 3]
+  - メイン行1: [4, 5, 6, 5] ← 5の次に5が来るが、同じ行内なのでスキップして6を取る。その後5を取る
+  - メイン行2: [6, 7, 8, 9] ← 6は前の行の最後と同じだが、行をまたいでいるのでOK
+  - メイン行3: [9]
 
 ステップ4: グリッド初期配置
   - rows = mainRows.length * 2

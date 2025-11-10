@@ -1,10 +1,10 @@
-# データ・API設計書 v1.0
+# データ・API設計書 v1.1
 
 **Document Management Information**
 - Document ID: DOC-03
-- Version: 1.0
+- Version: 1.1
 - Created: 2025-11-02
-- Last Updated: 2025-11-02
+- Last Updated: 2025-01-XX
 - Status: Confirmed
 - Approver: Technical Lead
 

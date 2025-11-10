@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).parent.parent
-sys.path.append(str(PROJECT_ROOT / 'notebooks'))
+sys.path.insert(0, str(PROJECT_ROOT.resolve() / 'core'))
 
 from chart_generator import (
     load_keisen_master,
@@ -58,8 +58,9 @@ def visualize_extreme_cube_steps(df, keisen_master, round_number):
     print(f"  → B1パターン: 欠番補足なし（0も含めて補足しない）")
     
     # ステップ3: メイン行の組み立て
-    main_rows = build_main_rows(nums)
+    main_rows, temp_list = build_main_rows(nums)
     print(f"\n【ステップ3】メイン行の組み立て")
+    print(f"  tempList: {temp_list}")
     for i, row in enumerate(main_rows):
         print(f"  メイン行{i}: {row}")
     

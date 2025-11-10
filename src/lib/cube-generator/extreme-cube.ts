@@ -22,9 +22,6 @@ function inverse(n: number): number {
 
 /**
  * 裏数字ルール（縦パス）を適用する
- * 
- * 注意: 4列目（中心0配置で0が入る可能性がある列）で値が0の場合は、
- *       その下のマスには裏数字を入れない。
  */
 function applyVerticalInverse(grid: ChartGrid, rows: number, cols: number): void {
   let updated = true;
@@ -34,11 +31,6 @@ function applyVerticalInverse(grid: ChartGrid, rows: number, cols: number): void
     
     for (let row = 1; row <= rows; row++) {
       for (let col = 1; col <= cols; col++) {
-        // 4列目で値が0のマスの下には裏数字を入れない
-        if (col === 4 && row > 1 && grid[row - 1][col] === 0) {
-          continue;
-        }
-        
         if (grid[row][col] === null && row > 1 && grid[row - 1][col] !== null) {
           grid[row][col] = inverse(grid[row - 1][col]!);
           updated = true;
@@ -50,9 +42,6 @@ function applyVerticalInverse(grid: ChartGrid, rows: number, cols: number): void
 
 /**
  * 裏数字ルール（横パス）を適用する
- * 
- * 注意: 4列目（中心0配置で0が入る可能性がある列）で値が0の場合は、
- *       その右のマスには裏数字を入れない。
  */
 function applyHorizontalInverse(grid: ChartGrid, rows: number, cols: number): void {
   let updated = true;
@@ -62,11 +51,6 @@ function applyHorizontalInverse(grid: ChartGrid, rows: number, cols: number): vo
     
     for (let row = 1; row <= rows; row++) {
       for (let col = 1; col <= cols; col++) {
-        // 4列目で値が0のマスの右には裏数字を入れない
-        if (col === 4 && grid[row][col - 1] === 0) {
-          continue;
-        }
-        
         if (grid[row][col] === null && col > 1 && grid[row][col - 1] !== null) {
           grid[row][col] = inverse(grid[row][col - 1]!);
           updated = true;

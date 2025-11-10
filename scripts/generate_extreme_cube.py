@@ -92,7 +92,7 @@ def generate_extreme_cube(
             step_callbacks['step2'](nums)
         
         # ステップ3: メイン行の組み立て
-        main_rows = build_main_rows(nums)
+        main_rows, temp_list = build_main_rows(nums)
         if 'step3' in step_callbacks:
             step_callbacks['step3'](main_rows)
         

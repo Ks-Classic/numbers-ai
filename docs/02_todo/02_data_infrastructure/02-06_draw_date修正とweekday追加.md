@@ -66,12 +66,14 @@
 
 ### Phase 7: データ取得・更新の実行
 
-- [ ] みずほ銀行から全件（1-4800回）の日付を取得・更新
+- [x] みずほ銀行から全件（1-4800回）の日付を取得・更新
   - コマンド: `python3 scripts/fetch_past_results.py --from-round 1 --to-round 4800 --update-null`
   - または: `python3 scripts/fetch_past_results.py --update-null`
 
-- [ ] `weekday`カラムを追加
+- [x] `weekday`カラムを追加
   - コマンド: `python3 scripts/add_weekday_column.py`
+  - 実行日: 2025-01-XX
+  - 結果: 6,830件のデータに`weekday`カラムを追加完了（全件にweekdayが設定された）
 
 - [ ] データ整合性を検証
   - コマンド: `python3 scripts/validate_date_weekday.py`
@@ -84,6 +86,8 @@
 - 2025-11-07: `validate_date_weekday.py`スクリプトを作成
 - 2025-11-07: TypeScript型定義を更新
 - 2025-11-07: データモデル設計ドキュメントを更新
+- 2025-01-XX: `scripts/production/fetch_past_results.py`に`calculate_weekday`関数と`weekday`カラム処理を追加
+- 2025-01-XX: 既存の`past_results.csv`に`weekday`カラムを追加（6,830件）
 
 ## 注意事項
 

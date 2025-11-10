@@ -16,7 +16,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.append(str(PROJECT_ROOT / 'core'))
 
 from model_loader import load_model_loader
-from chart_generator import load_keisen_master, generate_chart, ChartGenerationError
+from chart_generator import load_keisen_master, generate_chart, ChartGenerationError, apply_pattern_expansion, build_main_rows
 from feature_extractor import (
     extract_digit_features,
     extract_combination_features,
@@ -512,7 +512,26 @@ async def get_cubes(round_number: int):
             logger.error(traceback.format_exc())
             raise HTTPException(status_code=500, detail=f"新罫線マスターデータの読み込みに失敗: {str(e)}")
         
+        # 前回・前々回の当選番号を取得（共通情報）
+        previous_row = df[df['round_number'] == round_number - 1]
+        previous_previous_row = df[df['round_number'] == round_number - 2]
+        
+        if len(previous_row) == 0:
+            raise HTTPException(status_code=404, detail=f"前回の当選番号が見つかりません（回号: {round_number - 1}）")
+        if len(previous_previous_row) == 0:
+            raise HTTPException(status_code=404, detail=f"前々回の当選番号が見つかりません（回号: {round_number - 2}）")
+        
+        previous_n3 = str(previous_row['n3_winning'].iloc[0]).replace('.0', '').zfill(3)
+        previous_n4 = str(previous_row['n4_winning'].iloc[0]).replace('.0', '').zfill(4)
+        previous_previous_n3 = str(previous_previous_row['n3_winning'].iloc[0]).replace('.0', '').zfill(3)
+        previous_previous_n4 = str(previous_previous_row['n4_winning'].iloc[0]).replace('.0', '').zfill(4)
+        
         cubes = []
+        
+        # 予測出目を取得するヘルパー関数
+        def get_source_list(keisen_master_dict: dict, target: str) -> List[int]:
+            from chart_generator import extract_predicted_digits
+            return extract_predicted_digits(df, keisen_master_dict, round_number, target)
         
         # 通常CUBE: 現罫線 × 4パターン（A1, A2, B1, B2）
         patterns = ['A1', 'A2', 'B1', 'B2']
@@ -520,12 +539,19 @@ async def get_cubes(round_number: int):
         
         logger.info("通常CUBE（現罫線）の生成を開始...")
         for target in targets:
+            source_list = get_source_list(keisen_master_current, target)
+            previous_winning = previous_n3 if target == 'n3' else previous_n4
+            previous_previous_winning = previous_previous_n3 if target == 'n3' else previous_previous_n4
+            
             for pattern in patterns:
                 try:
                     logger.debug(f"現罫線 {target} {pattern} のCUBE生成中...")
                     grid, rows, cols = generate_chart(
                         df, keisen_master_current, round_number, pattern, target
                     )
+                    # templistを取得（通常CUBEと同じ定義）
+                    nums = apply_pattern_expansion(source_list, pattern)
+                    _, temp_list = build_main_rows(nums)
                     cubes.append({
                         'id': f'current_normal_{target}_{pattern}',
                         'keisen_type': 'current',
@@ -534,7 +560,10 @@ async def get_cubes(round_number: int):
                         'pattern': pattern,
                         'grid': grid,
                         'rows': rows,
-                        'cols': cols
+                        'cols': cols,
+                        'previous_winning': previous_winning,
+                        'previous_previous_winning': previous_previous_winning,
+                        'predicted_digits': temp_list
                     })
                     logger.debug(f"現罫線 {target} {pattern} のCUBE生成完了")
                 except Exception as e:
@@ -544,12 +573,19 @@ async def get_cubes(round_number: int):
         # 通常CUBE: 新罫線 × 4パターン（A1, A2, B1, B2）
         logger.info("通常CUBE（新罫線）の生成を開始...")
         for target in targets:
+            source_list = get_source_list(keisen_master_new, target)
+            previous_winning = previous_n3 if target == 'n3' else previous_n4
+            previous_previous_winning = previous_previous_n3 if target == 'n3' else previous_previous_n4
+            
             for pattern in patterns:
                 try:
                     logger.debug(f"新罫線 {target} {pattern} のCUBE生成中...")
                     grid, rows, cols = generate_chart(
                         df, keisen_master_new, round_number, pattern, target
                     )
+                    # templistを取得（通常CUBEと同じ定義）
+                    nums = apply_pattern_expansion(source_list, pattern)
+                    _, temp_list = build_main_rows(nums)
                     cubes.append({
                         'id': f'new_normal_{target}_{pattern}',
                         'keisen_type': 'new',
@@ -558,7 +594,10 @@ async def get_cubes(round_number: int):
                         'pattern': pattern,
                         'grid': grid,
                         'rows': rows,
-                        'cols': cols
+                        'cols': cols,
+                        'previous_winning': previous_winning,
+                        'previous_previous_winning': previous_previous_winning,
+                        'predicted_digits': temp_list
                     })
                     logger.debug(f"新罫線 {target} {pattern} のCUBE生成完了")
                 except Exception as e:
@@ -568,6 +607,11 @@ async def get_cubes(round_number: int):
         # 極CUBE: 現罫線 × 1パターン（N3のみ）
         logger.info("極CUBE（現罫線）の生成を開始...")
         try:
+            source_list = get_source_list(keisen_master_current, 'n3')
+            # B1パターンでtemplist（nums）を作成
+            nums = apply_pattern_expansion(source_list, 'B1')
+            # templistを取得（通常CUBEと同じ定義）
+            _, temp_list = build_main_rows(nums)
             grid, rows, cols = generate_extreme_cube(
                 df, keisen_master_current, round_number
             )
@@ -579,7 +623,10 @@ async def get_cubes(round_number: int):
                 'pattern': None,
                 'grid': grid,
                 'rows': rows,
-                'cols': cols
+                'cols': cols,
+                'previous_winning': previous_n3,
+                'previous_previous_winning': previous_previous_n3,
+                'predicted_digits': temp_list
             })
             logger.info("極CUBE（現罫線）の生成完了")
         except Exception as e:
@@ -589,6 +636,11 @@ async def get_cubes(round_number: int):
         # 極CUBE: 新罫線 × 1パターン（N3のみ）
         logger.info("極CUBE（新罫線）の生成を開始...")
         try:
+            source_list = get_source_list(keisen_master_new, 'n3')
+            # B1パターンでtemplist（nums）を作成
+            nums = apply_pattern_expansion(source_list, 'B1')
+            # templistを取得（通常CUBEと同じ定義）
+            _, temp_list = build_main_rows(nums)
             grid, rows, cols = generate_extreme_cube(
                 df, keisen_master_new, round_number
             )
@@ -600,7 +652,10 @@ async def get_cubes(round_number: int):
                 'pattern': None,
                 'grid': grid,
                 'rows': rows,
-                'cols': cols
+                'cols': cols,
+                'previous_winning': previous_n3,
+                'previous_previous_winning': previous_previous_n3,
+                'predicted_digits': temp_list
             })
             logger.info("極CUBE（新罫線）の生成完了")
         except Exception as e:

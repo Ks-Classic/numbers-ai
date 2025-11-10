@@ -4,7 +4,7 @@
  * 4パターン（A1/A2/B1/B2）の予測表を生成する
  */
 
-import { generateChart } from '@/lib/chart-generator';
+import { generateChart } from '@/lib/cube-generator';
 import type { Pattern, Target } from '@/types/prediction';
 import type { ChartData } from '@/types/chart';
 

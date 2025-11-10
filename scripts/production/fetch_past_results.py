@@ -1127,10 +1127,23 @@ def combine_data(n4_data: Dict[int, Dict[str, str]], n3_data: Dict[int, Dict[str
         
         # 日付が取得できていない場合のみ、推定値を計算
         if not draw_date:
-            # 日付を計算（最新回から逆算、簡易版）
-            # 実際の日付はデータに含まれていないため、推定値を使用
-            days_back = latest_round - round_number
-            draw_date_obj = base_date - timedelta(days=days_back)
+            # 日付を計算（最新回から逆算、平日のみを考慮）
+            # ナンバーズは平日のみ抽選があるため、平日のみをカウント
+            round_diff = latest_round - round_number
+            draw_date_obj = base_date
+            weekday_count = 0
+            
+            # 最新回から逆算して、平日のみをカウント
+            while weekday_count < round_diff:
+                draw_date_obj = draw_date_obj - timedelta(days=1)
+                # 平日かどうかを確認（月曜=0, 金曜=4）
+                if draw_date_obj.weekday() < 5:
+                    # 年末年始を除外
+                    month = draw_date_obj.month
+                    day = draw_date_obj.day
+                    if not ((month == 12 and day >= 29) or (month == 1 and day <= 3)):
+                        weekday_count += 1
+            
             draw_date = draw_date_obj.strftime('%Y-%m-%d')
         
         # weekdayを計算

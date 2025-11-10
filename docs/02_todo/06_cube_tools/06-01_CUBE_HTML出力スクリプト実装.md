@@ -102,7 +102,14 @@ ReactベースのWebアプリで、回号を指定すると自動で全パター
   - 10個のCUBE（通常CUBE 8個 + 極CUBE 2個）を自動生成・表示
   - 各CUBEにコピーボタンを配置し、Excel貼り付け対応（TSV形式）
 
+## Next.js内包型への移行計画
+
+現在、CUBE生成はFastAPIサーバー（`api/main.py`）で実行されているが、将来的にはTypeScriptで再実装し、Next.js API Routeで直接実行する計画がある。
+
+詳細は [06-03_CUBE自動生成システム実装.md](./06-03_CUBE自動生成システム実装.md) を参照。
+
 ## 関連ドキュメント
 - [CUBE生成ルール.md](../../01_design/CUBE生成ルール.md): CUBE生成ルール（通常CUBEと極CUBE）
-
+- [06-03_CUBE自動生成システム実装.md](./06-03_CUBE自動生成システム実装.md): CUBE生成システム実装（Next.js内包型への移行計画）
+- [10-cube-automation-design.md](../../01_design/10-cube-automation-design.md): CUBE生成システム設計書
 

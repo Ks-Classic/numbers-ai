@@ -1,8 +1,8 @@
-# システムアーキテクチャ設計書 v1.1
+# システムアーキテクチャ設計書 v1.2
 
 **Document Management Information**
 - Document ID: DOC-02
-- Version: 1.1
+- Version: 1.2
 - Created: 2025-11-02
 - Last Updated: 2025-01-XX
 - Status: Confirmed
@@ -181,8 +181,17 @@
 
 **Chart Generator (TypeScript)**
 - 予測表生成ロジック
+- CUBE生成ロジック（通常CUBE・極CUBE）
 - アルゴリズム実装（docs/元ネタ/表作成ルール.,md準拠）
 - パターンA/B処理
+- **実装場所**: `src/lib/cube-generator/`
+- **用途**: 本番Webアプリ（`/cube`ページ、`/predict`ページ）
+
+**Chart Generator (Python)**
+- 予測表生成ロジック（開発・分析用途）
+- CUBE生成ロジック（開発・分析用途）
+- **実装場所**: `core/chart_generator.py`
+- **用途**: 可視化ツール、バッチ処理、データ分析、ノートブック
 
 **Feature Extractor (TypeScript/Python)**
 - 特徴量計算
@@ -237,6 +246,7 @@
 **実装状況:**
 - FastAPI AI推論エンジンは実装済み（`api/`ディレクトリ）
 - Dockerコンテナ化とGCP Cloud Runデプロイは準備中
+- **注意**: FastAPIサーバーのCUBE生成エンドポイント（`/api/cube/{round_number}`）は**非推奨**。TypeScript版（`src/app/api/cube/[roundNumber]/route.ts`）に移行済み。
 
 **なぜMVPではNext.js API Routesを使うのか:**
 詳細は [06-implementation-plan.md](./06-implementation-plan.md) の「MVP実装計画」を参照
@@ -389,11 +399,12 @@ numbers-ai/
 │   │   ├── utils.ts               # ユーティリティ関数（実装済み）
 │   │   ├── sample-data.ts         # サンプルデータ（実装済み）
 │   │   │
-│   │   ├── chart-generator/       # 予測表生成（Phase 2実装予定）
-│   │   │   ├── index.ts
-│   │   │   ├── pattern-a.ts       # パターンA（0なし）
-│   │   │   ├── pattern-b.ts       # パターンB（0あり、Phase 4実装予定）
-│   │   │   └── types.ts
+│   │   ├── cube-generator/           # CUBE生成（実装済み）
+│   │   │   ├── index.ts              # エクスポート
+│   │   │   ├── chart-generator.ts    # 通常CUBE生成
+│   │   │   ├── extreme-cube.ts      # 極CUBE生成
+│   │   │   ├── keisen-master-loader.ts # 罫線マスターデータ読み込み
+│   │   │   └── types.ts              # 型定義
 │   │   │
 │   │   ├── feature-extraction/    # 特徴量計算（Phase 2実装予定）
 │   │   │   ├── index.ts
@@ -502,7 +513,8 @@ numbers-ai/
 - グローバルスタイルは `app/globals.css` に配置（Next.js App Routerの標準）
 
 **将来実装予定の明確化**
-- **Phase 2**: `lib/chart-generator/`, `lib/feature-extraction/`, `lib/ai-predictor/`, `lib/data-loader/` を実装
+- **Phase 1**: `lib/cube-generator/` を実装（完了）
+- **Phase 2**: `lib/feature-extraction/`, `lib/ai-predictor/`, `lib/data-loader/` を実装
 - **Phase 2**: `components/features/` に機能別コンポーネントを実装
 - **Phase 2**: `components/layouts/` にレイアウトコンポーネントを実装（`shared/Navigation.tsx` を移動予定）
 - **Phase 2**: Supabase統合により `lib/data-loader/` でCSV→Supabase移行

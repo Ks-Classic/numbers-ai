@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { usePredictionStore } from '@/lib/store';
 import type { PredictionItem } from '@/types/prediction';
+import { getPatternLabel } from '@/lib/utils/pattern-label';
 import { ArrowLeft, Bot, CheckCircle, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 
@@ -170,7 +171,7 @@ export default function LoadingPage() {
                 confidence: item.confidence,
                 chart_score: item.score,
                 rehearsal_score: 0,
-                reason: `パターン${item.source}から予測`,
+                reason: `${getPatternLabel(item.source)}から予測`,
                 source: item.source as any,
                 candidates: {
                   box: boxCandidates,
@@ -249,7 +250,7 @@ export default function LoadingPage() {
                 confidence: item.confidence,
                 chart_score: item.score,
                 rehearsal_score: 0,
-                reason: `パターン${item.source}から予測`,
+                reason: `${getPatternLabel(item.source)}から予測`,
                 source: item.source as any,
                 candidates: {
                   box: boxCandidates,

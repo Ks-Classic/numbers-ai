@@ -21,7 +21,7 @@ if not os.path.exists(str(PROJECT_ROOT / 'core' / 'chart_generator.py')):
     print(f"Chart generator exists: {os.path.exists(str(PROJECT_ROOT / 'core' / 'chart_generator.py'))}")
     sys.exit(1)
 
-from chart_generator import load_keisen_master
+from chart_generator import load_keisen_master, build_main_rows
 from generate_extreme_cube import generate_extreme_cube
 import pandas as pd
 import copy
@@ -74,7 +74,11 @@ def visualize_extreme_cube_steps(df, keisen_master, round_number):
     
     def step3_callback(main_rows):
         step_states['step3'] = main_rows
+        # temp_listを取得（step2のnumsから）
+        _, temp_list = build_main_rows(step_states['step2'])
+        step_states['temp_list'] = temp_list
         print(f"\n【ステップ3】メイン行の組み立て")
+        print(f"  tempList: {temp_list}")
         for i, row in enumerate(main_rows):
             print(f"  メイン行{i}: {row}")
     

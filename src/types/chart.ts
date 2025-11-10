@@ -28,6 +28,8 @@ export interface ChartData {
   sourceDigits: number[];
   /** 拡張後の数字リスト（欠番補足後） */
   expandedDigits?: number[];
+  /** templist（4桁単位で最小値から順に重複せずに選択した順序） */
+  tempList?: number[];
   /** 中心0配置が明示的に実行されたかどうか（A2/B2のみtrue） */
   centerZeroPlaced?: boolean;
 }

@@ -167,6 +167,20 @@ python3 scripts/fetch_past_results.py data/my_results.csv --limit 500
 - **WSL環境**: WSL環境では、cronサービスが起動していない場合があります。システム起動時に自動起動する設定を推奨します
 - **年末年始**: 12/29〜1/3は抽選日ではないため、自動更新はスキップされます
 
+## CUBE生成との関係
+
+### CUBE生成は手動トリガー
+
+- **CUBE生成**: ユーザーが回号を入力することで実行される（手動トリガー）
+- **データ更新**: 当選番号とリハーサル数字は自動取得・更新される（自動化）
+
+### データ更新の重要性
+
+- **当日の回号のCUBE生成**: ユーザーが当日の回号を入力した際に、前日分の当選番号とリハーサル数字が利用可能である必要がある
+- **データの最新性**: 毎日最新データが自動取得・更新されるため、常に最新の情報でCUBEを生成できる
+
+詳細は [04-05_データ自動更新とCUBE生成自動化.md](../02_todo/04_operations/04-05_データ自動更新とCUBE生成自動化.md) を参照。
+
 ## 関連ファイル
 
 - `scripts/fetch_past_results.py`: データ取得スクリプト
@@ -175,3 +189,8 @@ python3 scripts/fetch_past_results.py data/my_results.csv --limit 500
 - `data/past_results.csv`: 過去当選番号データ
 - `logs/data_update_*.log`: 実行ログ
 - `logs/cron.log`: cron実行ログ
+
+## 関連ドキュメント
+
+- [04-05_データ自動更新とCUBE生成自動化.md](../02_todo/04_operations/04-05_データ自動更新とCUBE生成自動化.md): データ自動更新とCUBE生成の関係
+- [10-cube-automation-design.md](../01_design/10-cube-automation-design.md): CUBE生成システム設計書
