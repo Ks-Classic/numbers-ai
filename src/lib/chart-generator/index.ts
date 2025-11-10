@@ -50,9 +50,9 @@ export async function generateChart(
     //   - つまり、行数は 2*N（メイン行1本→2行、2本→4行、3本→6行、4本→8行）
     // 注意: 実装・表示・配列すべて1-indexedで統一（配列のインデックス1から使用、grid[0]は未使用）
     // 例: メイン行3本の場合、最後のメイン行は行5、その下の行6に裏数字
-    const rows = mainRows.length * 2; // メイン行N本の場合、2*N行必要
+    let rows = mainRows.length * 2; // メイン行N本の場合、2*N行必要
     const cols = 8;
-    const grid = initializeGrid(rows, cols, mainRows);
+    let grid = initializeGrid(rows, cols, mainRows);
     
     // ステップ5: メイン行配置後の余りマスルール（裏数字適用前）
     // 奇数行の奇数列・偶数列の空マスに対して、
