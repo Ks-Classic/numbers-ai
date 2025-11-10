@@ -41,16 +41,16 @@ def print_grid(grid, rows, cols, title=""):
         print(f"{title}")
         print('='*70)
     
-    # 列番号の表示（通常の数値）
+    # 列番号の表示（通常の数値、データ列と同じ幅に統一）
     print("      ", end="")
     for col in range(1, cols + 1):
-        print(f"  {col}", end="")
+        print(f" {col:2d} ", end="")
     print()
     
-    # 区切り線を追加
+    # 区切り線を追加（データ列と同じ幅に統一）
     print("      ", end="")
     for col in range(1, cols + 1):
-        print("---", end="")
+        print("----", end="")
     print()
     
     # グリッドの表示
