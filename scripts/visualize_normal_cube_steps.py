@@ -41,11 +41,13 @@ def print_grid(grid, rows, cols, title=""):
         print(f"{title}")
         print('='*70)
     
+    # 列番号の表示（幅を統一）
     print("      ", end="")
     for col in range(1, cols + 1):
-        print(f"{number_to_circle(col)} ", end="")
+        print(f"  {number_to_circle(col)}", end="")
     print()
     
+    # グリッドの表示
     for row in range(1, rows + 1):
         print(f"{number_to_circle(row)}: ", end="")
         for col in range(1, cols + 1):
@@ -54,8 +56,10 @@ def print_grid(grid, rows, cols, title=""):
                 print("  . ", end="")
             elif isinstance(val, (list, tuple)):
                 # リストやタプルの場合は最初の要素を表示（デバッグ用）
-                print(f" {val[0] if len(val) > 0 else '?':2d} ", end="")
+                num = val[0] if len(val) > 0 else '?'
+                print(f" {num:2d} ", end="")
             else:
+                # 数字を2桁で表示（1桁の場合は前にスペース）
                 print(f" {val:2d} ", end="")
         print()
 
