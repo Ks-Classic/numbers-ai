@@ -524,6 +524,159 @@ def fetch_page(url: str, max_retries: int = 3) -> Optional[str]:
     return None
 
 
+def fetch_mizuhobank_csv(round_number: int, session: Optional[requests.Session] = None) -> Optional[str]:
+    """
+    みずほ銀行のCSVファイルを取得
+    
+    CSVファイルのURL形式:
+    https://www.mizuhobank.co.jp/retail/takarakuji/numbers/csv/A100{round_number:04d}.CSV
+    
+    Args:
+        round_number: 回号
+        session: requests.Sessionオブジェクト（再利用用、Noneの場合は新規作成）
+        
+    Returns:
+        CSVファイルの内容（Shift_JISエンコーディング）、またはNone
+    """
+    csv_url = f'https://www.mizuhobank.co.jp/retail/takarakuji/numbers/csv/A100{round_number:04d}.CSV'
+    
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+    }
+    
+    # セッションが提供されていない場合は新規作成
+    if session is None:
+        session = requests.Session()
+        session.headers.update(headers)
+    
+    try:
+        response = session.get(csv_url, timeout=30)
+        
+        if response.status_code == 404:
+            return None
+        
+        # 403エラー（アクセス拒否）の場合もスキップ
+        if response.status_code == 403:
+            return None
+        
+        response.raise_for_status()
+        
+        # Shift_JISエンコーディングで取得
+        response.encoding = 'shift_jis'
+        
+        return response.text
+        
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code == 403:
+            return None
+        raise
+    except Exception as e:
+        return None
+
+
+def parse_mizuhobank_csv(csv_content: str, round_number: int, max_round: Optional[int] = None) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+    """
+    みずほ銀行のCSVファイルからN3とN4の当選番号と日付を抽出（リハーサル番号はなし）
+    
+    Args:
+        csv_content: CSVファイルの内容（Shift_JISエンコーディング）
+        round_number: 回号
+        max_round: 取得する最大回号（Noneの場合は制限なし）
+        
+    Returns:
+        (n3_winning, n4_winning, draw_date) のタプル。見つからない場合はNone
+    """
+    # 最大回号のチェック
+    if max_round and round_number > max_round:
+        return None, None, None
+    
+    try:
+        # Shift_JISからUTF-8に変換
+        if isinstance(csv_content, bytes):
+            csv_text = csv_content.decode('shift_jis', errors='ignore')
+        else:
+            csv_text = csv_content
+        
+        # 全角数字を半角に変換
+        csv_text = re.sub(r'[０-９]', lambda m: str(ord(m.group(0)) - 0xFEE0), csv_text)
+        
+        # 行に分割
+        lines = csv_text.split('\n')
+        # 空行を除去
+        lines = [line.strip() for line in lines if line.strip()]
+        
+        # プレフィックス行（A50など）をスキップ
+        skip_prefix = False
+        if lines and lines[0].startswith('A5'):
+            skip_prefix = True
+            lines = lines[1:]
+        
+        if len(lines) < 11:
+            return None, None, None
+        
+        # ヘッダー行から回号と日付を抽出
+        # 形式: 第2701回ナンバーズ,数字選択式全国自治宝くじ,平成21年10月8日,...
+        header_line = lines[0] if len(lines) > 0 else ''
+        
+        date_match = re.search(r'(平成|令和|昭和)(\d+|元)年(\d{1,2})月(\d{1,2})日', header_line)
+        draw_date = ''
+        if date_match:
+            era = date_match.group(1)
+            year_str = date_match.group(2)
+            month = date_match.group(3).zfill(2)
+            day = date_match.group(4).zfill(2)
+            
+            # 元号を西暦に変換
+            if era == '平成':
+                year = 1988 + (1 if year_str == '元' else int(year_str))
+            elif era == '令和':
+                year = 2018 + (1 if year_str == '元' else int(year_str))
+            elif era == '昭和':
+                year = 1925 + (1 if year_str == '元' else int(year_str))
+            else:
+                year = None
+            
+            if year:
+                draw_date = f"{year}-{month}-{day}"
+        
+        # N3の当選番号を抽出
+        # 元のCSVファイルの4行目 = プレフィックススキップ後は lines[2]（0-indexedで3行目）
+        n3_winning = None
+        n3_line_idx = 2 if skip_prefix else 3
+        if len(lines) > n3_line_idx:
+            n3_line = lines[n3_line_idx]
+            n3_parts = n3_line.split(',')
+            if len(n3_parts) >= 2 and ('ナンバーズ51' in n3_parts[0] or 'ナンバーズ３' in n3_parts[0]):
+                n3_winning = n3_parts[1].strip()
+                # 3桁の数字のみを抽出（先頭の0も含む）
+                n3_match = re.search(r'(\d{3})', n3_winning)
+                if n3_match:
+                    n3_winning = n3_match.group(1)
+                else:
+                    n3_winning = None
+        
+        # N4の当選番号を抽出
+        # 元のCSVファイルの11行目 = プレフィックススキップ後は lines[9]（0-indexedで10行目）
+        n4_winning = None
+        n4_line_idx = 9 if skip_prefix else 10
+        if len(lines) > n4_line_idx:
+            n4_line = lines[n4_line_idx]
+            n4_parts = n4_line.split(',')
+            if len(n4_parts) >= 2 and ('ナンバーズ52' in n4_parts[0] or 'ナンバーズ４' in n4_parts[0]):
+                n4_winning = n4_parts[1].strip()
+                # 4桁の数字のみを抽出（先頭の0も含む）
+                n4_match = re.search(r'(\d{4})', n4_winning)
+                if n4_match:
+                    n4_winning = n4_match.group(1)
+                else:
+                    n4_winning = None
+        
+        return n3_winning, n4_winning, draw_date
+        
+    except Exception as e:
+        return None, None, None
+
+
 def parse_mizuhobank_table(soup: BeautifulSoup, max_round: Optional[int] = None) -> Tuple[Dict[int, Dict[str, str]], Dict[int, Dict[str, str]]]:
     """
     みずほ銀行のページからN3とN4の当選番号を抽出（リハーサル番号はなし）
@@ -2015,38 +2168,91 @@ def main():
             else:
                 n4_data, n3_data = {}, {}
         elif max_rounds <= 10:
-            # 最新N件取得: みずほ銀行の最新ページから日付付きで取得（優先）、失敗時はhpfree.comから取得
-            print(f"📥 マージモード: 最新の{max_rounds}回分を取得します（みずほ銀行優先）...")
+            # 最新N件取得: みずほ銀行のCSVファイルから日付付きで取得（優先）、失敗時はhpfree.comから取得
+            print(f"📥 マージモード: 最新の{max_rounds}回分を取得します（みずほ銀行CSV優先）...")
             
-            # まずみずほ銀行の最新ページから取得を試みる（日付が含まれている）
+            # まずhpfree.comから最新回号とデータを取得（みずほ銀行CSVが存在しない場合のフォールバック用）
+            html_content = fetch_page(LATEST_PAGE_URL)
+            hpfree_n4_data = {}
+            hpfree_n3_data = {}
+            hpfree_latest_round = latest_round
+            
+            if html_content:
+                soup = BeautifulSoup(html_content, 'html.parser')
+                hpfree_n4_data = parse_n4_table(soup, latest_only=False)
+                hpfree_n3_data = parse_n3_table(soup, latest_only=False)
+                if hpfree_n4_data or hpfree_n3_data:
+                    hpfree_latest_round = max(set(hpfree_n4_data.keys()) | set(hpfree_n3_data.keys()))
+                    print(f"   hpfree.comから最新回号を取得: 第{hpfree_latest_round}回")
+            
             n4_data = {}
             n3_data = {}
             
-            print(f"   みずほ銀行の最新ページから取得を試みます...")
-            n4_html = fetch_page(MIZUHO_LATEST_N4_URL)
-            n3_html = fetch_page(MIZUHO_LATEST_N3_URL)
+            # みずほ銀行のCSVファイルから取得を試みる（日付が含まれている）
+            print(f"   みずほ銀行のCSVファイルから取得を試みます...")
+            session = requests.Session()
+            session.headers.update({
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            })
             
-            if n4_html:
-                soup = BeautifulSoup(n4_html, 'html.parser')
-                mizuhobank_n4_data, _ = parse_mizuhobank_table(soup)
-                n4_data.update(mizuhobank_n4_data)
-                print(f"   ✓ みずほ銀行からN4データを取得: {len(mizuhobank_n4_data)}件")
+            # hpfree.comから取得した最新回号から逆順にCSVファイルから取得を試みる
+            for round_num in range(hpfree_latest_round, hpfree_latest_round - max_rounds, -1):
+                csv_content = fetch_mizuhobank_csv(round_num, session=session)
+                if csv_content:
+                    n3_winning, n4_winning, draw_date = parse_mizuhobank_csv(csv_content, round_num)
+                    if n3_winning or n4_winning:
+                        print(f"   ✓ 第{round_num}回: N3={n3_winning}, N4={n4_winning}, Date={draw_date}")
+                        if n4_winning:
+                            n4_data[round_num] = {
+                                'n4_winning': n4_winning,
+                                'n4_rehearsal': '',  # CSVにはリハーサル番号は含まれていない
+                                'draw_date': draw_date or ''
+                            }
+                        if n3_winning:
+                            n3_data[round_num] = {
+                                'n3_winning': n3_winning,
+                                'n3_rehearsal': '',  # CSVにはリハーサル番号は含まれていない
+                                'draw_date': draw_date or ''
+                            }
+                    else:
+                        print(f"   ⚠ 第{round_num}回: CSVからデータを抽出できませんでした")
+                else:
+                    print(f"   ⚠ 第{round_num}回: CSVファイルを取得できませんでした")
             
-            if n3_html:
-                soup = BeautifulSoup(n3_html, 'html.parser')
-                _, mizuhobank_n3_data = parse_mizuhobank_table(soup)
-                n3_data.update(mizuhobank_n3_data)
-                print(f"   ✓ みずほ銀行からN3データを取得: {len(mizuhobank_n3_data)}件")
+            print(f"   ✓ みずほ銀行CSVから取得: N4={len(n4_data)}件、N3={len(n3_data)}件")
             
-            # みずほ銀行から取得できなかった場合、hpfree.comから取得（フォールバック）
+            # みずほ銀行から取得できなかった回号は、hpfree.comから取得したデータを使用（リハーサル番号を含む）
+            # ただし、みずほ銀行から取得した日付は優先する
+            if hpfree_n4_data or hpfree_n3_data:
+                all_rounds = set(n4_data.keys()) | set(n3_data.keys())
+                hpfree_rounds = set(hpfree_n4_data.keys()) | set(hpfree_n3_data.keys())
+                missing_rounds = hpfree_rounds - all_rounds
+                
+                for round_num in missing_rounds:
+                    if round_num in hpfree_n4_data:
+                        n4_data[round_num] = hpfree_n4_data[round_num]
+                    if round_num in hpfree_n3_data:
+                        n3_data[round_num] = hpfree_n3_data[round_num]
+                
+                # みずほ銀行から取得したデータにリハーサル番号を追加（hpfree.comから）
+                for round_num in all_rounds:
+                    if round_num in hpfree_n4_data and round_num in n4_data:
+                        # リハーサル番号を追加（日付はみずほ銀行のものを優先）
+                        if hpfree_n4_data[round_num].get('n4_rehearsal'):
+                            n4_data[round_num]['n4_rehearsal'] = hpfree_n4_data[round_num]['n4_rehearsal']
+                    if round_num in hpfree_n3_data and round_num in n3_data:
+                        # リハーサル番号を追加（日付はみずほ銀行のものを優先）
+                        if hpfree_n3_data[round_num].get('n3_rehearsal'):
+                            n3_data[round_num]['n3_rehearsal'] = hpfree_n3_data[round_num]['n3_rehearsal']
+                
+                if missing_rounds:
+                    print(f"   ✓ hpfree.comから補完: {len(missing_rounds)}件")
+            
+            # みずほ銀行から全く取得できなかった場合、hpfree.comから取得（フォールバック）
             if not n4_data and not n3_data:
-                print(f"   ⚠ みずほ銀行から取得できなかったため、hpfree.comから取得します...")
-                html_content = fetch_page(LATEST_PAGE_URL)
-                if html_content:
-                    soup = BeautifulSoup(html_content, 'html.parser')
-                    # 最新のN行を取得（latest_only=Falseで全件取得し、上位N件を使用）
-                    n4_data = parse_n4_table(soup, latest_only=False)
-                    n3_data = parse_n3_table(soup, latest_only=False)
+                print(f"   ⚠ みずほ銀行CSVから取得できなかったため、hpfree.comから取得します...")
+                n4_data = hpfree_n4_data
+                n3_data = hpfree_n3_data
             
             # N4とN3の両方の回号を統合して、最新のN件を取得
             all_rounds = set(n4_data.keys()) | set(n3_data.keys())
@@ -2067,7 +2273,7 @@ def main():
             if all_rounds:
                 actual_latest_round = max(all_rounds)
             else:
-                actual_latest_round = latest_round
+                actual_latest_round = hpfree_latest_round
             
             latest_round = actual_latest_round
             if all_rounds:
