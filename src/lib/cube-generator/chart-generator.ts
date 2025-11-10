@@ -499,6 +499,7 @@ function initializeGrid(
  * 
  * 行数に応じて対角線上に0を配置する。
  * 
+ * - 6行: 4行5列目
  * - 8行: 5行5列目
  * - 10行: 6行6列目
  * - 12行: 7行7列目
@@ -515,7 +516,10 @@ function placeCenterZero(grid: ChartGrid, rows: number, cols: number): [number, 
   let centerRow: number;
   let centerCol: number;
   
-  if (rows === 8) {
+  if (rows === 6) {
+    centerRow = 4;
+    centerCol = 5;
+  } else if (rows === 8) {
     centerRow = 5;
     centerCol = 5;
   } else if (rows === 10) {

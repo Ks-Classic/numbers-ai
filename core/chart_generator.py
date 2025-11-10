@@ -392,6 +392,7 @@ def place_center_zero(
     
     行数に応じて対角線上に0を配置する。
     
+    - 6行: 4行5列目
     - 8行: 5行5列目
     - 10行: 6行6列目
     - 12行: 7行7列目
@@ -405,7 +406,10 @@ def place_center_zero(
         0が配置された位置 (row, col) のタプル、配置されなかった場合はNone
     """
     # 行数に応じて対角線上の位置を決定
-    if rows == 8:
+    if rows == 6:
+        center_row = 4
+        center_col = 5
+    elif rows == 8:
         center_row = 5
         center_col = 5
     elif rows == 10:
