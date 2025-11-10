@@ -334,7 +334,7 @@ export default function CubePage() {
                   )}
 
                   {activeCubeType === 'extreme' && cubeData.extreme && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 max-w-4xl">
                       {cubeData.extreme.n3?.map((cube) => (
                         <CubeCard key={cube.id} cube={cube} onCopy={handleCopy} toCircledNumber={toCircledNumber} copied={copiedCubeId === cube.id} />
                       ))}
@@ -432,13 +432,13 @@ function CubeCard({
           )}
         </Button>
       </div>
-      <div className="overflow-x-auto">
-        <table className="border-collapse border-2 border-slate-400 text-sm w-full" role="table" aria-label={`${getMissingFillLabel(cube)}のCUBEテーブル`}>
+      <div className="overflow-x-visible">
+        <table className="border-collapse border-2 border-slate-400 text-xs w-full table-fixed" role="table" aria-label={`${getMissingFillLabel(cube)}のCUBEテーブル`}>
           <thead>
             <tr>
-              <th className="border-2 border-slate-400 bg-slate-200 p-2 w-10 h-10 font-bold" scope="col"></th>
+              <th className="border-2 border-slate-400 bg-slate-200 p-1 w-8 h-8 font-bold" scope="col"></th>
               {Array.from({ length: cube.cols }, (_, i) => (
-                <th key={i} className="border-2 border-slate-400 bg-slate-200 p-2 w-10 h-10 font-bold" scope="col">
+                <th key={i} className="border-2 border-slate-400 bg-slate-200 p-1 w-8 h-8 font-bold" scope="col">
                   {toCircledNumber(i + 1)}
                 </th>
               ))}
@@ -447,7 +447,7 @@ function CubeCard({
           <tbody>
             {Array.from({ length: cube.rows }, (_, rowIdx) => (
               <tr key={rowIdx}>
-                <th className="border-2 border-slate-400 bg-slate-200 p-2 w-10 h-10 font-bold" scope="row">
+                <th className="border-2 border-slate-400 bg-slate-200 p-1 w-8 h-8 font-bold" scope="row">
                   {toCircledNumber(rowIdx + 1)}
                 </th>
                 {Array.from({ length: cube.cols }, (_, colIdx) => {
@@ -455,7 +455,7 @@ function CubeCard({
                   return (
                     <td
                       key={colIdx}
-                      className="border-2 border-slate-400 p-2 w-10 h-10 text-center font-semibold"
+                      className="border-2 border-slate-400 p-1 w-8 h-8 text-center font-semibold"
                     >
                       {value !== null && value !== undefined ? value : ''}
                     </td>
