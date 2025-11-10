@@ -69,15 +69,13 @@ export async function generateChart(
       centerZeroPlaced = centerZeroPos !== null;
     }
     
-    // ステップ6-8: 裏数字・余りマスルール
+    // ステップ6-7: 裏数字ルール
     // ステップ6: 縦パス（上から下へ裏数字を配置）
     applyVerticalInverse(grid, rows, cols, centerZeroPos);
     // ステップ7: 横パス（左から右へ裏数字を配置）
     applyHorizontalInverse(grid, rows, cols);
-    // ステップ8: 余りマスルール（裏数字適用後の空マスを上からコピー）
-    applyRemainingCopy(grid, rows, cols);
     
-    // ステップ9: 8列×8行の場合の最終調整
+    // ステップ8: 8列×8行の場合の最終調整
     if (rows === 8 && cols === 8) {
       // 5列5行目を0に強制置き換え
       grid[5][5] = 0;

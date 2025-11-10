@@ -619,10 +619,7 @@ def generate_chart(
         if 'step7' in step_callbacks:
             step_callbacks['step7'](grid, rows, cols)
         
-        # ステップ8: 余りマスルール（裏数字適用後の空マスを上からコピー）
-        apply_remaining_copy(grid, rows, cols)
-        
-        # ステップ9: 8列×8行の場合の最終調整
+        # ステップ8: 8列×8行の場合の最終調整
         if rows == 8 and cols == 8:
             # 5列5行目を0に強制置き換え
             grid[5][5] = 0
