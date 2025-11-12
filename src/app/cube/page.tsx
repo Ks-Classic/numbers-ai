@@ -1155,7 +1155,7 @@ export default function CubePage() {
               {cubeData && (
                 <div className="space-y-8">
                   {activeCubeType === 'normal' && cubeData.normal && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                       {cubeData.normal[activeTarget]
                         ?.sort((a, b) => {
                           // 表0追加あり（B2/A2）が上2つ、表0追加なし（B1/A1）が下2つ
@@ -1252,7 +1252,7 @@ function CubeCard({
   const nums = cube.predicted_digits || [];
 
   return (
-    <Card className="p-5 hover:shadow-xl transition-all border-2 border-slate-200 shadow-md overflow-hidden">
+    <Card className="p-4 hover:shadow-xl transition-all border-2 border-slate-200 shadow-md overflow-hidden min-w-0">
       <div className="flex justify-between items-start mb-4">
         <div className="flex-1 min-w-0">
           <div className="text-xs font-bold text-slate-500 mb-1 uppercase tracking-wide">
