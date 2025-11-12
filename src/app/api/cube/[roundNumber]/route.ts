@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateChart, generateExtremeCube } from '@/lib/cube-generator';
-import { getPreviousResult, getPreviousPreviousResult } from '@/lib/data-loader';
+import { getPreviousResult, getPreviousPreviousResult, getPastResultByRoundNumber } from '@/lib/data-loader';
 import type { Pattern, Target } from '@/types/prediction';
 import type { KeisenMasterType } from '@/lib/cube-generator';
 
@@ -79,6 +79,54 @@ export async function GET(
 
     console.log(`[CUBE API Route] リクエスト: 回号=${roundNumberInt}`);
 
+    // クエリパラメータから手動編集値を取得
+    const { searchParams } = new URL(request.url);
+    const manualN3Winning = searchParams.get('n3_winning');
+    const manualN4Winning = searchParams.get('n4_winning');
+    const manualN3Rehearsal = searchParams.get('n3_rehearsal');
+    const manualN4Rehearsal = searchParams.get('n4_rehearsal');
+    
+    console.log(`[CUBE API Route] 手動編集値:`, {
+      n3_winning: manualN3Winning,
+      n4_winning: manualN4Winning,
+      n3_rehearsal: manualN3Rehearsal,
+      n4_rehearsal: manualN4Rehearsal,
+    });
+
+    // 現在の回号の当選番号を取得（インジケーター説明用）
+    // 手動編集値がある場合はそれを優先、なければCSVから取得
+    const currentResult = await getPastResultByRoundNumber(roundNumberInt);
+    
+    console.log(`[CUBE API Route] 現在の回号データ取得:`, {
+      roundNumber: roundNumberInt,
+      currentResult: currentResult ? {
+        n3Winning: currentResult.n3Winning,
+        n4Winning: currentResult.n4Winning,
+        n3Rehearsal: currentResult.n3Rehearsal,
+        n4Rehearsal: currentResult.n4Rehearsal,
+      } : null,
+      manualN3Winning,
+      manualN4Winning,
+      manualN3Rehearsal,
+      manualN4Rehearsal,
+    });
+    
+    // 手動編集値またはCSVデータを使用
+    const currentWinning = {
+      n3: manualN3Winning || currentResult?.n3Winning || null,
+      n4: manualN4Winning || currentResult?.n4Winning || null,
+    };
+    
+    const currentRehearsal = {
+      n3: manualN3Rehearsal || currentResult?.n3Rehearsal || null,
+      n4: manualN4Rehearsal || currentResult?.n4Rehearsal || null,
+    };
+    
+    console.log(`[CUBE API Route] current_winning/rehearsal設定:`, {
+      currentWinning,
+      currentRehearsal,
+    });
+    
     // 前回・前々回の当選番号を取得
     const previousResult = await getPreviousResult(roundNumberInt);
     const previousPreviousResult = await getPreviousPreviousResult(roundNumberInt);
@@ -101,6 +149,12 @@ export async function GET(
     const previousN4 = previousResult.n4Winning.padStart(4, '0');
     const previousPreviousN3 = previousPreviousResult.n3Winning.padStart(3, '0');
     const previousPreviousN4 = previousPreviousResult.n4Winning.padStart(4, '0');
+    
+    // リハーサル数字を取得
+    const previousN3Rehearsal = previousResult.n3Rehearsal?.padStart(3, '0') || null;
+    const previousN4Rehearsal = previousResult.n4Rehearsal?.padStart(4, '0') || null;
+    const previousPreviousN3Rehearsal = previousPreviousResult.n3Rehearsal?.padStart(3, '0') || null;
+    const previousPreviousN4Rehearsal = previousPreviousResult.n4Rehearsal?.padStart(4, '0') || null;
 
     const cubes = [];
     const patterns: Pattern[] = ['A1', 'A2', 'B1', 'B2'];
@@ -144,6 +198,8 @@ export async function GET(
             cols: chartData.cols,
             previous_winning: previousWinning,
             previous_previous_winning: previousPreviousWinning,
+            previous_rehearsal: target === 'n3' ? previousN3Rehearsal : previousN4Rehearsal,
+            previous_previous_rehearsal: target === 'n3' ? previousPreviousN3Rehearsal : previousPreviousN4Rehearsal,
             predicted_digits: chartData.expandedDigits || [...chartData.sourceDigits].sort((a, b) => a - b), // ソート済みの数字リストを表示
           });
         } catch (error) {
@@ -192,6 +248,8 @@ export async function GET(
             cols: chartData.cols,
             previous_winning: previousWinning,
             previous_previous_winning: previousPreviousWinning,
+            previous_rehearsal: target === 'n3' ? previousN3Rehearsal : previousN4Rehearsal,
+            previous_previous_rehearsal: target === 'n3' ? previousPreviousN3Rehearsal : previousPreviousN4Rehearsal,
             predicted_digits: chartData.expandedDigits || [...chartData.sourceDigits].sort((a, b) => a - b), // ソート済みの数字リストを表示
           });
         } catch (error) {
@@ -219,6 +277,8 @@ export async function GET(
         cols: extremeCube.cols,
         previous_winning: previousN3,
         previous_previous_winning: previousPreviousN3,
+        previous_rehearsal: previousN3Rehearsal,
+        previous_previous_rehearsal: previousPreviousN3Rehearsal,
         predicted_digits: chartData.expandedDigits || [...chartData.sourceDigits].sort((a, b) => a - b), // ソート済みの数字リストを表示
       });
     } catch (error) {
@@ -244,6 +304,8 @@ export async function GET(
         cols: extremeCube.cols,
         previous_winning: previousN3,
         previous_previous_winning: previousPreviousN3,
+        previous_rehearsal: previousN3Rehearsal,
+        previous_previous_rehearsal: previousPreviousN3Rehearsal,
         predicted_digits: chartData.expandedDigits || [...chartData.sourceDigits].sort((a, b) => a - b), // ソート済みの数字リストを表示
       });
     } catch (error) {
@@ -253,10 +315,18 @@ export async function GET(
     }
 
     console.log(`[CUBE API Route] 成功: ${cubes.length}個のCUBEを生成しました`);
+    console.log(`[CUBE API Route] レスポンス送信前:`, {
+      round_number: roundNumberInt,
+      current_winning: currentWinning,
+      current_rehearsal: currentRehearsal,
+      cubes_count: cubes.length,
+    });
 
     return NextResponse.json({
       round_number: roundNumberInt,
       cubes,
+      current_winning: currentWinning,
+      current_rehearsal: currentRehearsal,
       extracted_digits: {
         current: {
           n3: currentExtractedDigits.n3,
