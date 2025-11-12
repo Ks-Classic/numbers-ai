@@ -1252,9 +1252,9 @@ function CubeCard({
   const nums = cube.predicted_digits || [];
 
   return (
-    <Card className="p-5 hover:shadow-xl transition-all border-2 border-slate-200 shadow-md">
+    <Card className="p-5 hover:shadow-xl transition-all border-2 border-slate-200 shadow-md overflow-hidden">
       <div className="flex justify-between items-start mb-4">
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <div className="text-xs font-bold text-slate-500 mb-1 uppercase tracking-wide">
             {cube.cube_type === 'extreme' ? '極CUBE' : '通常CUBE'}
           </div>
@@ -1262,7 +1262,7 @@ function CubeCard({
             {getTitleText(cube)}
           </h3>
           {/* 元数字リスト（抽出数字） */}
-          <div className="font-bold text-base text-slate-700 tracking-wide">
+          <div className="font-bold text-base text-slate-700 tracking-wide break-words">
             抽出数字：{nums.length > 0 ? nums.join('  ') : 'データなし'}
           </div>
         </div>
@@ -1270,7 +1270,7 @@ function CubeCard({
           size="default"
           variant={copied ? "default" : "outline"}
           onClick={() => onCopy(cube)}
-          className={`h-10 shrink-0 min-w-[100px] transition-all ${
+          className={`h-10 shrink-0 min-w-[100px] transition-all ml-2 ${
             copied ? 'bg-green-500 text-white border-green-500' : ''
           }`}
           aria-label={`${cube.id}のCUBEをコピー`}
@@ -1288,8 +1288,8 @@ function CubeCard({
           )}
         </Button>
       </div>
-      <div className="overflow-x-visible">
-        <table className="border-collapse border-2 border-slate-400 text-xs w-full table-fixed" role="table" aria-label={`${getMissingFillLabel(cube)}のCUBEテーブル`}>
+      <div className="overflow-x-auto -mx-5 px-5">
+        <table className="border-collapse border-2 border-slate-400 text-xs w-full table-auto min-w-full" role="table" aria-label={`${getMissingFillLabel(cube)}のCUBEテーブル`}>
           <thead>
             <tr>
               <th className="border-2 border-slate-400 bg-slate-200 p-1 w-8 h-8 font-bold" scope="col"></th>
