@@ -13,6 +13,8 @@ export interface CubeData {
   cols: number;
   previous_winning: string;
   previous_previous_winning: string;
+  previous_rehearsal: string | null;
+  previous_previous_rehearsal: string | null;
   predicted_digits: number[];
 }
 
@@ -24,6 +26,14 @@ export interface ExtractedDigits {
 export interface CubesResponse {
   round_number: number;
   cubes: CubeData[];
+  current_winning: {
+    n3: string | null;
+    n4: string | null;
+  };
+  current_rehearsal: {
+    n3: string | null;
+    n4: string | null;
+  };
   extracted_digits: {
     current: {
       n3: ExtractedDigits;
