@@ -69,9 +69,10 @@ export async function generateChart(
     // ステップ5.5: パターンA2/B2中心0配置
     // メイン行配置後の余りマスルールの後に実行することで、
     // 余りマスルールで補完された数字が中心0配置で上書きされないようにする
+    // 注意: 6行の場合は中心0配置を実行せず、最終調整のみを実行する
     let centerZeroPos: [number, number] | null = null;
     let centerZeroPlaced = false;
-    if (pattern === ('A2' as Pattern) || pattern === ('B2' as Pattern)) {
+    if ((pattern === ('A2' as Pattern) || pattern === ('B2' as Pattern)) && rows !== 6) {
       centerZeroPos = placeCenterZero(grid, rows, cols);
       centerZeroPlaced = centerZeroPos !== null;
     }
@@ -81,7 +82,7 @@ export async function generateChart(
     applyVerticalInverse(grid, rows, cols, centerZeroPos);
     // ステップ7: 横パス（左から右へ裏数字を配置）
     applyHorizontalInverse(grid, rows, cols);
-    
+
     // ステップ8: 8行を超える場合は9行以降を削除して8行にする
     if (rows > 8 && cols === 8) {
       // 9行目以降を削除（grid[0]は未使用、grid[1]からgrid[8]までを保持）
