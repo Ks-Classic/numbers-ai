@@ -1,0 +1,167 @@
+# Vercel ignore file
+# CUBE生成機能に不要なファイルを除外
+# 各ファイル・ディレクトリの用途をコメントで明記
+
+# ============================================
+# Dependencies (Vercelが自動的にインストールするため不要)
+# ============================================
+node_modules/
+.pnp
+.pnp.*
+
+# ============================================
+# Next.js build output (Vercelが自動的にビルドするため不要)
+# ============================================
+.next/
+out/
+build/
+
+# ============================================
+# Python関連（CUBE生成機能には不要）
+# ============================================
+# FastAPIサーバー（AI推論用、プロジェクトルートのapi/のみ）
+# 注意: src/app/api/はNext.jsのAPI Routeなので含める必要がある
+/api/
+/core/
+/notebooks/
+/scripts/
+
+# Python設定ファイル（VercelがPython関数として認識するのを防ぐ）
+**/requirements.txt
+**/pyproject.toml
+**/Pipfile
+**/Pipfile.lock
+**/setup.py
+**/setup.cfg
+
+# Pythonファイル（プロジェクトルート直下のみ、src/内は除外しない）
+/*.py
+# Pythonキャッシュファイル（すべて除外）
+**/__pycache__/
+*.pyc
+
+# Python仮想環境（すべて除外）
+/venv/
+/env/
+/.venv/
+/api/venv/
+/notebooks/venv/
+/scripts/venv/
+
+# ============================================
+# AIモデルと学習データ（CUBE生成機能には不要）
+# ============================================
+# AIモデルファイル（161MB）
+/data/models/
+
+# 学習データ（AI推論用）
+/data/train_data_*.csv
+
+# ============================================
+# 生成されたファイルと分析結果（不要）
+# ============================================
+# 生成されたCUBEデータ
+/data/extreme_cubes/
+
+# 分析結果
+/data/analysis/
+
+# アーカイブファイル
+/data/archive/
+
+# バックアップファイル
+/data/*.csv.backup
+
+# ドキュメントファイル
+/data/*.md
+
+# 分析用JSONファイル（keisen_master.jsonとkeisen_master_new.json以外）
+/data/keisen_digit_ranking.json
+/data/keisen_reliability_stats.json
+/data/keisen_pattern_frequency.json
+/data/keisen_master_verification.json
+/data/keisen_master_verification_summary.csv
+
+# ============================================
+# テストファイル（不要）
+# ============================================
+# Pythonテストファイル
+test_*.py
+
+# TypeScript/JavaScriptテストファイル（src/内のテストファイルも除外）
+test_*.ts
+test_*.tsx
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+
+# テストカバレッジ
+coverage/
+
+# ============================================
+# 開発環境ファイル（不要）
+# ============================================
+.env.local
+.env*.local
+.vscode/
+.idea/
+.cursor/
+.serena/
+*.swp
+*.swo
+*~
+
+# ============================================
+# OSファイル（不要）
+# ============================================
+.DS_Store
+Thumbs.db
+
+# ============================================
+# Gitファイル（不要）
+# ============================================
+.git/
+.gitignore
+
+# ============================================
+# ログファイル（不要）
+# ============================================
+*.log
+*.log.*
+
+# ============================================
+# 一時ファイル（不要）
+# ============================================
+test_extreme_cube.json/
+temp/
+tmp/
+*.tmp
+
+# ============================================
+# その他の不要ファイル
+# ============================================
+git-add-cube-files.sh
+GIT_ADD_CUBE_FILES.md
+Dockerfile
+*.md
+!README.md
+
+# ============================================
+# ドキュメント（デプロイには不要）
+# ============================================
+docs/
+
+# ============================================
+# 重要な注意事項
+# ============================================
+# 以下のファイルは必ず含める必要があります（除外しない）:
+# - src/ (Next.jsアプリ全体)
+# - public/ (静的ファイル)
+# - data/past_results.csv (過去データ)
+# - data/keisen_master.json (現罫線マスタ)
+# - data/keisen_master_new.json (新罫線マスタ)
+# - package.json, tsconfig.json, next.config.ts, vercel.json (設定ファイル)
+# - .github/workflows/auto-update-data.yml (GitHub Actions)
+#
+# 合計サイズ: 約1MB（必要なファイルのみ）
