@@ -97,6 +97,14 @@ export async function generateChart(
       grid[4][5] = 5;
     }
     
+    // ステップ10: 8列×6行の場合の最終調整（0配置パターンのみ）
+    if (rows === 6 && cols === 8 && (pattern === 'A2' || pattern === 'B2')) {
+      // 5列4行目を0に強制置き換え
+      grid[4][5] = 0;
+      // 5列3行目を5に強制置き換え
+      grid[3][5] = 5;
+    }
+    
     return {
       grid,
       rows,
