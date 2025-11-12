@@ -5,6 +5,7 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import { PastResult, DataLoadError, RoundNumber } from './types';
+import { fetchPastResultsFromGitHub, shouldUseGitHubData } from './github-data';
 
 /**
  * CSVファイルのパス（プロジェクトルートからの相対パス）
@@ -13,14 +14,43 @@ const CSV_FILE_PATH = path.join(process.cwd(), 'data', 'past_results.csv');
 
 /**
  * CSVファイルから過去当選番号データを読み込む
+ * 本番環境ではGitHubから、ローカル環境ではローカルファイルから取得
  * 
  * @returns 過去当選番号データの配列（回号の降順）
  * @throws DataLoadError ファイル読み込みエラーまたはデータフォーマットエラー
  */
 export async function loadPastResults(): Promise<PastResult[]> {
   try {
-    const fileContent = await fs.readFile(CSV_FILE_PATH, 'utf-8');
-    return parseCSV(fileContent);
+    let csvContent: string;
+    
+    // 環境に応じてデータソースを決定
+    const useGitHub = shouldUseGitHubData();
+    console.log('[loadPastResults] データソース決定:', {
+      useGitHub,
+      NODE_ENV: process.env.NODE_ENV,
+      VERCEL: process.env.VERCEL,
+      USE_GITHUB_DATA: process.env.USE_GITHUB_DATA,
+    });
+    
+    if (useGitHub) {
+      // GitHubから取得
+      console.log('[loadPastResults] GitHubからデータを取得します');
+      csvContent = await fetchPastResultsFromGitHub();
+      console.log('[loadPastResults] GitHubからデータ取得完了:', {
+        contentLength: csvContent.length,
+        firstLine: csvContent.split('\n')[0],
+      });
+    } else {
+      // ローカルファイルから取得
+      console.log('[loadPastResults] ローカルファイルからデータを取得します:', CSV_FILE_PATH);
+      csvContent = await fs.readFile(CSV_FILE_PATH, 'utf-8');
+      console.log('[loadPastResults] ローカルファイルからデータ取得完了:', {
+        contentLength: csvContent.length,
+        firstLine: csvContent.split('\n')[0],
+      });
+    }
+    
+    return parseCSV(csvContent);
   } catch (error) {
     if (error instanceof DataLoadError) {
       throw error;
