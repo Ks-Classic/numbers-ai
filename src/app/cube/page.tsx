@@ -80,11 +80,18 @@ export default function CubePage() {
       }
 
       const data = await response.json();
+      console.log('[handleGenerateCubes] APIレスポンス:', {
+        round_number: data.round_number,
+        current_winning: data.current_winning,
+        current_rehearsal: data.current_rehearsal,
+        cubes_count: data.cubes?.length,
+      });
       setCubes(data.cubes);
       setCurrentRoundNumber(data.round_number);
       setExtractedDigits(data.extracted_digits);
       setCurrentWinning(data.current_winning);
       setCurrentRehearsal(data.current_rehearsal);
+      console.log('[handleGenerateCubes] state更新完了');
       toast.success(`${data.cubes.length}個のCUBEを生成しました`);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'CUBE生成に失敗しました';
@@ -268,6 +275,8 @@ export default function CubePage() {
           message: 'データ更新の確認がタイムアウトしました。GitHub Actionsで実行状況を確認してください。',
           details: updateNotification?.details,
         });
+        // タイムアウトでもローディング状態をリセット
+        setUpdatingData(false);
         return;
       }
       
@@ -294,6 +303,8 @@ export default function CubePage() {
                 },
               });
               toast.error('データ更新が失敗しました');
+              // エラーでもローディング状態をリセット
+              setUpdatingData(false);
             }
           } else {
             // まだ実行中の場合、継続してポーリング
@@ -395,6 +406,7 @@ export default function CubePage() {
         }
         
         // 同期が不要な場合、または同期後の再チェックが不要な場合
+        // データが更新されていない場合でも、完了通知を表示
         if (isDataUpdated) {
           setUpdateNotification({
             type: 'success',
@@ -420,12 +432,19 @@ export default function CubePage() {
           });
           toast.success('データ更新が完了しました');
         }
+        
+        // ローディング状態をリセット
+        setUpdateStatus('idle');
+        setUpdatingData(false);
       } else {
         console.error('[checkDataUpdateComplete] statusResponseが失敗:', {
           ok: statusResponse.ok,
           status: statusResponse.status,
           data: statusData,
         });
+        // エラーでもローディング状態をリセット
+        setUpdateStatus('idle');
+        setUpdatingData(false);
       }
     } catch (error) {
       console.error('[checkDataUpdateComplete] ❌ データ更新確認エラー:', error);
@@ -435,6 +454,9 @@ export default function CubePage() {
         details: updateNotification?.details,
       });
       toast.success('データ更新が完了しました');
+      // エラーでもローディング状態をリセット
+      setUpdateStatus('idle');
+      setUpdatingData(false);
     }
   };
 
@@ -491,17 +513,35 @@ export default function CubePage() {
 
   // 表示用の当選番号・リハーサルを取得（CSV優先、なければ手動編集値）
   const getDisplayWinning = () => {
-    return {
+    const result = {
       n3: currentWinning?.n3 || manualWinning.n3 || '---',
       n4: currentWinning?.n4 || manualWinning.n4 || '---',
     };
+    // デバッグログ（開発時のみ）
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[getDisplayWinning]', {
+        currentWinning,
+        manualWinning,
+        result,
+      });
+    }
+    return result;
   };
 
   const getDisplayRehearsal = () => {
-    return {
+    const result = {
       n3: currentRehearsal?.n3 || manualRehearsal.n3 || '---',
       n4: currentRehearsal?.n4 || manualRehearsal.n4 || '---',
     };
+    // デバッグログ（開発時のみ）
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[getDisplayRehearsal]', {
+        currentRehearsal,
+        manualRehearsal,
+        result,
+      });
+    }
+    return result;
   };
 
   // 数字のカテゴリを判定する関数（入力回号の当選番号・リハーサルのみ）
