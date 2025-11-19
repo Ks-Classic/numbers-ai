@@ -42,6 +42,8 @@ logger = logging.getLogger(__name__)
 # CUBE生成用のインポート
 sys.path.append(str(PROJECT_ROOT / 'scripts'))
 from generate_extreme_cube import generate_extreme_cube
+from production.fetch_past_results import fetch_latest_data_for_api
+
 
 app = FastAPI(title="Numbers AI Prediction API", version="1.0.0")
 
@@ -220,6 +222,44 @@ async def predict_axis(request: PredictAxisRequest):
     pattern_results = {}
     pattern_max_scores = {}
     
+    # 必要なデータ（前回・前々回）があるか確認し、なければ取得
+    required_rounds = [request.round_number - 1, request.round_number - 2]
+    missing_rounds = []
+    
+    for r in required_rounds:
+        if r > 0 and len(df[df['round_number'] == r]) == 0:
+            missing_rounds.append(r)
+    
+    if missing_rounds:
+        print(f"データ不足: 第{missing_rounds}回のデータがありません。取得を試みます。")
+        try:
+            new_rows = []
+            for r in missing_rounds:
+                # データ取得
+                fetched_data = fetch_latest_data_for_api(r)
+                if fetched_data:
+                    new_rows.append(fetched_data)
+            
+            if new_rows:
+                # DataFrameに追加
+                new_df = pd.DataFrame(new_rows)
+                # 既存のDataFrameと結合
+                df = pd.concat([df, new_df], ignore_index=True)
+                # 回号でソート
+                df = df.sort_values('round_number', ascending=False).reset_index(drop=True)
+                
+                # データ型変換（文字列型に統一）
+                df['n3_winning'] = df['n3_winning'].astype(str).str.replace('.0', '', regex=False)
+                df['n4_winning'] = df['n4_winning'].astype(str).str.replace('.0', '', regex=False)
+                # 先頭0を補完
+                df['n3_winning'] = df['n3_winning'].apply(lambda x: str(x).zfill(3) if pd.notna(x) and str(x) != 'NULL' else x)
+                df['n4_winning'] = df['n4_winning'].apply(lambda x: str(x).zfill(4) if pd.notna(x) and str(x) != 'NULL' else x)
+                
+                print(f"✓ {len(new_rows)}件のデータを追加しました")
+        except Exception as e:
+            print(f"⚠ データ自動取得エラー: {e}")
+            # エラーが出ても既存データで続行
+
     try:
         # 各パターンで予測を実行
         for pattern in patterns:
@@ -349,6 +389,44 @@ async def predict_combination(request: PredictCombinationRequest):
     if df is None or keisen_master is None:
         raise HTTPException(status_code=500, detail="データが読み込まれていません")
     
+    # 必要なデータ（前回・前々回）があるか確認し、なければ取得
+    required_rounds = [request.round_number - 1, request.round_number - 2]
+    missing_rounds = []
+    
+    for r in required_rounds:
+        if r > 0 and len(df[df['round_number'] == r]) == 0:
+            missing_rounds.append(r)
+    
+    if missing_rounds:
+        print(f"データ不足: 第{missing_rounds}回のデータがありません。取得を試みます。")
+        try:
+            new_rows = []
+            for r in missing_rounds:
+                # データ取得
+                fetched_data = fetch_latest_data_for_api(r)
+                if fetched_data:
+                    new_rows.append(fetched_data)
+            
+            if new_rows:
+                # DataFrameに追加
+                new_df = pd.DataFrame(new_rows)
+                # 既存のDataFrameと結合
+                df = pd.concat([df, new_df], ignore_index=True)
+                # 回号でソート
+                df = df.sort_values('round_number', ascending=False).reset_index(drop=True)
+                
+                # データ型変換（文字列型に統一）
+                df['n3_winning'] = df['n3_winning'].astype(str).str.replace('.0', '', regex=False)
+                df['n4_winning'] = df['n4_winning'].astype(str).str.replace('.0', '', regex=False)
+                # 先頭0を補完
+                df['n3_winning'] = df['n3_winning'].apply(lambda x: str(x).zfill(3) if pd.notna(x) and str(x) != 'NULL' else x)
+                df['n4_winning'] = df['n4_winning'].apply(lambda x: str(x).zfill(4) if pd.notna(x) and str(x) != 'NULL' else x)
+                
+                print(f"✓ {len(new_rows)}件のデータを追加しました")
+        except Exception as e:
+            print(f"⚠ データ自動取得エラー: {e}")
+            # エラーが出ても既存データで続行
+
     try:
         # 予測表を生成
         grid, rows, cols = generate_chart(

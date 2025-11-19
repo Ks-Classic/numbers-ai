@@ -106,6 +106,54 @@ def handler(event: Dict[str, Any], context: Any = None) -> Dict[str, Any]:
         rehearsal_digits = data.get('rehearsal_digits')
         max_combinations = int(data.get('max_combinations', 100))
         
+        # 必要なデータ（前回・前々回）があるか確認し、なければ取得
+        # 予測対象回号の前回(round_number - 1)と前々回(round_number - 2)が必要
+        required_rounds = [round_number - 1, round_number - 2]
+        missing_rounds = []
+        
+        for r in required_rounds:
+            if r > 0 and len(df[df['round_number'] == r]) == 0:
+                missing_rounds.append(r)
+        
+        if missing_rounds:
+            print(f"データ不足: 第{missing_rounds}回のデータがありません。取得を試みます。")
+            try:
+                # scriptsディレクトリへのパスを追加
+                scripts_dir = str(PROJECT_ROOT / 'scripts')
+                if scripts_dir not in sys.path:
+                    sys.path.append(scripts_dir)
+                
+                # fetch_past_resultsモジュールをインポート
+                from production.fetch_past_results import fetch_latest_data_for_api
+                
+                new_rows = []
+                for r in missing_rounds:
+                    # データ取得
+                    fetched_data = fetch_latest_data_for_api(r)
+                    if fetched_data:
+                        new_rows.append(fetched_data)
+                
+                if new_rows:
+                    # DataFrameに追加
+                    new_df = pd.DataFrame(new_rows)
+                    # 既存のDataFrameと結合
+                    df = pd.concat([df, new_df], ignore_index=True)
+                    # 回号でソート
+                    df = df.sort_values('round_number')
+                    
+                    # データ型変換（文字列型に統一）
+                    df['n3_winning'] = df['n3_winning'].astype(str).str.replace('.0', '', regex=False)
+                    df['n4_winning'] = df['n4_winning'].astype(str).str.replace('.0', '', regex=False)
+                    # 先頭0を補完
+                    df['n3_winning'] = df['n3_winning'].apply(lambda x: str(x).zfill(3) if pd.notna(x) and str(x) != 'NULL' else x)
+                    df['n4_winning'] = df['n4_winning'].apply(lambda x: str(x).zfill(4) if pd.notna(x) and str(x) != 'NULL' else x)
+                    
+                    print(f"✓ {len(new_rows)}件のデータを追加しました")
+            except Exception as e:
+                print(f"⚠ データ自動取得エラー: {e}")
+                # エラーが出ても既存データで続行
+
+        
         # 予測表を生成
         grid, rows, cols = generate_chart(
             df, keisen_master, round_number, best_pattern, target

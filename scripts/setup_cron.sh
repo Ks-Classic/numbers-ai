@@ -17,7 +17,10 @@ echo "Pythonパス: $PYTHON_PATH"
 echo ""
 
 # cronジョブを設定
-CRON_CMD="0 15 * * 1-5 cd $PROJECT_ROOT && $PYTHON_PATH scripts/production/auto_update_past_results.py >> logs/cron.log 2>&1"
+# 毎日 08:00 と 20:00 に実行 (半日に1回)
+# ナンバーズの抽選は平日のみだが、祝日判定などが複雑なため毎日実行し、
+# スクリプト側で抽選日かどうかを判定する運用とする
+CRON_CMD="0 8,20 * * * cd $PROJECT_ROOT && $PYTHON_PATH scripts/production/auto_update_past_results.py >> logs/cron.log 2>&1"
 
 echo "設定するcronジョブ:"
 echo "$CRON_CMD"
@@ -26,16 +29,10 @@ echo ""
 # 既存のcronジョブを確認
 if crontab -l 2>/dev/null | grep -q "scripts/production/auto_update_past_results.py"; then
     echo "既存のcronジョブが見つかりました。"
-    read -p "既存のジョブを削除して新しく設定しますか？ (y/N): " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        # 既存のジョブを削除
-        crontab -l 2>/dev/null | grep -v "scripts/production/auto_update_past_results.py" | crontab -
-        echo "既存のジョブを削除しました。"
-    else
-        echo "設定をキャンセルしました。"
-        exit 0
-    fi
+    # 自動的に更新する（ユーザーの手間を省くため）
+    # 既存のジョブを削除
+    crontab -l 2>/dev/null | grep -v "scripts/production/auto_update_past_results.py" | crontab -
+    echo "既存のジョブを更新しました。"
 fi
 
 # 新しいcronジョブを追加
@@ -52,11 +49,4 @@ echo "  sudo service cron start"
 echo ""
 echo "cronサービスが自動起動するように設定するには:"
 echo "  sudo systemctl enable cron"
-echo ""
-echo "設定を確認するには:"
-echo "  crontab -l"
-echo ""
-echo "cronジョブを削除するには:"
-echo "  crontab -e"
-echo "  (該当行を削除して保存)"
 echo ""
