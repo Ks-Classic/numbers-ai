@@ -1,0 +1,64 @@
+# .dockerignore
+# Dockerイメージに含めないファイル・ディレクトリ
+
+# Python関連
+venv/
+api/venv/
+notebooks/venv/
+scripts/venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+*.whl
+
+# Node関連
+node_modules/
+.next/
+.pnpm-store/
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# IDE関連
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-*
+
+# 環境変数
+.env*
+!.env.local.example
+
+# Git関連
+.git/
+.gitignore
+.gitattributes
+
+# ドキュメント（必要に応じて）
+docs/
+*.md
+!README.md
+
+# その他
+.DS_Store
+*.log
+vercel.json
+.vercel/
+
+# 一時ファイル
+*.tmp
+*.bak
+*.cache
+
+# Jupyter Notebook関連（.ipynb_checkpoints）
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+

@@ -1,0 +1,27 @@
+{
+  "python.defaultInterpreterPath": "/usr/bin/python3",
+  "python.terminal.activateEnvironment": false,
+  "python.analysis.extraPaths": [
+    "${workspaceFolder}/notebooks",
+    "${workspaceFolder}/api"
+  ],
+  "python.autoComplete.extraPaths": [
+    "${workspaceFolder}/notebooks",
+    "${workspaceFolder}/api"
+  ],
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "explicit"
+    }
+  },
+  "python.linting.enabled": true,
+  "python.linting.pylintEnabled": false,
+  "python.linting.flake8Enabled": true,
+  "jupyter.defaultKernel": "/usr/bin/python3",
+  "cursorpyright.analysis.extraPaths": [
+    "${workspaceFolder}/notebooks",
+    "${workspaceFolder}/api"
+  ]
+}

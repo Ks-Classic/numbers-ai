@@ -1,0 +1,212 @@
+# Vercel ignore file
+# CUBE生成機能に不要なファイルを除外
+# 各ファイル・ディレクトリの用途をコメントで明記
+
+# ============================================
+# Dependencies (Vercelが自動的にインストールするため不要)
+# ============================================
+node_modules/
+.pnp
+.pnp.*
+
+# ============================================
+# Next.js build output (Vercelが自動的にビルドするため不要)
+# ============================================
+.next/
+out/
+build/
+
+# ============================================
+# Python関連（Vercel Python関数は含める）
+# ============================================
+# FastAPIサーバー関連ファイル（Vercel Python関数には不要）
+# 注意: api/predict/axis.py と api/predict/combination.py はVercel Python関数として含める
+/api/main.py
+/api/run.py
+/api/Dockerfile
+/api/Procfile
+/api/start.sh
+/api/README.md
+/api/requirements.md
+/api/venv/
+/api/__pycache__/
+
+# 開発・分析用ディレクトリ（Vercel Python関数にcore/は必要）
+# 注意: core/はVercel Python関数に必要なので除外しない
+/notebooks/
+/scripts/
+
+# Python設定ファイル（api/requirements.txtはVercel Python関数に必要なので含める）
+# 注意: api/requirements.txtはVercel Python関数に必要
+/pyproject.toml
+/Pipfile
+/Pipfile.lock
+/setup.py
+/setup.cfg
+
+# Pythonファイル（プロジェクトルート直下のみ、src/内は除外しない）
+/*.py
+# Pythonキャッシュファイル（すべて除外）
+**/__pycache__/
+*.pyc
+
+# Python仮想環境（すべて除外）
+/venv/
+/env/
+/.venv/
+/api/venv/
+/notebooks/venv/
+/scripts/venv/
+
+# ============================================
+# AIモデルと学習データ（Vercel Python関数に必要）
+# ============================================
+# AIモデルファイル（LightGBMモデルは含める必要がある）
+# 注意: /data/models/*_lgb.pkl はVercel Python関数に必要なので除外しない
+# ただし、XGBoostモデルファイルと学習データファイルは除外
+
+# 学習データファイル（推論時には不要、178MB削減）
+/data/models/*_data.pkl
+
+# XGBoostモデルファイル（削除予定、LightGBMに移行）
+/data/models/n3_axis.pkl
+/data/models/n4_axis.pkl
+/data/models/n3_axis_tuned.pkl
+/data/models/n4_axis_tuned.pkl
+/data/models/n3_box_comb.pkl
+/data/models/n3_straight_comb.pkl
+/data/models/n4_box_comb.pkl
+/data/models/n4_straight_comb.pkl
+
+# 評価結果ファイル（不要）
+/data/models/evaluation_results*.pkl
+
+# 学習データCSV（AI推論用、Vercelには不要）
+/data/train_data_*.csv
+
+# ============================================
+# 生成されたファイルと分析結果（不要）
+# ============================================
+# 生成されたCUBEデータ
+/data/extreme_cubes/
+
+# 分析結果
+/data/analysis/
+
+# アーカイブファイル
+/data/archive/
+
+# バックアップファイル
+/data/*.csv.backup
+
+# ドキュメントファイル
+/data/*.md
+
+# 分析用JSONファイル（keisen_master.jsonとkeisen_master_new.json以外）
+/data/keisen_digit_ranking.json
+/data/keisen_reliability_stats.json
+/data/keisen_pattern_frequency.json
+/data/keisen_master_verification.json
+/data/keisen_master_verification_summary.csv
+
+# ============================================
+# テストファイル（不要）
+# ============================================
+# Pythonテストファイル
+test_*.py
+
+# TypeScript/JavaScriptテストファイル（src/内のテストファイルも除外）
+test_*.ts
+test_*.tsx
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+
+# テストカバレッジ
+coverage/
+
+# ============================================
+# 開発環境ファイル（不要）
+# ============================================
+.env.local
+.env*.local
+.vscode/
+.idea/
+.cursor/
+.serena/
+*.swp
+*.swo
+*~
+
+# ============================================
+# OSファイル（不要）
+# ============================================
+.DS_Store
+Thumbs.db
+
+# ============================================
+# Gitファイル（不要）
+# ============================================
+.git/
+.gitignore
+
+# ============================================
+# ログファイル（不要）
+# ============================================
+*.log
+*.log.*
+
+# ============================================
+# 一時ファイル（不要）
+# ============================================
+test_extreme_cube.json/
+temp/
+tmp/
+*.tmp
+
+# ============================================
+# その他の不要ファイル
+# ============================================
+git-add-cube-files.sh
+GIT_ADD_CUBE_FILES.md
+Dockerfile
+*.md
+!README.md
+
+# ============================================
+# ドキュメント（デプロイには不要）
+# ============================================
+docs/
+
+# ============================================
+# AIモデルと学習データ（Vercel Python関数に必要）
+# ============================================
+# ... (既存の設定) ...
+
+# 学習データディレクトリ（不要）
+/data/training_data/
+
+# バッチファイルとチェックポイント（不要）
+/data/models/combination_batches/
+/data/models/combination_checkpoint.pkl
+
+# バックアップディレクトリ（不要）
+/data/models/backup/
+
+# 基礎集計データ（不要）
+/data/base_statistics/
+
+# ============================================
+# 重要な注意事項
+# ============================================
+# 以下のファイルは必ず含める必要があります（除外しない）:
+# - src/ (Next.jsアプリ全体)
+# - public/ (静的ファイル)
+# - data/past_results.csv (過去データ)
+# - data/keisen_master.json (現罫線マスタ)
+# - data/keisen_master_new.json (新罫線マスタ)
+# - package.json, tsconfig.json, next.config.ts, vercel.json (設定ファイル)
+# - .github/workflows/auto-update-data.yml (GitHub Actions)
+#
+# 合計サイズ: 約1MB（必要なファイルのみ）
