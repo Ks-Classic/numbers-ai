@@ -2297,5 +2297,64 @@ def main():
     print("=" * 80)
 
 
+
+def fetch_latest_data_for_api(target_round: int) -> Optional[Dict[str, Any]]:
+    """
+    API用のデータ取得関数
+    指定された回号のデータを取得して辞書として返す（CSV保存なし）
+    
+    Args:
+        target_round: 取得したい回号
+        
+    Returns:
+        データ辞書（見つからない場合はNone）
+        {
+            'round_number': int,
+            'draw_date': str,
+            'n3_winning': str,
+            'n4_winning': str,
+            'n3_rehearsal': str,
+            'n4_rehearsal': str
+        }
+    """
+    print(f"APIリクエスト: 第{target_round}回のデータを取得します")
+    
+    # 最新版ページを取得
+    html_content = fetch_page(LATEST_PAGE_URL)
+    if not html_content:
+        print("⚠ 最新版ページの取得に失敗しました")
+        return None
+    
+    soup = BeautifulSoup(html_content, 'html.parser')
+    
+    # 最新の1行のみ取得するのではなく、ページ内の全データを取得して検索
+    n4_data = parse_n4_table(soup, latest_only=False)
+    n3_data = parse_n3_table(soup, latest_only=False)
+    
+    # ターゲット回号のデータがあるか確認
+    if target_round in n4_data or target_round in n3_data:
+        n4_info = n4_data.get(target_round, {})
+        n3_info = n3_data.get(target_round, {})
+        
+        # データを結合
+        result = {
+            'round_number': target_round,
+            'draw_date': n4_info.get('draw_date') or n3_info.get('draw_date') or '',
+            'n3_winning': n3_info.get('n3_winning', ''),
+            'n4_winning': n4_info.get('n4_winning', ''),
+            'n3_rehearsal': n3_info.get('n3_rehearsal', ''),
+            'n4_rehearsal': n4_info.get('n4_rehearsal', '')
+        }
+        
+        # 必須データがあるか確認
+        if result['n3_winning'] or result['n4_winning']:
+            print(f"✓ 第{target_round}回のデータを取得しました")
+            return result
+            
+    print(f"⚠ 第{target_round}回のデータが見つかりませんでした")
+    return None
+
+
 if __name__ == "__main__":
+
     main()
