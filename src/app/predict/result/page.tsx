@@ -151,7 +151,7 @@ export default function ResultPage() {
           </div>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'n3' | 'n4' | 'all')} className="w-full">
           <TabsList className="grid w-full grid-cols-3 mb-8">
             <TabsTrigger value="n3">ナンバーズ3</TabsTrigger>
             <TabsTrigger value="n4">ナンバーズ4</TabsTrigger>
