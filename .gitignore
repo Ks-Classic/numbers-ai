@@ -1,0 +1,76 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+node_modules/
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+!.env.local.example
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+.vercel
+
+# OCR tools (scripts directory only)
+scripts/venv/
+scripts/ocr_results/
+
+# Python virtual environments
+venv/
+env/
+.venv/
+api/venv/
+notebooks/venv/
+
+# CUBE data (analysis purposes only, too many files for Git)
+data/extreme_cubes/
+data/analysis/
+
+# Training data files (too large for Git, ~6GB total)
+data/training_data/
+
+# Model data files (large files, should not be in Git)
+data/models/*_data.pkl
+data/models/backup/
+data/models/combination_batches/
+data/models/combination_checkpoint.pkl
+data/models/evaluation_results*.pkl__pycache__/
+*.pyc
+data/base_statistics/
+.playwright-mcp/
+*.backup
+
+# Git debug logs
+git_push_debug*.log
