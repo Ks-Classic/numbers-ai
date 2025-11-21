@@ -20,6 +20,7 @@ git add src/app/cube/page.tsx
 
 # データファイル
 git add data/keisen_master_new.json
+git add data/past_results.csv
 
 # ドキュメント
 git add VERCEL_CUBE_DEPLOY_CHECKLIST.md
