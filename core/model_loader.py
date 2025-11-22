@@ -8,7 +8,6 @@ import pickle
 from pathlib import Path
 from typing import Optional, Dict, Literal, List, Union
 import numpy as np
-import xgboost as xgb
 import lightgbm as lgb
 
 Pattern = Literal['A1', 'A2', 'B1', 'B2']
@@ -19,42 +18,29 @@ ComboType = Literal['box', 'straight']
 class ModelLoader:
     """モデル読み込みクラス"""
     
-    def __init__(self, models_dir: Path, use_lightgbm: bool = False):
+    def __init__(self, models_dir: Path):
         """初期化
         
         Args:
             models_dir: モデルファイルが保存されているディレクトリ
-            use_lightgbm: Trueの場合、LightGBMモデルを読み込む（デフォルト: False）
         """
         self.models_dir = Path(models_dir)
-        self.use_lightgbm = use_lightgbm
-        self.models: Dict[str, Union[xgb.XGBClassifier, lgb.LGBMClassifier]] = {}
+        self.models: Dict[str, lgb.LGBMClassifier] = {}
         self.feature_keys: Dict[str, List[str]] = {}  # モデルごとの特徴量キーリスト
         self.dimension_warnings_shown: Dict[str, bool] = {}  # 次元不一致警告を1回だけ表示するためのフラグ
         self._load_all_models()
     
     def _load_all_models(self) -> None:
         """すべてのモデルを読み込む"""
-        if self.use_lightgbm:
-            # LightGBMモデルファイル名
-            model_files = {
-                'n3_axis': 'n3_axis_lgb.pkl',
-                'n4_axis': 'n4_axis_lgb.pkl',
-                'n3_box_comb': 'n3_box_comb_lgb.pkl',
-                'n3_straight_comb': 'n3_straight_comb_lgb.pkl',
-                'n4_box_comb': 'n4_box_comb_lgb.pkl',
-                'n4_straight_comb': 'n4_straight_comb_lgb.pkl'
-            }
-        else:
-            # XGBoostモデルファイル名（デフォルト）
-            model_files = {
-                'n3_axis': 'n3_axis.pkl',
-                'n4_axis': 'n4_axis.pkl',
-                'n3_box_comb': 'n3_box_comb.pkl',
-                'n3_straight_comb': 'n3_straight_comb.pkl',
-                'n4_box_comb': 'n4_box_comb.pkl',
-                'n4_straight_comb': 'n4_straight_comb.pkl'
-            }
+        # LightGBMモデルファイル名
+        model_files = {
+            'n3_axis': 'n3_axis_lgb.pkl',
+            'n4_axis': 'n4_axis_lgb.pkl',
+            'n3_box_comb': 'n3_box_comb_lgb.pkl',
+            'n3_straight_comb': 'n3_straight_comb_lgb.pkl',
+            'n4_box_comb': 'n4_box_comb_lgb.pkl',
+            'n4_straight_comb': 'n4_straight_comb_lgb.pkl'
+        }
         
         for model_name, filename in model_files.items():
             model_path = self.models_dir / filename
@@ -72,14 +58,13 @@ class ModelLoader:
                         self.models[model_name] = model_data
                         self.feature_keys[model_name] = []
                     
-                    model_type = "LightGBM" if self.use_lightgbm else "XGBoost"
-                    print(f"モデル読み込み完了: {model_name} ({model_type})")
+                    print(f"モデル読み込み完了: {model_name} (LightGBM)")
                 except Exception as e:
                     print(f"警告: モデル読み込みエラー ({model_name}): {e}")
             else:
                 print(f"警告: モデルファイルが見つかりません: {model_path}")
     
-    def load_model(self, model_name: str) -> Optional[Union[xgb.XGBClassifier, lgb.LGBMClassifier]]:
+    def load_model(self, model_name: str) -> Optional[lgb.LGBMClassifier]:
         """指定されたモデルを読み込む
         
         Args:
@@ -256,12 +241,11 @@ class ModelLoader:
         return list(self.models.keys())
 
 
-def load_model_loader(models_dir: Optional[Path] = None, use_lightgbm: bool = False) -> ModelLoader:
+def load_model_loader(models_dir: Optional[Path] = None) -> ModelLoader:
     """モデルローダーを読み込む
     
     Args:
         models_dir: モデルディレクトリ（Noneの場合はデフォルトパスを使用）
-        use_lightgbm: Trueの場合、LightGBMモデルを読み込む（デフォルト: False）
     
     Returns:
         ModelLoaderインスタンス
@@ -272,7 +256,7 @@ def load_model_loader(models_dir: Optional[Path] = None, use_lightgbm: bool = Fa
         project_root = Path(__file__).parent.parent if '__file__' in globals() else Path.cwd()
         models_dir = project_root / 'data' / 'models'
     
-    return ModelLoader(models_dir, use_lightgbm=use_lightgbm)
+    return ModelLoader(models_dir)
 
 
 def check_models_exist(models_dir: Path) -> Dict[str, bool]:
@@ -285,12 +269,12 @@ def check_models_exist(models_dir: Path) -> Dict[str, bool]:
         モデル名と存在フラグの辞書
     """
     required_models = [
-        'n3_axis.pkl',
-        'n4_axis.pkl',
-        'n3_box_comb.pkl',
-        'n3_straight_comb.pkl',
-        'n4_box_comb.pkl',
-        'n4_straight_comb.pkl'
+        'n3_axis_lgb.pkl',
+        'n4_axis_lgb.pkl',
+        'n3_box_comb_lgb.pkl',
+        'n3_straight_comb_lgb.pkl',
+        'n4_box_comb_lgb.pkl',
+        'n4_straight_comb_lgb.pkl'
     ]
     
     results = {}

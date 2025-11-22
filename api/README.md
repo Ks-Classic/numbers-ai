@@ -92,12 +92,12 @@ pip install -r requirements.txt
 
 - `data/models/` ディレクトリに必要なモデルファイル（`.pkl`）が配置されているか確認
 - モデルファイル名は以下の通り：
-  - `n3_axis.pkl`
-  - `n4_axis.pkl`
-  - `n3_box_comb.pkl`
-  - `n3_straight_comb.pkl`
-  - `n4_box_comb.pkl`
-  - `n4_straight_comb.pkl`（オプション）
+  - `n3_axis_lgb.pkl`
+  - `n4_axis_lgb.pkl`
+  - `n3_box_comb_lgb.pkl`
+  - `n3_straight_comb_lgb.pkl`
+  - `n4_box_comb_lgb.pkl`
+  - `n4_straight_comb_lgb.pkl`（オプション）
 
 ### ポート8000が既に使用されている場合
 

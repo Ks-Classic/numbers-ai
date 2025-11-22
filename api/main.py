@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 
 # CUBE生成用のインポート
 sys.path.append(str(PROJECT_ROOT / 'scripts'))
-from generate_extreme_cube import generate_extreme_cube
+from production.generate_extreme_cube import generate_extreme_cube
 from production.fetch_past_results import fetch_latest_data_for_api
 
 
@@ -101,12 +101,12 @@ def load_data_and_models(force_reload: bool = False):
         
         # モデルファイルの更新チェック
         model_files = {
-            'n3_axis': 'n3_axis.pkl',
-            'n4_axis': 'n4_axis.pkl',
-            'n3_box_comb': 'n3_box_comb.pkl',
-            'n3_straight_comb': 'n3_straight_comb.pkl',
-            'n4_box_comb': 'n4_box_comb.pkl',
-            'n4_straight_comb': 'n4_straight_comb.pkl'
+            'n3_axis': 'n3_axis_lgb.pkl',
+            'n4_axis': 'n4_axis_lgb.pkl',
+            'n3_box_comb': 'n3_box_comb_lgb.pkl',
+            'n3_straight_comb': 'n3_straight_comb_lgb.pkl',
+            'n4_box_comb': 'n4_box_comb_lgb.pkl',
+            'n4_straight_comb': 'n4_straight_comb_lgb.pkl'
         }
         
         models_updated = False

@@ -23,5 +23,6 @@
   "cursorpyright.analysis.extraPaths": [
     "${workspaceFolder}/notebooks",
     "${workspaceFolder}/api"
-  ]
+  ],
+  "editor.allowVariableFontsInAccessibilityMode": true
 }

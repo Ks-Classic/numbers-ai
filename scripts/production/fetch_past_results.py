@@ -28,7 +28,7 @@ import os
 import json
 from pathlib import Path
 from datetime import datetime, timedelta
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional, Tuple, Any
 from urllib.parse import urljoin
 
 try:

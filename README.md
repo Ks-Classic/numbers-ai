@@ -108,7 +108,10 @@
 ### 前提条件
 
 - Node.js 20.x以上
-- npm（Node.jsに標準で含まれています）
+- pnpm 9.0.0以上（高速・省スペースなパッケージマネージャー）
+  ```bash
+  npm install -g pnpm
+  ```
 - Python 3.10以上（AI開発時）
 
 ### セットアップ手順
@@ -123,7 +126,7 @@ cd numbers-ai
 2. **依存関係のインストール**
 
 ```bash
-npm install
+pnpm install
 ```
 
 3. **環境変数の設定**
@@ -163,7 +166,7 @@ FastAPIサーバーは `http://localhost:8000` で起動します。
 cd ..
 
 # 開発サーバーを起動
-npm run dev
+pnpm dev
 ```
 
 ブラウザで `http://localhost:3000` を開いてください。
@@ -174,7 +177,7 @@ npm run dev
 
 ```bash
 # テストスクリプトを実行
-npm run test:api
+pnpm test:api
 
 # または直接実行
 bash scripts/test-api.sh
@@ -448,22 +451,22 @@ numbers-ai/
 
 ```bash
 # 開発サーバー起動
-npm run dev
+pnpm dev
 
 # ビルド
-npm run build
+pnpm build
 
 # 本番環境起動
-npm start
+pnpm start
 
 # Lint
-npm run lint
+pnpm lint
 
 # テスト実行
-npm run test:data-loader
-npm run test:chart-generator
-npm run test:patterns
-npm run test:api
+pnpm test:data-loader
+pnpm test:chart-generator
+pnpm test:patterns
+pnpm test:api
 ```
 
 ---
@@ -499,5 +502,5 @@ Copyright (c) 2025 Numbers-AI Project
 
 ---
 
-**Last Updated**: 2025-11-06
+**Last Updated**: 2025-11-22
 
