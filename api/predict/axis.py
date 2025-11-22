@@ -38,7 +38,7 @@ def load_data_and_models():
     global model_loader, df, keisen_master
     
     if model_loader is None:
-        model_loader = load_model_loader(MODELS_DIR, use_lightgbm=True)
+        model_loader = load_model_loader(MODELS_DIR)
     
     if df is None:
         csv_path = DATA_DIR / 'past_results.csv'

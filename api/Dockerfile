@@ -20,6 +20,8 @@ COPY api/main.py /app/api/
 COPY api/run.py /app/api/
 COPY notebooks/ /app/notebooks/
 COPY data/ /app/data/
+COPY core/ /app/core/
+COPY scripts/ /app/scripts/
 
 # ポート設定（Cloud Runは自動的に$PORTを設定）
 ENV PORT=8080
