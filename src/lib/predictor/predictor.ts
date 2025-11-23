@@ -77,8 +77,18 @@ async function fetchFromAPI<T>(
   let url: string;
 
   if (USE_VERCEL_PYTHON) {
-    // Vercel Python関数を呼び出す（相対パス）
-    url = endpoint;
+    // Vercel Python関数を呼び出す
+    if (typeof window === 'undefined') {
+      // サーバーサイド（Next.js API Route）から呼び出す場合は絶対URLが必要
+      // VERCEL_URLはhttpsを含まないため付与する
+      const baseUrl = process.env.VERCEL_URL 
+        ? `https://${process.env.VERCEL_URL}` 
+        : 'http://localhost:3000'; // ローカルフォールバック
+      url = `${baseUrl}${endpoint}`;
+    } else {
+      // クライアントサイドから呼び出す場合は相対パスでOK
+      url = endpoint;
+    }
   } else {
     // FastAPIサーバーを呼び出す
     url = `${FASTAPI_URL}${endpoint}`;

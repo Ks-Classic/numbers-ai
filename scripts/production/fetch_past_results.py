@@ -677,9 +677,54 @@ def parse_mizuhobank_csv(csv_content: str, round_number: int, max_round: Optiona
         return None, None, None
 
 
+
+def parse_japanese_date(date_str: str) -> str:
+    """
+    日本語の日付文字列（平成/令和XX年XX月XX日）をYYYY-MM-DD形式に変換
+    
+    Args:
+        date_str: 日本語の日付文字列
+        
+    Returns:
+        YYYY-MM-DD形式の日付文字列。変換できない場合は空文字列
+    """
+    if not date_str:
+        return ''
+        
+    match = re.search(r'(平成|令和|昭和)(\d+|元)年(\d{1,2})月(\d{1,2})日', date_str)
+    if match:
+        era = match.group(1)
+        year_str = match.group(2)
+        month = match.group(3).zfill(2)
+        day = match.group(4).zfill(2)
+        
+        # 元号を西暦に変換
+        if era == '平成':
+            year = 1988 + (1 if year_str == '元' else int(year_str))
+        elif era == '令和':
+            year = 2018 + (1 if year_str == '元' else int(year_str))
+        elif era == '昭和':
+            year = 1925 + (1 if year_str == '元' else int(year_str))
+        else:
+            return ''
+        
+        return f"{year}-{month}-{day}"
+    
+    # YYYY年MM月DD日形式の場合
+    match = re.search(r'(\d{4})年(\d{1,2})月(\d{1,2})日', date_str)
+    if match:
+        year = match.group(1)
+        month = match.group(2).zfill(2)
+        day = match.group(3).zfill(2)
+        return f"{year}-{month}-{day}"
+        
+    return ''
+
+
 def parse_mizuhobank_table(soup: BeautifulSoup, max_round: Optional[int] = None) -> Tuple[Dict[int, Dict[str, str]], Dict[int, Dict[str, str]]]:
     """
     みずほ銀行のページからN3とN4の当選番号を抽出（リハーサル番号はなし）
+    横持ち（通常）と縦持ち（スマホ表示等）の両方に対応
     
     Args:
         soup: BeautifulSoupオブジェクト
@@ -697,141 +742,132 @@ def parse_mizuhobank_table(soup: BeautifulSoup, max_round: Optional[int] = None)
     
     for table_idx, table in enumerate(tables):
         rows = table.find_all('tr')
+        if not rows:
+            continue
+            
         print(f"   デバッグ: テーブル{table_idx + 1}の行数: {len(rows)}")
         
-        # 最初のテーブルの最初の数行をデバッグ表示
-        if table_idx == 0 and len(rows) > 0:
-            for debug_row_idx in range(min(3, len(rows))):
-                debug_row = rows[debug_row_idx]
-                debug_cells = debug_row.find_all(['td', 'th'])
-                debug_cell_texts = [cell.get_text().strip() for cell in debug_cells]
-                debug_row_text = debug_row.get_text().strip()
-                print(f"   デバッグ: テーブル1の行{debug_row_idx + 1}: セル数={len(debug_cells)}, セル内容={debug_cell_texts[:6]}, 行テキスト={debug_row_text[:150]}")
+        # 縦持ちテーブルかどうかの判定
+        # 行ヘッダーに「回別」や「抽せん日」が含まれているか確認
+        is_vertical = False
+        for row in rows[:5]: # 最初の5行を確認
+            text = row.get_text()
+            if "回別" in text or "抽せん日" in text:
+                # セルを確認して、ヘッダーセルがあるか
+                cells = row.find_all(['th', 'td'])
+                if cells and ("回別" in cells[0].get_text() or "抽せん日" in cells[0].get_text()):
+                    is_vertical = True
+                    break
         
-        for row in rows:
-            cells = row.find_all(['td', 'th'])
-            if len(cells) < 4:
-                continue
+        if is_vertical:
+            print(f"   デバッグ: テーブル{table_idx + 1}は縦持ち形式と判定しました")
+            # 縦持ちの場合の処理
+            # {列インデックス: {項目名: 値}}
+            temp_data = {} 
             
-            # 回号を含むセルを探す
-            row_text = row.get_text()
-            round_match = re.search(r'第(\d+)回', row_text)
-            if not round_match:
-                continue
-            
-            round_number = int(round_match.group(1))
-            
-            # 最大回号のチェック
-            if max_round and round_number > max_round:
-                continue
-            
-            # 抽せん日を探す
-            date_match = re.search(r'(\d{4})年(\d{1,2})月(\d{1,2})日', row_text)
-            draw_date = ''
-            if date_match:
-                year = date_match.group(1)
-                month = date_match.group(2).zfill(2)
-                day = date_match.group(3).zfill(2)
-                draw_date = f"{year}-{month}-{day}"
-            else:
-                # デバッグ: 日付が見つからない場合
-                if round_number <= 10:
-                    print(f"   デバッグ: 第{round_number}回の日付が見つかりません。行テキスト: {row_text[:100]}")
-            
-            # N3とN4の当選番号を抽出
-            # 表の構造: 回別 | 抽せん日 | ナンバーズ3抽せん数字 | ナンバーズ4抽せん数字
-            try:
-                n3_winning = ''
-                n4_winning = ''
-                
-                # セルから数字を抽出（列の順序を確認）
-                # 一般的な構造: 回別 | 抽せん日 | N3 | N4
-                cell_texts = [cell.get_text().strip() for cell in cells]
-                
-                # デバッグ: 最初の数行のみ詳細表示
-                if round_number <= 3:
-                    print(f"   デバッグ: 第{round_number}回のセル内容: {cell_texts}")
-                    print(f"   デバッグ: 第{round_number}回の行テキスト全体: {row_text[:200]}")
-                
-                # セルから直接数字を探す（より確実な方法）
-                # 各セルを順番に確認
-                for i, cell_text in enumerate(cell_texts):
-                    # セル内の空白や改行を除去して数字を探す
-                    cell_text_clean = re.sub(r'\s+', '', cell_text)
+            for row in rows:
+                cells = row.find_all(['td', 'th'])
+                if not cells:
+                    continue
                     
-                    # 3桁の数字をN3の当選番号として探す（回号や日付のセルを除外）
-                    if len(cell_text_clean) == 3 and cell_text_clean.isdigit() and not n3_winning:
-                        # 最初の2セルは回号と日付の可能性が高いのでスキップ
-                        if i >= 2:
-                            n3_winning = cell_text_clean
-                            continue
+                header_text = cells[0].get_text().strip()
+                
+                for i, cell in enumerate(cells[1:]): # 最初のセルはヘッダー
+                    val = cell.get_text().strip()
+                    if i not in temp_data:
+                        temp_data[i] = {}
                     
-                    # 4桁の数字をN4の当選番号として探す
-                    if len(cell_text_clean) == 4 and cell_text_clean.isdigit() and not n4_winning:
-                        # 最初の2セルは回号と日付の可能性が高いのでスキップ
-                        if i >= 2:
-                            n4_winning = cell_text_clean
-                            continue
-                
-                # それでも見つからない場合は、行全体から抽出
-                if not n3_winning:
-                    # 空白を除去した行テキストから抽出
-                    row_text_clean = re.sub(r'\s+', '', row_text)
-                    n3_matches = re.findall(r'(\d{3})', row_text_clean)
-                    # 回号の数字（4桁以上）を除外
-                    for match in n3_matches:
-                        if match.isdigit() and len(match) == 3:
-                            # 回号の一部でないことを確認（前後に数字がない）
-                            match_pos = row_text_clean.find(match)
-                            if match_pos > 0 and match_pos < len(row_text_clean) - 3:
-                                prev_char = row_text_clean[match_pos - 1] if match_pos > 0 else ''
-                                next_char = row_text_clean[match_pos + 3] if match_pos + 3 < len(row_text_clean) else ''
-                                if not prev_char.isdigit() and not next_char.isdigit():
-                                    n3_winning = match
-                                    break
-                
-                if not n4_winning:
-                    # 空白を除去した行テキストから抽出
-                    row_text_clean = re.sub(r'\s+', '', row_text)
-                    n4_matches = re.findall(r'(\d{4})', row_text_clean)
-                    # 回号の数字（5桁以上）を除外
-                    for match in n4_matches:
-                        if match.isdigit() and len(match) == 4:
-                            # 回号の一部でないことを確認（前後に数字がない）
-                            match_pos = row_text_clean.find(match)
-                            if match_pos > 0 and match_pos < len(row_text_clean) - 4:
-                                prev_char = row_text_clean[match_pos - 1] if match_pos > 0 else ''
-                                next_char = row_text_clean[match_pos + 4] if match_pos + 4 < len(row_text_clean) else ''
-                                if not prev_char.isdigit() and not next_char.isdigit():
-                                    n4_winning = match
-                                    break
-                
-                # デバッグ: 抽出結果を表示
-                if round_number <= 3:
-                    print(f"   デバッグ: 第{round_number}回の抽出結果: N3={n3_winning}, N4={n4_winning}")
-                
-                # データを保存（リハーサル番号は空文字列）
-                if n3_winning:
-                    n3_data[round_number] = {
-                        'n3_winning': n3_winning,
-                        'n3_rehearsal': '',  # 4800回以前はリハーサル番号なし
-                        'draw_date': draw_date,
-                    }
-                
-                if n4_winning:
-                    n4_data[round_number] = {
-                        'n4_winning': n4_winning,
-                        'n4_rehearsal': '',  # 4800回以前はリハーサル番号なし
-                        'draw_date': draw_date,
-                    }
-                elif round_number <= 3:
-                    # デバッグ: データが抽出できなかった場合
-                    print(f"   デバッグ: 第{round_number}回のN4データが抽出できませんでした")
+                    if "回別" in header_text:
+                        # 第1234回 -> 1234
+                        match = re.search(r'第(\d+)回', val)
+                        if match:
+                            temp_data[i]['round'] = int(match.group(1))
+                    elif "抽せん日" in header_text:
+                        temp_data[i]['date'] = parse_japanese_date(val)
+                    elif "抽せん数字" in header_text:
+                        temp_data[i]['number'] = val
+            
+            # temp_dataからn4_data, n3_dataを構築
+            for idx, data in temp_data.items():
+                if 'round' in data and 'number' in data:
+                    r = data['round']
+                    if max_round and r > max_round:
+                        continue
+                        
+                    num = data['number']
+                    date = data.get('date', '')
                     
-            except (ValueError, IndexError) as e:
-                if round_number <= 3:
-                    print(f"   デバッグ: 第{round_number}回の処理でエラー: {e}")
-                continue
+                    # 数字のみを抽出（念のため）
+                    num_clean = re.sub(r'\D', '', num)
+                    
+                    if len(num_clean) == 4:
+                        n4_data[r] = {'n4_winning': num_clean, 'draw_date': date, 'n4_rehearsal': ''}
+                    elif len(num_clean) == 3:
+                        n3_data[r] = {'n3_winning': num_clean, 'draw_date': date, 'n3_rehearsal': ''}
+            
+        else:
+            # 横持ち（通常）の場合の処理
+            for row in rows:
+                cells = row.find_all(['td', 'th'])
+                if len(cells) < 3:
+                    continue
+                
+                # 回号を含むセルを探す
+                row_text = row.get_text()
+                round_match = re.search(r'第(\d+)回', row_text)
+                if not round_match:
+                    continue
+                
+                round_number = int(round_match.group(1))
+                
+                # 最大回号のチェック
+                if max_round and round_number > max_round:
+                    continue
+                
+                # 抽せん日を探す
+                draw_date = parse_japanese_date(row_text)
+                
+                # N3とN4の当選番号を抽出
+                try:
+                    n3_winning = ''
+                    n4_winning = ''
+                    
+                    # セルから直接数字を探す
+                    cell_texts = [cell.get_text().strip() for cell in cells]
+                    
+                    for i, cell_text in enumerate(cell_texts):
+                        cell_text_clean = re.sub(r'\s+', '', cell_text)
+                        
+                        # 3桁の数字
+                        if len(cell_text_clean) == 3 and cell_text_clean.isdigit() and not n3_winning:
+                            # 回号や日付でないことを確認（簡易的）
+                            if i >= 1 and "回" not in cell_text and "月" not in cell_text:
+                                n3_winning = cell_text_clean
+                                continue
+                        
+                        # 4桁の数字
+                        if len(cell_text_clean) == 4 and cell_text_clean.isdigit() and not n4_winning:
+                            if i >= 1 and "回" not in cell_text and "月" not in cell_text:
+                                n4_winning = cell_text_clean
+                                continue
+                    
+                    # データを保存
+                    if n3_winning:
+                        n3_data[round_number] = {
+                            'n3_winning': n3_winning,
+                            'n3_rehearsal': '',
+                            'draw_date': draw_date,
+                        }
+                    
+                    if n4_winning:
+                        n4_data[round_number] = {
+                            'n4_winning': n4_winning,
+                            'n4_rehearsal': '',
+                            'draw_date': draw_date,
+                        }
+                        
+                except (ValueError, IndexError) as e:
+                    continue
     
     return n4_data, n3_data
 
@@ -2021,6 +2057,100 @@ def main():
         print("✓ 処理完了")
         print("=" * 80)
         sys.exit(0)
+    # キャッチアップモード（ハイブリッド方式：みずほ銀行＋hpfree.com）
+    # マージモードかつ、既存データがある場合
+    elif merge_mode and max_existing_round is not None:
+        print(f"\n📥 キャッチアップモード: 最新データを取得して欠番を補完します...")
+        print(f"   既存の最大回号: 第{max_existing_round}回")
+        
+        # 1. みずほ銀行から最新データを取得（日付と当選番号）
+        print("   みずほ銀行から最新データを取得中...")
+        mizuho_n4_data = {}
+        mizuho_n3_data = {}
+        
+        # N4
+        html_n4 = fetch_page(MIZUHO_LATEST_N4_URL)
+        if html_n4:
+            soup_n4 = BeautifulSoup(html_n4, 'html.parser')
+            mizuho_n4_data, _ = parse_mizuhobank_table(soup_n4)
+            
+        # N3
+        html_n3 = fetch_page(MIZUHO_LATEST_N3_URL)
+        if html_n3:
+            soup_n3 = BeautifulSoup(html_n3, 'html.parser')
+            _, mizuho_n3_data = parse_mizuhobank_table(soup_n3)
+            
+        if not mizuho_n4_data and not mizuho_n3_data:
+            print("⚠ みずほ銀行からデータを取得できませんでした")
+            sys.exit(1)
+            
+        # 2. hpfree.comからリハーサル数字を取得
+        print("   hpfree.comからリハーサル数字を取得中...")
+        hpfree_n4_data = {}
+        hpfree_n3_data = {}
+        
+        html_hpfree = fetch_page(LATEST_PAGE_URL)
+        if html_hpfree:
+            soup_hpfree = BeautifulSoup(html_hpfree, 'html.parser')
+            hpfree_n4_data = parse_n4_table(soup_hpfree, latest_only=False)
+            hpfree_n3_data = parse_n3_table(soup_hpfree, latest_only=False)
+        else:
+            print("⚠ hpfree.comからリハーサル数字を取得できませんでした（リハーサル数字なしで進めます）")
+            
+        # 3. データを結合
+        # みずほ銀行のデータをベースにする
+        all_rounds = sorted(set(mizuho_n4_data.keys()) | set(mizuho_n3_data.keys()), reverse=True)
+        
+        # 既存CSVを読み込んで既存の回号を取得
+        existing_data = load_existing_csv(output_file)
+        existing_rounds = set()
+        for row in existing_data:
+            try:
+                round_num = int(row.get('round_number', 0))
+                if round_num > 0:
+                    existing_rounds.add(round_num)
+            except (ValueError, TypeError):
+                continue
+        
+        # 欠番を検出（みずほ銀行のデータにあるが既存CSVにない回号）
+        missing_rounds = [r for r in all_rounds if r not in existing_rounds]
+        
+        if not missing_rounds:
+            print("✓ 最新データに欠番はありませんでした")
+            sys.exit(0)
+            
+        print(f"✓ {len(missing_rounds)}件の欠番を検出しました")
+        print(f"   欠番の回号: {missing_rounds[:10]}{'...' if len(missing_rounds) > 10 else ''}")
+        
+        # 欠番データを構築
+        n4_data = {}
+        n3_data = {}
+        
+        for r in missing_rounds:
+            # N4データ
+            if r in mizuho_n4_data:
+                n4_entry = mizuho_n4_data[r]
+                # リハーサル数字をマージ
+                if r in hpfree_n4_data:
+                    n4_entry['n4_rehearsal'] = hpfree_n4_data[r].get('n4_rehearsal', '')
+                n4_data[r] = n4_entry
+                
+            # N3データ
+            if r in mizuho_n3_data:
+                n3_entry = mizuho_n3_data[r]
+                # リハーサル数字をマージ
+                if r in hpfree_n3_data:
+                    n3_entry['n3_rehearsal'] = hpfree_n3_data[r].get('n3_rehearsal', '')
+                n3_data[r] = n3_entry
+        
+        print(f"✓ 欠番データを構築: N4={len(n4_data)}件、N3={len(n3_data)}件")
+        
+        # 取得したデータの範囲を使用
+        if n4_data or n3_data:
+            all_rounds = set(n4_data.keys()) | set(n3_data.keys())
+            if all_rounds:
+                latest_round = max(all_rounds)
+    
     elif update_null_mode:
         print("\n🔍 NULL値がある回号を検出中...")
         existing_data = load_existing_csv(output_file)

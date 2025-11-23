@@ -35,6 +35,7 @@ build/
 # 注意: core/はVercel Python関数に必要なので除外しない
 /notebooks/
 /scripts/
+!/scripts/production/fetch_past_results.py
 
 # Python設定ファイル（api/requirements.txtはVercel Python関数に必要なので含める）
 # 注意: api/requirements.txtはVercel Python関数に必要
