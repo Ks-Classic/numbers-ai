@@ -70,14 +70,9 @@ build/
 /data/models/*_data.pkl
 
 # XGBoostモデルファイル（削除予定、LightGBMに移行）
-/data/models/n3_axis.pkl
-/data/models/n4_axis.pkl
-/data/models/n3_axis_tuned.pkl
-/data/models/n4_axis_tuned.pkl
-/data/models/n3_box_comb.pkl
-/data/models/n3_straight_comb.pkl
-/data/models/n4_box_comb.pkl
-/data/models/n4_straight_comb.pkl
+/data/models/*.pkl
+!/data/models/*_lgb.pkl
+
 
 # 評価結果ファイル（不要）
 /data/models/evaluation_results*.pkl
