@@ -13,16 +13,6 @@ from typing import Dict, Any, List
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.append(str(PROJECT_ROOT / 'core'))
 
-# 【重要】Vercel環境(x86_64)用の共有ライブラリを強制ロード
-import ctypes
-lib_path = PROJECT_ROOT / 'api' / 'lib' / 'libgomp.so.1'
-if lib_path.exists():
-    try:
-        ctypes.CDLL(str(lib_path))
-        print(f"Successfully loaded {lib_path}")
-    except Exception as e:
-        print(f"Failed to load {lib_path}: {e}")
-
 # デバッグ: パスと環境確認
 print(f"Python Path: {sys.path}")
 try:

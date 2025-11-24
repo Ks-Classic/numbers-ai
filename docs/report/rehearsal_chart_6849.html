@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>6849回予測表 - リハーサル数字と当選番号の可視化</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        h2 {
+            color: #555;
+            margin-top: 30px;
+        }
+        h3 {
+            color: #666;
+            margin-top: 20px;
+        }
+        h4 {
+            color: #777;
+            margin-top: 15px;
+        }
+        .legend {
+            margin: 20px 0;
+            padding: 10px;
+            background-color: #f5f5f5;
+            border-radius: 5px;
+        }
+        .legend-item {
+            margin: 5px 0;
+        }
+        .main-content {
+            display: flex;
+            gap: 30px;
+            align-items: flex-start;
+        }
+        .chart-container {
+            flex: 0 0 auto;
+        }
+        .explanation-container {
+            flex: 1 1 auto;
+            min-width: 400px;
+        }
+        @media (max-width: 1200px) {
+            .main-content {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>6849回予測表（N3、パターンA1）</h1>
+    <div class="legend">
+        <h3>凡例:</h3>
+        <div class="legend-item">
+            <svg width="30" height="3" style="vertical-align: middle;"><line x1="0" y1="1.5" x2="30" y2="1.5" stroke="#ff0000" stroke-width="3" opacity="0.7"/></svg>
+            <span style="margin-left: 10px;">リハーサル数字（631）</span>
+        </div>
+        <div class="legend-item">
+            <svg width="30" height="3" style="vertical-align: middle;"><line x1="0" y1="1.5" x2="30" y2="1.5" stroke="#0000ff" stroke-width="3" opacity="0.7"/></svg>
+            <span style="margin-left: 10px;">当選番号（684）</span>
+        </div>
+    </div>
+    <div class="main-content">
+        <div class="chart-container">
+            <div style='position: relative; width: 480px; height: 480px;'>
+<table style='border-collapse: collapse; font-family: monospace; position: relative; z-index: 1; background-color: white;'>
+<tr><th style='border: 1px solid #ccc; padding: 4px; width: 30px; height: 30px; background-color: white;'></th>
+<th style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 30px; text-align: center; background-color: white;'>1</th>
+<th style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 30px; text-align: center; background-color: white;'>2</th>
+<th style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 30px; text-align: center; background-color: white;'>3</th>
+<th style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 30px; text-align: center; background-color: white;'>4</th>
+<th style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 30px; text-align: center; background-color: white;'>5</th>
+<th style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 30px; text-align: center; background-color: white;'>6</th>
+<th style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 30px; text-align: center; background-color: white;'>7</th>
+<th style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 30px; text-align: center; background-color: white;'>8</th>
+</tr>
+<tr><th style='border: 1px solid #ccc; padding: 4px; width: 30px; height: 42px; text-align: center; background-color: white;'>1</th>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>0</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>5</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>1</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>6</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>2</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>7</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>3</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>8</td>
+</tr>
+<tr><th style='border: 1px solid #ccc; padding: 4px; width: 30px; height: 42px; text-align: center; background-color: white;'>2</th>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>5</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>0</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>6</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>1</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>7</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>2</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>8</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>3</td>
+</tr>
+<tr><th style='border: 1px solid #ccc; padding: 4px; width: 30px; height: 42px; text-align: center; background-color: white;'>3</th>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>4</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>9</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>5</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>0</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>6</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>1</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>7</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>2</td>
+</tr>
+<tr><th style='border: 1px solid #ccc; padding: 4px; width: 30px; height: 42px; text-align: center; background-color: white;'>4</th>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>9</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>4</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>0</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>5</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>1</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>6</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>2</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>7</td>
+</tr>
+<tr><th style='border: 1px solid #ccc; padding: 4px; width: 30px; height: 42px; text-align: center; background-color: white;'>5</th>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>5</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>0</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>6</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>1</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>8</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>3</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>9</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>4</td>
+</tr>
+<tr><th style='border: 1px solid #ccc; padding: 4px; width: 30px; height: 42px; text-align: center; background-color: white;'>6</th>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>0</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>5</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>1</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>6</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>3</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>8</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>4</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>9</td>
+</tr>
+<tr><th style='border: 1px solid #ccc; padding: 4px; width: 30px; height: 42px; text-align: center; background-color: white;'>7</th>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>9</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>4</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>6</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>1</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>8</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>3</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>9</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>4</td>
+</tr>
+<tr><th style='border: 1px solid #ccc; padding: 4px; width: 30px; height: 42px; text-align: center; background-color: white;'>8</th>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>4</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>9</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>1</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>6</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>3</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>8</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>4</td>
+<td style='border: 1px solid #ccc; padding: 4px; width: 42px; height: 42px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>9</td>
+</tr>
+</table>
+<svg width='480' height='480' style='position: absolute; top: 0; left: 0; z-index: 3; pointer-events: none;'>
+<line x1="165.0" y1="115.0" x2="215.0" y2="115.0" stroke="#ff0000" stroke-width="3" opacity="0.8"/>
+<line x1="215.0" y1="65.0" x2="215.0" y2="115.0" stroke="#ff0000" stroke-width="3" opacity="0.8"/>
+<line x1="165.0" y1="65.0" x2="165.0" y2="115.0" stroke="#ff0000" stroke-width="3" opacity="0.8"/>
+<line x1="165.0" y1="65.0" x2="215.0" y2="65.0" stroke="#ff0000" stroke-width="3" opacity="0.8"/>
+<line x1="265.0" y1="165.0" x2="315.0" y2="165.0" stroke="#ff0000" stroke-width="3" opacity="0.8"/>
+<line x1="315.0" y1="165.0" x2="315.0" y2="215.0" stroke="#ff0000" stroke-width="3" opacity="0.8"/>
+<line x1="265.0" y1="215.0" x2="315.0" y2="215.0" stroke="#ff0000" stroke-width="3" opacity="0.8"/>
+<line x1="265.0" y1="165.0" x2="265.0" y2="215.0" stroke="#ff0000" stroke-width="3" opacity="0.8"/>
+<line x1="315.0" y1="215.0" x2="315.0" y2="265.0" stroke="#ff0000" stroke-width="3" opacity="0.8"/>
+<line x1="165.0" y1="265.0" x2="165.0" y2="315.0" stroke="#ff0000" stroke-width="3" opacity="0.8"/>
+<line x1="215.0" y1="315.0" x2="265.0" y2="315.0" stroke="#ff0000" stroke-width="3" opacity="0.8"/>
+<line x1="215.0" y1="315.0" x2="215.0" y2="365.0" stroke="#ff0000" stroke-width="3" opacity="0.8"/>
+<line x1="215.0" y1="415.0" x2="265.0" y2="415.0" stroke="#ff0000" stroke-width="3" opacity="0.8"/>
+<line x1="165.0" y1="415.0" x2="215.0" y2="415.0" stroke="#ff0000" stroke-width="3" opacity="0.8"/>
+<line x1="215.0" y1="365.0" x2="215.0" y2="415.0" stroke="#ff0000" stroke-width="3" opacity="0.8"/>
+<line x1="165.0" y1="365.0" x2="215.0" y2="365.0" stroke="#ff0000" stroke-width="3" opacity="0.8"/>
+<line x1="215.0" y1="265.0" x2="215.0" y2="315.0" stroke="#ff0000" stroke-width="3" opacity="0.8"/>
+<line x1="165.0" y1="365.0" x2="165.0" y2="415.0" stroke="#ff0000" stroke-width="3" opacity="0.8"/>
+<line x1="165.0" y1="315.0" x2="215.0" y2="315.0" stroke="#ff0000" stroke-width="3" opacity="0.8"/>
+<line x1="165.0" y1="315.0" x2="165.0" y2="365.0" stroke="#ff0000" stroke-width="3" opacity="0.8"/>
+<line x1="165.0" y1="265.0" x2="215.0" y2="265.0" stroke="#ff0000" stroke-width="3" opacity="0.8"/>
+<line x1="365.0" y1="65.0" x2="415.0" y2="115.0" stroke="#ff0000" stroke-width="3" opacity="0.8"/>
+<circle cx="315.0" cy="365.0" r="3" fill="#ff0000" opacity="0.8"/>
+<line x1="217.0" y1="67.0" x2="167.0" y2="117.0" stroke="#0000ff" stroke-width="3" opacity="0.8"/>
+<line x1="65.0" y1="165.0" x2="115.0" y2="215.0" stroke="#0000ff" stroke-width="3" opacity="0.8"/>
+<line x1="115.0" y1="215.0" x2="165.0" y2="265.0" stroke="#0000ff" stroke-width="3" opacity="0.8"/>
+<line x1="315.0" y1="215.0" x2="265.0" y2="265.0" stroke="#0000ff" stroke-width="3" opacity="0.8"/>
+<line x1="215.0" y1="315.0" x2="265.0" y2="365.0" stroke="#0000ff" stroke-width="3" opacity="0.8"/>
+<line x1="265.0" y1="265.0" x2="215.0" y2="315.0" stroke="#0000ff" stroke-width="3" opacity="0.8"/>
+<line x1="167.0" y1="267.0" x2="217.0" y2="317.0" stroke="#0000ff" stroke-width="3" opacity="0.8"/>
+<line x1="265.0" y1="365.0" x2="215.0" y2="415.0" stroke="#0000ff" stroke-width="3" opacity="0.8"/>
+<line x1="267.0" y1="167.0" x2="317.0" y2="217.0" stroke="#0000ff" stroke-width="3" opacity="0.8"/>
+<line x1="115.0" y1="365.0" x2="165.0" y2="365.0" stroke="#0000ff" stroke-width="3" opacity="0.8"/>
+<line x1="415.0" y1="65.0" x2="365.0" y2="115.0" stroke="#0000ff" stroke-width="3" opacity="0.8"/>
+<line x1="315.0" y1="315.0" x2="365.0" y2="315.0" stroke="#0000ff" stroke-width="3" opacity="0.8"/>
+<line x1="315.0" y1="415.0" x2="365.0" y2="415.0" stroke="#0000ff" stroke-width="3" opacity="0.8"/>
+<circle cx="415.0" cy="265.0" r="3" fill="#0000ff" opacity="0.8"/>
+<circle cx="415.0" cy="365.0" r="3" fill="#0000ff" opacity="0.8"/>
+<circle cx="65.0" cy="415.0" r="3" fill="#0000ff" opacity="0.8"/>
+</svg>
+</div>
+        </div>
+        <div class="explanation-container">
+            
+<div style="margin-top: 40px; padding: 20px; background-color: #f9f9f9; border-radius: 8px;">
+    <h2>特徴量の解説（6849回のケース）</h2>
+    <p style="margin-bottom: 20px;">
+        <strong>リハーサル数字: 631</strong> | 
+        <strong>当選番号: 684</strong>
+    </p>
+    
+    <h3>1. rehearsal_distance（リハーサルとの距離）</h3>
+    <p style="margin-left: 20px; margin-bottom: 15px;">
+        各候補数字の位置から最も近いリハーサル数字の位置までのユークリッド距離を計算し、その平均値を求めます。<br>
+        <strong>計算式:</strong> 各候補位置について、最も近いリハーサル位置までの距離を求め、それらの平均値
+    </p>
+    
+    <h3>2. overlap_count（リハーサルとの重なり）</h3>
+    <p style="margin-left: 20px; margin-bottom: 15px;">
+        候補数字とリハーサル数字が同じ位置（マス）にある回数をカウントします。<br>
+        <strong>計算式:</strong> 候補位置のセットとリハーサル位置のセットの共通部分の要素数
+    </p>
+    
+    <h3>3. inverse_ratio（裏数字の割合）</h3>
+    <p style="margin-left: 20px; margin-bottom: 15px;">
+        候補数字がリハーサル数字の「裏数字」である割合を計算します。<br>
+        <strong>裏数字の定義:</strong> 数字nの裏数字は (9-n) です（例: 0↔9, 1↔8, 2↔7, 3↔6, 4↔5）<br>
+        <strong>計算式:</strong> リハーサル位置と同じ位置にある候補数字のうち、それがリハーサル数字の裏数字である割合
+    </p>
+    
+    <h3>各数字の特徴量値（6849回）</h3>
+    <table style="border-collapse: collapse; width: 100%; margin-top: 20px; background-color: white;">
+        <thead>
+            <tr style="background-color: #e0e0e0;">
+                <th style="border: 1px solid #ccc; padding: 8px; text-align: center;">数字</th>
+                <th style="border: 1px solid #ccc; padding: 8px; text-align: center;">位置数</th>
+                <th style="border: 1px solid #ccc; padding: 8px; text-align: center;">rehearsal_distance</th>
+                <th style="border: 1px solid #ccc; padding: 8px; text-align: center;">overlap_count</th>
+                <th style="border: 1px solid #ccc; padding: 8px; text-align: center;">inverse_ratio</th>
+                <th style="border: 1px solid #ccc; padding: 8px; text-align: center;">当選</th>
+            </tr>
+        </thead>
+        <tbody>
+
+            <tr style="">
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center; font-weight: bold;">0</td>
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">6</td>
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">1.333</td>
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">0</td>
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">0.000</td>
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">✗</td>
+            </tr>
+
+            <tr style="background-color: #ffe6e6;">
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center; font-weight: bold;">1</td>
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">8</td>
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">0.000</td>
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">8</td>
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">0.000</td>
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">✗</td>
+            </tr>
+
+            <tr style="">
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center; font-weight: bold;">2</td>
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">4</td>
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">1.000</td>
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">0</td>
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">0.000</td>
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">✗</td>
+            </tr>
+
+            <tr style="background-color: #ffe6e6;">
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center; font-weight: bold;">3</td>
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">6</td>
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">0.000</td>
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">6</td>
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">0.000</td>
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">✗</td>
+            </tr>
+
+            <tr style="background-color: #e6e6ff;">
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center; font-weight: bold;">4</td>
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">8</td>
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">1.685</td>
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">0</td>
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">0.000</td>
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">✓</td>
+            </tr>
+
+            <tr style="">
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center; font-weight: bold;">5</td>
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">6</td>
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">1.333</td>
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">0</td>
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">0.000</td>
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">✗</td>
+            </tr>
+
+            <tr style="background-color: #ffe6e6;">
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center; font-weight: bold;">6</td>
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">8</td>
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">0.000</td>
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">8</td>
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">0.000</td>
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">✓</td>
+            </tr>
+
+            <tr style="">
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center; font-weight: bold;">7</td>
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">4</td>
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">1.250</td>
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">0</td>
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">0.000</td>
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">✗</td>
+            </tr>
+
+            <tr style="background-color: #e6e6ff;">
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center; font-weight: bold;">8</td>
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">6</td>
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">1.000</td>
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">0</td>
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">0.000</td>
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">✓</td>
+            </tr>
+
+            <tr style="">
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center; font-weight: bold;">9</td>
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">8</td>
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">1.640</td>
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">0</td>
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">0.000</td>
+                <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">✗</td>
+            </tr>
+
+        </tbody>
+    </table>
+    
+    <div style="margin-top: 30px;">
+        <h4>具体例: 数字6の場合（リハーサル数字「631」に含まれる）</h4>
+        <p style="margin-left: 20px;">
+            <strong>リハーサル数字「631」に含まれる数字6:</strong><br>
+            <ul style="margin-left: 40px;">
+
+                <li>数字6の位置数: 8個</li>
+                <li><strong>overlap_count = 8:</strong> 数字6の位置とリハーサル数字「631」の位置が8箇所で一致しています。これは、数字6がリハーサル数字に含まれるため、数字6の位置の多くがリハーサル位置と重なっていることを意味します。</li>
+                <li><strong>rehearsal_distance = 0.000:</strong> 数字6の各位置から最も近いリハーサル位置までの距離の平均が0.000です。この値が0に近いほど、数字6の位置がリハーサル位置に近いことを示します。</li>
+                <li><strong>inverse_ratio = 0.000:</strong> 数字6の裏数字は3です。リハーサル数字「631」には3が含まれますが、数字6の位置でリハーサル位置と同じ位置にあるもののうち、その位置の数字が3（裏数字）である割合は0.000です。</li>
+            </ul>
+    
+        </p>
+        
+        <h4>具体例: 数字8の場合（当選番号「684」に含まれる）</h4>
+        <p style="margin-left: 20px;">
+
+            <ul style="margin-left: 40px;">
+                <li>数字8の位置数: 6個</li>
+                <li><strong>overlap_count = 0:</strong> 数字8の位置とリハーサル数字「631」の位置が0箇所で一致しています。数字8はリハーサル数字に含まれないため、重なりは0です。</li>
+                <li><strong>rehearsal_distance = 1.000:</strong> 数字8の各位置から最も近いリハーサル位置までの距離の平均が1.000です。この値が大きいほど、数字8の位置がリハーサル位置から遠いことを示します。</li>
+                <li><strong>inverse_ratio = 0.000:</strong> 数字8の裏数字は1です。リハーサル数字「631」には1が含まれますが、数字8の位置でリハーサル位置と同じ位置にあるもののうち、その位置の数字が1（裏数字）である割合は0.000です。</li>
+            </ul>
+    
+        </p>
+        
+        <h4>具体例: 数字4の場合（当選番号「684」に含まれる）</h4>
+        <p style="margin-left: 20px;">
+
+            <ul style="margin-left: 40px;">
+                <li>数字4の位置数: 8個</li>
+                <li><strong>overlap_count = 0:</strong> 数字4の位置とリハーサル数字「631」の位置が0箇所で一致しています。数字4はリハーサル数字に含まれないため、重なりは0です。</li>
+                <li><strong>rehearsal_distance = 1.685:</strong> 数字4の各位置から最も近いリハーサル位置までの距離の平均が1.685です。この値が大きいほど、数字4の位置がリハーサル位置から遠いことを示します。</li>
+                <li><strong>inverse_ratio = 0.000:</strong> 数字4の裏数字は5です。リハーサル数字「631」には5が含まれないため、裏数字の割合は0.000です。</li>
+            </ul>
+    
+        </p>
+        
+        <h4>特徴量の意味</h4>
+        <p style="margin-left: 20px;">
+            これらの特徴量は、予測モデルが学習する際に使用されます。各数字について、リハーサル数字との関係性を数値化することで、
+            モデルは「リハーサル数字に近い位置の数字は当選しやすいか？」「リハーサル数字と同じ位置の数字は当選しやすいか？」
+            といったパターンを学習することができます。
+        </p>
+    </div>
+</div>
+
+        </div>
+    </div>
+</body>
+</html>
