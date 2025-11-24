@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>リハーサル数字と当選番号の関係性可視化（インタラクティブ版）</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .controls {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        label {
+            font-weight: bold;
+            color: #555;
+        }
+        select, input {
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        select {
+            min-width: 120px;
+        }
+        input[type="number"] {
+            width: 150px;
+        }
+        select:disabled {
+            background-color: #f0f0f0;
+            cursor: not-allowed;
+        }
+        button {
+            padding: 8px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .legend {
+            margin: 20px 0;
+            padding: 10px;
+            background-color: #f5f5f5;
+            border-radius: 5px;
+        }
+        .legend-item {
+            margin: 5px 0;
+        }
+        .main-content {
+            display: flex;
+            gap: 30px;
+            align-items: flex-start;
+            margin-top: 20px;
+        }
+        .chart-container {
+            flex: 0 0 auto;
+        }
+        .explanation-container {
+            flex: 1 1 auto;
+            min-width: 400px;
+        }
+        .error-message {
+            padding: 15px;
+            background-color: #ffebee;
+            color: #c62828;
+            border-radius: 5px;
+            margin: 20px 0;
+            display: none;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        @media (max-width: 1200px) {
+            .main-content {
+                flex-direction: column;
+            }
+        }
+        h2 {
+            color: #555;
+            margin-top: 30px;
+        }
+        h3 {
+            color: #666;
+            margin-top: 20px;
+        }
+        h4 {
+            color: #777;
+            margin-top: 15px;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 20px;
+            background-color: white;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            background-color: #e0e0e0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>リハーサル数字と当選番号の関係性可視化</h1>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label for="roundSelect">回号:</label>
+                <select id="roundSelect" onchange="updateRehearsalInfo()"></select>
+            </div>
+            <div class="control-group">
+                <label for="rehearsalInfo" style="font-weight: normal; color: #666;">リハーサル番号:</label>
+                <span id="rehearsalInfo" style="padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; background-color: #f9f9f9; min-width: 100px; display: inline-block;">-</span>
+            </div>
+            <div class="control-group">
+                <label for="targetSelect">対象:</label>
+                <select id="targetSelect" onchange="onTargetChange()" disabled>
+                    <option value="n3">N3</option>
+                    <option value="n4">N4</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label for="patternSelect">パターン:</label>
+                <select id="patternSelect" onchange="onPatternChange()" disabled>
+                    <option value="A1">A1</option>
+                    <option value="A2">A2</option>
+                    <option value="B1">B1</option>
+                    <option value="B2">B2</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <button id="generateButton" onclick="generateData()">表示</button>
+            </div>
+        </div>
+        
+        <div class="error-message" id="errorMessage"></div>
+        
+        <div id="loading" class="loading" style="display: none;">データを読み込み中...</div>
+        
+        <div id="content" style="display: none;">
+            <div class="legend">
+                <h3>凡例:</h3>
+                <div class="legend-item">
+                    <svg width="30" height="3" style="vertical-align: middle;"><line x1="0" y1="1.5" x2="30" y2="1.5" stroke="#ff0000" stroke-width="3" opacity="0.7"/></svg>
+                    <span style="margin-left: 10px;">リハーサル数字</span>
+                </div>
+                <div class="legend-item">
+                    <svg width="30" height="3" style="vertical-align: middle;"><line x1="0" y1="1.5" x2="30" y2="1.5" stroke="#0000ff" stroke-width="3" opacity="0.7"/></svg>
+                    <span style="margin-left: 10px;">当選番号</span>
+                </div>
+            </div>
+            <div id="currentRoundInfo" style="margin: 10px 0; padding: 10px; background-color: #e3f2fd; border-radius: 5px; display: none;">
+                <strong>回号: <span id="currentRoundNumber">-</span></strong> | 
+                <strong>リハーサル数字: <span id="currentRehearsalDigits">-</span></strong> | 
+                <strong>当選番号: <span id="currentWinningDigits">-</span></strong>
+            </div>
+            
+            <div class="main-content">
+                <div class="chart-container" id="chartContainer"></div>
+                <div class="explanation-container" id="explanationContainer"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let visualizationData = null;
+        let currentRoundData = null; // 現在の回号の全パターンデータ
+        let roundsWithRehearsal = null; // 回号とリハーサル番号の対応
+        const CELL_SIZE = 50;
+        const CELL_PADDING = 4;
+        const TABLE_MARGIN = 40;
+        const API_BASE_URL = 'http://localhost:8000'; // PythonサーバーのURL
+
+        // データを読み込む
+        async function loadJSONData() {
+            try {
+                // 利用可能な回号リストを取得
+                const response = await fetch(`${API_BASE_URL}/api/rounds`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                if (data.success) {
+                    roundsWithRehearsal = data.rounds;
+                    populateRoundSelect(data.rounds);
+                } else {
+                    throw new Error(data.error || '未知のエラー');
+                }
+            } catch (error) {
+                showError(`サーバーに接続できません: ${error.message}<br>Pythonサーバーが起動しているか確認してください。<br><code>python3 notebooks/visualization_server.py</code>`);
+            }
+        }
+
+        // 回号の選択肢を追加（降順）
+        function populateRoundSelect(roundsData) {
+            const select = document.getElementById('roundSelect');
+            select.innerHTML = '';
+            roundsData.forEach(roundData => {
+                const option = document.createElement('option');
+                option.value = roundData.round_number;
+                option.textContent = roundData.round_number;
+                option.dataset.n3Rehearsal = roundData.n3_rehearsal || '';
+                option.dataset.n4Rehearsal = roundData.n4_rehearsal || '';
+                select.appendChild(option);
+            });
+            
+            // デフォルトで最初の回号を選択
+            if (roundsData.length > 0) {
+                select.value = roundsData[0].round_number;
+                updateRehearsalInfo();
+            }
+        }
+
+        // リハーサル番号情報を更新
+        function updateRehearsalInfo() {
+            const select = document.getElementById('roundSelect');
+            const selectedOption = select.options[select.selectedIndex];
+            const n3Rehearsal = selectedOption.dataset.n3Rehearsal;
+            const n4Rehearsal = selectedOption.dataset.n4Rehearsal;
+            const rehearsalInfo = document.getElementById('rehearsalInfo');
+            const targetSelect = document.getElementById('targetSelect');
+            
+            // リハーサル番号を表示
+            if (n3Rehearsal && n4Rehearsal) {
+                rehearsalInfo.textContent = `N3: ${n3Rehearsal}, N4: ${n4Rehearsal}`;
+                rehearsalInfo.style.color = '#333';
+            } else if (n3Rehearsal) {
+                rehearsalInfo.textContent = `N3: ${n3Rehearsal}`;
+                rehearsalInfo.style.color = '#333';
+            } else if (n4Rehearsal) {
+                rehearsalInfo.textContent = `N4: ${n4Rehearsal}`;
+                rehearsalInfo.style.color = '#333';
+            } else {
+                rehearsalInfo.textContent = '-';
+                rehearsalInfo.style.color = '#999';
+            }
+            
+            // 対象選択を有効化し、リハーサル番号が存在する方を優先
+            if (n3Rehearsal && n4Rehearsal) {
+                targetSelect.disabled = false;
+                targetSelect.value = 'n3';
+            } else if (n3Rehearsal) {
+                targetSelect.disabled = false;
+                targetSelect.value = 'n3';
+            } else if (n4Rehearsal) {
+                targetSelect.disabled = false;
+                targetSelect.value = 'n4';
+            } else {
+                targetSelect.disabled = true;
+            }
+            
+            // パターン選択を無効化（回号が変更されたため）
+            document.getElementById('patternSelect').disabled = true;
+        }
+
+        // 対象変更時の処理
+        function onTargetChange() {
+            const targetSelect = document.getElementById('targetSelect');
+            const patternSelect = document.getElementById('patternSelect');
+            
+            // 既にデータが生成されている場合は再生成
+            if (currentRoundData && targetSelect.value) {
+                const roundNumber = document.getElementById('roundSelect').value;
+                generateDataForTarget(roundNumber, targetSelect.value);
+            } else {
+                // パターン選択を無効化
+                patternSelect.disabled = true;
+            }
+        }
+
+        // データを生成（全パターンを実行）
+        async function generateData() {
+            const roundNumber = document.getElementById('roundSelect').value;
+            const targetSelect = document.getElementById('targetSelect');
+            const patternSelect = document.getElementById('patternSelect');
+            
+            if (!roundNumber) {
+                showError('回号を選択してください。');
+                return;
+            }
+            
+            const target = targetSelect.value || 'n3';
+            
+            await generateDataForTarget(roundNumber, target);
+        }
+
+        // 対象を指定してデータを生成
+        async function generateDataForTarget(roundNumber, target) {
+            const patternSelect = document.getElementById('patternSelect');
+            
+            // ローディング表示
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('content').style.display = 'none';
+            hideError();
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/generate?round=${roundNumber}&target=${target}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                if (!result.success) {
+                    showError(result.error || 'データの生成に失敗しました。');
+                    document.getElementById('loading').style.display = 'none';
+                    return;
+                }
+                
+                // 全パターンのデータを保存
+                currentRoundData = result.data;
+                
+                // パターン選択を有効化
+                patternSelect.disabled = false;
+                
+                // デフォルトでA1を表示
+                const defaultPattern = 'A1';
+                if (currentRoundData[defaultPattern]) {
+                    patternSelect.value = defaultPattern;
+                    displayData(currentRoundData[defaultPattern], roundNumber);
+                } else {
+                    // A1がなければ最初の利用可能なパターンを表示
+                    const availablePatterns = Object.keys(currentRoundData);
+                    if (availablePatterns.length > 0) {
+                        patternSelect.value = availablePatterns[0];
+                        displayData(currentRoundData[availablePatterns[0]], roundNumber);
+                    }
+                }
+                
+                document.getElementById('loading').style.display = 'none';
+                
+            } catch (error) {
+                showError(`データの生成に失敗しました: ${error.message}<br>Pythonサーバーが起動しているか確認してください。`);
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        // パターン変更時にデータを表示
+        function onPatternChange() {
+            if (!currentRoundData) {
+                showError('まず回号を選択して「表示」ボタンを押してください。');
+                return;
+            }
+            
+            const roundNumber = document.getElementById('roundSelect').value;
+            const pattern = document.getElementById('patternSelect').value;
+            
+            if (!currentRoundData[pattern]) {
+                showError(`パターン ${pattern} のデータが見つかりません。`);
+                return;
+            }
+            
+            displayData(currentRoundData[pattern], roundNumber);
+        }
+
+        // データを表示
+        function displayData(data, roundNumber) {
+            hideError();
+            document.getElementById('content').style.display = 'block';
+            
+            // 現在の回号情報を表示
+            const roundInfo = document.getElementById('currentRoundInfo');
+            document.getElementById('currentRoundNumber').textContent = roundNumber;
+            document.getElementById('currentRehearsalDigits').textContent = data.rehearsal_digits || '-';
+            document.getElementById('currentWinningDigits').textContent = data.winning_digits || '-';
+            roundInfo.style.display = 'block';
+            
+            renderChart(data);
+            renderExplanation(data, roundNumber);
+        }
+
+        // エラーを表示
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.innerHTML = message;
+            errorDiv.style.display = 'block';
+            document.getElementById('content').style.display = 'none';
+        }
+
+        // エラーを非表示
+        function hideError() {
+            document.getElementById('errorMessage').style.display = 'none';
+        }
+
+        // セルの中心座標を取得
+        function getCellCenter(row, col) {
+            // 位置は1-indexedで来るので、そのまま使用
+            // テーブルのヘッダー幅（30px）+ セル幅（CELL_SIZE-8）* (col-1) + セル幅の半分
+            // テーブルのヘッダー高さ（30px）+ セル高さ（CELL_SIZE-8）* (row-1) + セル高さの半分
+            const headerWidth = 30;
+            const headerHeight = 30;
+            const actualCellWidth = CELL_SIZE - 8;
+            const actualCellHeight = CELL_SIZE - 8;
+            const x = TABLE_MARGIN + headerWidth + (col - 1) * actualCellWidth + actualCellWidth / 2;
+            const y = TABLE_MARGIN + headerHeight + (row - 1) * actualCellHeight + actualCellHeight / 2;
+            return { x, y };
+        }
+
+        // 隣接チェック関数
+        function isAdjacentHorizontalOrVertical(pos1, pos2) {
+            const rowDiff = Math.abs(pos1[0] - pos2[0]);
+            const colDiff = Math.abs(pos1[1] - pos2[1]);
+            return (rowDiff === 1 && colDiff === 0) || (rowDiff === 0 && colDiff === 1);
+        }
+
+        function isAdjacentDiagonal(pos1, pos2) {
+            const rowDiff = Math.abs(pos1[0] - pos2[0]);
+            const colDiff = Math.abs(pos1[1] - pos2[1]);
+            return rowDiff === 1 && colDiff === 1;
+        }
+
+        // SVGパスを生成
+        function generatePathForDigits(positions, color, offset = 0, commonPositionsSet = null) {
+            if (positions.length === 0) return '';
+            
+            if (positions.length === 1) {
+                const { x, y } = getCellCenter(positions[0][0], positions[0][1]);
+                const useOffset = commonPositionsSet && commonPositionsSet.has(positions[0].toString());
+                const actualOffset = useOffset ? offset : 0;
+                return `<circle cx="${x + actualOffset}" cy="${y + actualOffset}" r="3" fill="${color}" opacity="0.8"/>`;
+            }
+            
+            const positionSet = new Set(positions.map(p => p.toString()));
+            const paths = [];
+            const visited = new Set();
+            
+            // BFSで連結成分を探索
+            function getNeighbors(pos) {
+                const neighbors = [];
+                const [row, col] = pos;
+                
+                // 縦横の隣接を優先
+                for (const [dr, dc] of [[0, 1], [0, -1], [1, 0], [-1, 0]]) {
+                    const neighbor = [row + dr, col + dc];
+                    if (positionSet.has(neighbor.toString()) && !visited.has(neighbor.toString())) {
+                        neighbors.push(neighbor);
+                    }
+                }
+                
+                // 斜めの隣接（縦横に隣接がない場合のみ）
+                if (neighbors.length === 0) {
+                    for (const [dr, dc] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+                        const neighbor = [row + dr, col + dc];
+                        if (positionSet.has(neighbor.toString())) {
+                            // この位置の周囲8マスに縦横の隣接があるかチェック
+                            let hasHVNeighbor = false;
+                            for (const [dr2, dc2] of [[0, 1], [0, -1], [1, 0], [-1, 0]]) {
+                                const checkPos = [row + dr2, col + dc2];
+                                if (positionSet.has(checkPos.toString())) {
+                                    hasHVNeighbor = true;
+                                    break;
+                                }
+                            }
+                            
+                            if (!hasHVNeighbor) {
+                                // 隣接位置の周囲8マスにも縦横の隣接がないかチェック
+                                let neighborHasHV = false;
+                                for (const [dr2, dc2] of [[0, 1], [0, -1], [1, 0], [-1, 0]]) {
+                                    const checkPos = [neighbor[0] + dr2, neighbor[1] + dc2];
+                                    if (positionSet.has(checkPos.toString())) {
+                                        neighborHasHV = true;
+                                        break;
+                                    }
+                                }
+                                
+                                if (!neighborHasHV && !visited.has(neighbor.toString())) {
+                                    neighbors.push(neighbor);
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                return neighbors;
+            }
+            
+            // 各未訪問の位置から探索を開始
+            for (const startPos of positions) {
+                const startKey = startPos.toString();
+                if (visited.has(startKey)) continue;
+                
+                // BFSで連続する位置を探索
+                const component = [];
+                const queue = [startPos];
+                visited.add(startKey);
+                
+                while (queue.length > 0) {
+                    const current = queue.shift();
+                    component.push(current);
+                    
+                    const neighbors = getNeighbors(current);
+                    for (const neighbor of neighbors) {
+                        const neighborKey = neighbor.toString();
+                        if (!visited.has(neighborKey)) {
+                            visited.add(neighborKey);
+                            queue.push(neighbor);
+                        }
+                    }
+                }
+                
+                // コンポーネントが1つの場合は点を描画
+                if (component.length === 1) {
+                    const { x, y } = getCellCenter(component[0][0], component[0][1]);
+                    const useOffset = commonPositionsSet && commonPositionsSet.has(component[0].toString());
+                    const actualOffset = useOffset ? offset : 0;
+                    paths.push(`<circle cx="${x + actualOffset}" cy="${y + actualOffset}" r="3" fill="${color}" opacity="0.8"/>`);
+                } else {
+                    // 複数の位置がある場合は、隣接するペアを線で結ぶ
+                    const drawnPairs = new Set();
+                    
+                    for (let i = 0; i < component.length; i++) {
+                        for (let j = i + 1; j < component.length; j++) {
+                            const pos1 = component[i];
+                            const pos2 = component[j];
+                            
+                            const isHV = isAdjacentHorizontalOrVertical(pos1, pos2);
+                            let isDiag = false;
+                            
+                            if (!isHV) {
+                                isDiag = isAdjacentDiagonal(pos1, pos2);
+                                if (isDiag) {
+                                    // 両方の位置の周囲8マスに縦横の隣接がないかチェック
+                                    let pos1HasHV = false;
+                                    let pos2HasHV = false;
+                                    
+                                    for (const otherPos of component) {
+                                        if (otherPos !== pos1 && otherPos !== pos2) {
+                                            if (isAdjacentHorizontalOrVertical(pos1, otherPos)) {
+                                                pos1HasHV = true;
+                                            }
+                                            if (isAdjacentHorizontalOrVertical(pos2, otherPos)) {
+                                                pos2HasHV = true;
+                                            }
+                                        }
+                                    }
+                                    
+                                    if (pos1HasHV || pos2HasHV) {
+                                        isDiag = false;
+                                    }
+                                }
+                            }
+                            
+                            if (isHV || isDiag) {
+                                const pairKey = [pos1, pos2].sort().toString();
+                                if (!drawnPairs.has(pairKey)) {
+                                    drawnPairs.add(pairKey);
+                                    
+                                    const isCommonPair = commonPositionsSet && 
+                                        commonPositionsSet.has(pos1.toString()) && 
+                                        commonPositionsSet.has(pos2.toString());
+                                    const actualOffset = isCommonPair ? offset : 0;
+                                    
+                                    const { x: x1, y: y1 } = getCellCenter(pos1[0], pos1[1]);
+                                    const { x: x2, y: y2 } = getCellCenter(pos2[0], pos2[1]);
+                                    
+                                    paths.push(`<line x1="${x1 + actualOffset}" y1="${y1 + actualOffset}" x2="${x2 + actualOffset}" y2="${y2 + actualOffset}" stroke="${color}" stroke-width="3" opacity="0.8"/>`);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            return paths.join('\n');
+        }
+
+        // チャートを描画
+        function renderChart(data) {
+            const container = document.getElementById('chartContainer');
+            const { grid, grid_size, rehearsal_positions, winning_positions } = data;
+            const { rows, cols } = grid_size;
+            
+            // 共通位置を計算
+            const rehearsalSet = new Set(rehearsal_positions.map(p => p.toString()));
+            const winningSet = new Set(winning_positions.map(p => p.toString()));
+            const commonPositionsSet = new Set(
+                rehearsal_positions.filter(p => winningSet.has(p.toString())).map(p => p.toString())
+            );
+            
+            // SVGパスを生成
+            const rehearsalPath = generatePathForDigits(rehearsal_positions, '#ff0000', -2, commonPositionsSet);
+            const winningPath = generatePathForDigits(winning_positions, '#0000ff', 2, commonPositionsSet);
+            
+            const tableWidth = TABLE_MARGIN * 2 + 30 + cols * (CELL_SIZE - 8);
+            const tableHeight = TABLE_MARGIN * 2 + 30 + rows * (CELL_SIZE - 8);
+            
+            let html = `<div style='position: relative; width: ${tableWidth}px; height: ${tableHeight}px;'>`;
+            html += `<table style='border-collapse: collapse; font-family: monospace; position: relative; z-index: 1; background-color: white;'>`;
+            html += `<tr><th style='border: 1px solid #ccc; padding: 4px; width: 30px; height: 30px; background-color: white;'></th>`;
+            for (let c = 1; c <= cols; c++) {
+                html += `<th style='border: 1px solid #ccc; padding: 4px; width: ${CELL_SIZE-8}px; height: 30px; text-align: center; background-color: white;'>${c}</th>`;
+            }
+            html += '</tr>';
+            
+            for (let r = 1; r <= rows; r++) {
+                html += `<tr><th style='border: 1px solid #ccc; padding: 4px; width: 30px; height: ${CELL_SIZE-8}px; text-align: center; background-color: white;'>${r}</th>`;
+                for (let c = 1; c <= cols; c++) {
+                    const val = grid[r-1][c-1];
+                    if (val === null) {
+                        html += `<td style='border: 1px solid #ccc; padding: 4px; width: ${CELL_SIZE-8}px; height: ${CELL_SIZE-8}px; text-align: center; background-color: white;'>.</td>`;
+                    } else {
+                        html += `<td style='border: 1px solid #ccc; padding: 4px; width: ${CELL_SIZE-8}px; height: ${CELL_SIZE-8}px; text-align: center; background-color: white; font-weight: bold; font-size: 18px;'>${val}</td>`;
+                    }
+                }
+                html += '</tr>';
+            }
+            html += '</table>';
+            html += `<svg width='${tableWidth}px' height='${tableHeight}px' style='position: absolute; top: 0; left: 0; z-index: 3; pointer-events: none;'>`;
+            html += rehearsalPath;
+            html += winningPath;
+            html += '</svg>';
+            html += '</div>';
+            
+            container.innerHTML = html;
+        }
+
+        // 解説を描画
+        function renderExplanation(data, roundNumber) {
+            const container = document.getElementById('explanationContainer');
+            const { feature_results, rehearsal_digits, winning_digits, pattern } = data;
+            
+            let html = `<div style="margin-top: 40px; padding: 20px; background-color: #f9f9f9; border-radius: 8px;">`;
+            html += `<h2>特徴量の解説（${roundNumber}回のケース、${data.target.toUpperCase()}、パターン${pattern}）</h2>`;
+            html += `<p style="margin-bottom: 20px;"><strong>リハーサル数字: ${rehearsal_digits}</strong> | <strong>当選番号: ${winning_digits}</strong></p>`;
+            
+            html += `<h3>1. rehearsal_distance（リハーサルとの距離）</h3>`;
+            html += `<p style="margin-left: 20px; margin-bottom: 15px;">各候補数字の位置から最も近いリハーサル数字の位置までのユークリッド距離を計算し、その平均値を求めます。<br><strong>計算式:</strong> 各候補位置について、最も近いリハーサル位置までの距離を求め、それらの平均値</p>`;
+            
+            html += `<h3>2. overlap_count（リハーサルとの重なり）</h3>`;
+            html += `<p style="margin-left: 20px; margin-bottom: 15px;">候補数字とリハーサル数字が同じ位置（マス）にある回数をカウントします。<br><strong>計算式:</strong> 候補位置のセットとリハーサル位置のセットの共通部分の要素数</p>`;
+            
+            html += `<h3>3. inverse_ratio（裏数字の割合）</h3>`;
+            html += `<p style="margin-left: 20px; margin-bottom: 15px;">候補数字がリハーサル数字の「裏数字」である割合を計算します。<br><strong>裏数字の定義:</strong> 数字nの裏数字は (9-n) です（例: 0↔9, 1↔8, 2↔7, 3↔6, 4↔5）<br><strong>計算式:</strong> リハーサル位置と同じ位置にある候補数字のうち、それがリハーサル数字の裏数字である割合</p>`;
+            
+            html += `<h3>各数字の特徴量値（${roundNumber}回、${data.target.toUpperCase()}、パターン${pattern}）</h3>`;
+            html += `<table><thead><tr><th>数字</th><th>位置数</th><th>rehearsal_distance</th><th>overlap_count</th><th>inverse_ratio</th><th>当選</th></tr></thead><tbody>`;
+            
+            feature_results.forEach(feat => {
+                const bgColor = feat.is_rehearsal ? 'background-color: #ffe6e6;' : 
+                               feat.is_winning ? 'background-color: #e6e6ff;' : '';
+                html += `<tr style="${bgColor}">`;
+                html += `<td style="font-weight: bold;">${feat.digit}</td>`;
+                html += `<td>${feat.positions_count}</td>`;
+                html += `<td>${feat.rehearsal_distance.toFixed(3)}</td>`;
+                html += `<td>${feat.overlap_count}</td>`;
+                html += `<td>${feat.inverse_ratio.toFixed(3)}</td>`;
+                html += `<td>${feat.is_winning ? '✓' : '✗'}</td>`;
+                html += `</tr>`;
+            });
+            
+            html += `</tbody></table>`;
+            
+            // 具体例を追加
+            const digit6 = feature_results.find(f => f.digit === 6);
+            const digit8 = feature_results.find(f => f.digit === 8);
+            const digit4 = feature_results.find(f => f.digit === 4);
+            
+            if (digit6) {
+                html += `<div style="margin-top: 30px;"><h4>具体例: 数字6の場合${digit6.is_rehearsal ? '（リハーサル数字に含まれる）' : ''}</h4>`;
+                html += `<p style="margin-left: 20px;"><ul style="margin-left: 40px;">`;
+                html += `<li>数字6の位置数: ${digit6.positions_count}個</li>`;
+                html += `<li><strong>overlap_count = ${digit6.overlap_count}:</strong> ${digit6.is_rehearsal ? '数字6の位置とリハーサル数字「' + rehearsal_digits + '」の位置が' + digit6.overlap_count + '箇所で一致しています。' : '数字6の位置とリハーサル数字「' + rehearsal_digits + '」の位置が' + digit6.overlap_count + '箇所で一致しています。数字6はリハーサル数字に含まれないため、重なりは0です。'}</li>`;
+                html += `<li><strong>rehearsal_distance = ${digit6.rehearsal_distance.toFixed(3)}:</strong> 数字6の各位置から最も近いリハーサル位置までの距離の平均が${digit6.rehearsal_distance.toFixed(3)}です。</li>`;
+                html += `<li><strong>inverse_ratio = ${digit6.inverse_ratio.toFixed(3)}:</strong> 数字6の裏数字は3です。リハーサル数字「${rehearsal_digits}」との関係性による裏数字の割合は${digit6.inverse_ratio.toFixed(3)}です。</li>`;
+                html += `</ul></p></div>`;
+            }
+            
+            if (digit8) {
+                html += `<div style="margin-top: 20px;"><h4>具体例: 数字8の場合${digit8.is_winning ? '（当選番号に含まれる）' : ''}</h4>`;
+                html += `<p style="margin-left: 20px;"><ul style="margin-left: 40px;">`;
+                html += `<li>数字8の位置数: ${digit8.positions_count}個</li>`;
+                html += `<li><strong>overlap_count = ${digit8.overlap_count}:</strong> 数字8の位置とリハーサル数字「${rehearsal_digits}」の位置が${digit8.overlap_count}箇所で一致しています。${digit8.is_rehearsal ? '' : '数字8はリハーサル数字に含まれないため、重なりは0です。'}</li>`;
+                html += `<li><strong>rehearsal_distance = ${digit8.rehearsal_distance.toFixed(3)}:</strong> 数字8の各位置から最も近いリハーサル位置までの距離の平均が${digit8.rehearsal_distance.toFixed(3)}です。</li>`;
+                html += `<li><strong>inverse_ratio = ${digit8.inverse_ratio.toFixed(3)}:</strong> 数字8の裏数字は1です。リハーサル数字「${rehearsal_digits}」との関係性による裏数字の割合は${digit8.inverse_ratio.toFixed(3)}です。</li>`;
+                html += `</ul></p></div>`;
+            }
+            
+            if (digit4) {
+                html += `<div style="margin-top: 20px;"><h4>具体例: 数字4の場合${digit4.is_winning ? '（当選番号に含まれる）' : ''}</h4>`;
+                html += `<p style="margin-left: 20px;"><ul style="margin-left: 40px;">`;
+                html += `<li>数字4の位置数: ${digit4.positions_count}個</li>`;
+                html += `<li><strong>overlap_count = ${digit4.overlap_count}:</strong> 数字4の位置とリハーサル数字「${rehearsal_digits}」の位置が${digit4.overlap_count}箇所で一致しています。${digit4.is_rehearsal ? '' : '数字4はリハーサル数字に含まれないため、重なりは0です。'}</li>`;
+                html += `<li><strong>rehearsal_distance = ${digit4.rehearsal_distance.toFixed(3)}:</strong> 数字4の各位置から最も近いリハーサル位置までの距離の平均が${digit4.rehearsal_distance.toFixed(3)}です。</li>`;
+                html += `<li><strong>inverse_ratio = ${digit4.inverse_ratio.toFixed(3)}:</strong> 数字4の裏数字は5です。リハーサル数字「${rehearsal_digits}」との関係性による裏数字の割合は${digit4.inverse_ratio.toFixed(3)}です。</li>`;
+                html += `</ul></p></div>`;
+            }
+            
+            html += `<div style="margin-top: 30px;"><h4>特徴量の意味</h4>`;
+            html += `<p style="margin-left: 20px;">これらの特徴量は、予測モデルが学習する際に使用されます。各数字について、リハーサル数字との関係性を数値化することで、モデルは「リハーサル数字に近い位置の数字は当選しやすいか？」「リハーサル数字と同じ位置の数字は当選しやすいか？」といったパターンを学習することができます。</p></div>`;
+            html += `</div>`;
+            
+            container.innerHTML = html;
+        }
+
+        // ページ読み込み時にデータを読み込む
+        window.addEventListener('DOMContentLoaded', loadJSONData);
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,447 @@
+{
+  "features": [
+    {
+      "name": "max_line_length",
+      "importance": 0.02957727760076523,
+      "rank": 1,
+      "category": "形状特徴"
+    },
+    {
+      "name": "turn_count",
+      "importance": 0.023825716227293015,
+      "rank": 2,
+      "category": "その他"
+    },
+    {
+      "name": "edge_left",
+      "importance": 0.016462292522192,
+      "rank": 3,
+      "category": "位置特徴"
+    },
+    {
+      "name": "inverse_ratio",
+      "importance": 0.016115747392177582,
+      "rank": 4,
+      "category": "その他"
+    },
+    {
+      "name": "rehearsal_overlap_by_digit_ratio",
+      "importance": 0.015942733734846115,
+      "rank": 5,
+      "category": "関係性特徴"
+    },
+    {
+      "name": "rehearsal_distance",
+      "importance": 0.01561832707375288,
+      "rank": 6,
+      "category": "関係性特徴"
+    },
+    {
+      "name": "rehearsal_overlap_digit_1",
+      "importance": 0.015609443187713623,
+      "rank": 7,
+      "category": "関係性特徴"
+    },
+    {
+      "name": "shape_complexity",
+      "importance": 0.01559174619615078,
+      "rank": 8,
+      "category": "形状特徴（新規）"
+    },
+    {
+      "name": "quadrant_top_right",
+      "importance": 0.015571331605315208,
+      "rank": 9,
+      "category": "位置特徴（新規）"
+    },
+    {
+      "name": "rehearsal_direction_3",
+      "importance": 0.015528115443885326,
+      "rank": 10,
+      "category": "関係性特徴"
+    },
+    {
+      "name": "straightness",
+      "importance": 0.015436063520610332,
+      "rank": 11,
+      "category": "形状特徴"
+    },
+    {
+      "name": "quadrant_bottom_right",
+      "importance": 0.015402907505631447,
+      "rank": 12,
+      "category": "位置特徴（新規）"
+    },
+    {
+      "name": "rehearsal_direction_ratio_6",
+      "importance": 0.015282505191862583,
+      "rank": 13,
+      "category": "関係性特徴"
+    },
+    {
+      "name": "edge_proximity",
+      "importance": 0.01516693364828825,
+      "rank": 14,
+      "category": "位置特徴（新規）"
+    },
+    {
+      "name": "rehearsal_overlap_digit_2",
+      "importance": 0.01513467263430357,
+      "rank": 15,
+      "category": "関係性特徴"
+    },
+    {
+      "name": "rehearsal_overlap_by_digit_count",
+      "importance": 0.015132904052734375,
+      "rank": 16,
+      "category": "関係性特徴"
+    },
+    {
+      "name": "rehearsal_direction_ratio_7",
+      "importance": 0.015108993276953697,
+      "rank": 17,
+      "category": "関係性特徴"
+    },
+    {
+      "name": "rehearsal_partial_match",
+      "importance": 0.015102026052772999,
+      "rank": 18,
+      "category": "関係性特徴"
+    },
+    {
+      "name": "rehearsal_distance_bin_3_plus",
+      "importance": 0.01507104653865099,
+      "rank": 19,
+      "category": "関係性特徴（新規）"
+    },
+    {
+      "name": "edge_right",
+      "importance": 0.015049373731017113,
+      "rank": 20,
+      "category": "位置特徴"
+    },
+    {
+      "name": "rehearsal_distance_trimmed_mean",
+      "importance": 0.015003467909991741,
+      "rank": 21,
+      "category": "関係性特徴"
+    },
+    {
+      "name": "rehearsal_overlap_digit_0",
+      "importance": 0.014996637590229511,
+      "rank": 22,
+      "category": "関係性特徴"
+    },
+    {
+      "name": "dispersion",
+      "importance": 0.014878476038575172,
+      "rank": 23,
+      "category": "集約特徴"
+    },
+    {
+      "name": "center_distance",
+      "importance": 0.01483173854649067,
+      "rank": 24,
+      "category": "位置特徴"
+    },
+    {
+      "name": "rehearsal_direction_ratio_2",
+      "importance": 0.014805949293076992,
+      "rank": 25,
+      "category": "関係性特徴"
+    },
+    {
+      "name": "clustering_coefficient",
+      "importance": 0.014758545905351639,
+      "rank": 26,
+      "category": "形状特徴（新規）"
+    },
+    {
+      "name": "rehearsal_direction_ratio_0",
+      "importance": 0.014661737717688084,
+      "rank": 27,
+      "category": "関係性特徴"
+    },
+    {
+      "name": "rehearsal_direction_ratio_5",
+      "importance": 0.014637419953942299,
+      "rank": 28,
+      "category": "関係性特徴"
+    },
+    {
+      "name": "overlap_count",
+      "importance": 0.014620229601860046,
+      "rank": 29,
+      "category": "関係性特徴"
+    },
+    {
+      "name": "rehearsal_direction_0",
+      "importance": 0.01458672247827053,
+      "rank": 30,
+      "category": "関係性特徴"
+    },
+    {
+      "name": "quadrant_top_left",
+      "importance": 0.014527246356010437,
+      "rank": 31,
+      "category": "位置特徴（新規）"
+    },
+    {
+      "name": "rehearsal_direction_ratio_1",
+      "importance": 0.014511248096823692,
+      "rank": 32,
+      "category": "関係性特徴"
+    },
+    {
+      "name": "rehearsal_direction_ratio_4",
+      "importance": 0.014455212280154228,
+      "rank": 33,
+      "category": "関係性特徴"
+    },
+    {
+      "name": "rehearsal_digit_1_mean_distance",
+      "importance": 0.014414315111935139,
+      "rank": 34,
+      "category": "関係性特徴（新規）"
+    },
+    {
+      "name": "rehearsal_digit_2_mean_distance",
+      "importance": 0.014402995817363262,
+      "rank": 35,
+      "category": "関係性特徴（新規）"
+    },
+    {
+      "name": "rehearsal_distance_q75",
+      "importance": 0.014386353082954884,
+      "rank": 36,
+      "category": "関係性特徴"
+    },
+    {
+      "name": "rehearsal_distance_median",
+      "importance": 0.014374424703419209,
+      "rank": 37,
+      "category": "関係性特徴"
+    },
+    {
+      "name": "rehearsal_distance_bin_1_2",
+      "importance": 0.014365604147315025,
+      "rank": 38,
+      "category": "関係性特徴（新規）"
+    },
+    {
+      "name": "rehearsal_direction_ratio_3",
+      "importance": 0.01428468618541956,
+      "rank": 39,
+      "category": "関係性特徴"
+    },
+    {
+      "name": "rehearsal_distance_q25",
+      "importance": 0.014271324500441551,
+      "rank": 40,
+      "category": "関係性特徴"
+    },
+    {
+      "name": "rehearsal_direction_5",
+      "importance": 0.014254994690418243,
+      "rank": 41,
+      "category": "関係性特徴"
+    },
+    {
+      "name": "centroid_x",
+      "importance": 0.014240461401641369,
+      "rank": 42,
+      "category": "位置特徴"
+    },
+    {
+      "name": "rehearsal_angle",
+      "importance": 0.014209972694516182,
+      "rank": 43,
+      "category": "関係性特徴（新規）"
+    },
+    {
+      "name": "rehearsal_direction_concentration",
+      "importance": 0.01419174112379551,
+      "rank": 44,
+      "category": "関係性特徴"
+    },
+    {
+      "name": "rehearsal_digit_0_mean_distance",
+      "importance": 0.014157894998788834,
+      "rank": 45,
+      "category": "関係性特徴（新規）"
+    },
+    {
+      "name": "diagonal_line_length",
+      "importance": 0.0140380859375,
+      "rank": 46,
+      "category": "形状特徴（新規）"
+    },
+    {
+      "name": "rehearsal_primary_direction",
+      "importance": 0.013955851085484028,
+      "rank": 47,
+      "category": "関係性特徴"
+    },
+    {
+      "name": "centroid_y",
+      "importance": 0.01395464688539505,
+      "rank": 48,
+      "category": "位置特徴"
+    },
+    {
+      "name": "bias",
+      "importance": 0.013872683048248291,
+      "rank": 49,
+      "category": "集約特徴"
+    },
+    {
+      "name": "rehearsal_distance_std",
+      "importance": 0.013854620978236198,
+      "rank": 50,
+      "category": "関係性特徴"
+    },
+    {
+      "name": "rehearsal_direction_2",
+      "importance": 0.01384866051375866,
+      "rank": 51,
+      "category": "関係性特徴"
+    },
+    {
+      "name": "rehearsal_distance_bin_2_3",
+      "importance": 0.013834141194820404,
+      "rank": 52,
+      "category": "関係性特徴（新規）"
+    },
+    {
+      "name": "rehearsal_distance_mean",
+      "importance": 0.013781081885099411,
+      "rank": 53,
+      "category": "関係性特徴"
+    },
+    {
+      "name": "quadrant_bottom_left",
+      "importance": 0.013748408295214176,
+      "rank": 54,
+      "category": "位置特徴（新規）"
+    },
+    {
+      "name": "rehearsal_direction_4",
+      "importance": 0.0137481102719903,
+      "rank": 55,
+      "category": "関係性特徴"
+    },
+    {
+      "name": "density",
+      "importance": 0.013682138174772263,
+      "rank": 56,
+      "category": "形状特徴"
+    },
+    {
+      "name": "rehearsal_direction_6",
+      "importance": 0.013579264283180237,
+      "rank": 57,
+      "category": "関係性特徴"
+    },
+    {
+      "name": "rehearsal_direction_1",
+      "importance": 0.013431013561785221,
+      "rank": 58,
+      "category": "関係性特徴"
+    },
+    {
+      "name": "edge_bottom",
+      "importance": 0.013333256356418133,
+      "rank": 59,
+      "category": "位置特徴"
+    },
+    {
+      "name": "rehearsal_distance_max",
+      "importance": 0.013181044720113277,
+      "rank": 60,
+      "category": "関係性特徴"
+    },
+    {
+      "name": "rehearsal_direction_7",
+      "importance": 0.013046326115727425,
+      "rank": 61,
+      "category": "関係性特徴"
+    },
+    {
+      "name": "edge_top",
+      "importance": 0.012746612541377544,
+      "rank": 62,
+      "category": "位置特徴"
+    },
+    {
+      "name": "pattern_id",
+      "importance": 0.012682789005339146,
+      "rank": 63,
+      "category": "パターンID"
+    },
+    {
+      "name": "pattern_A2",
+      "importance": 0.012032819911837578,
+      "rank": 64,
+      "category": "パターンID"
+    },
+    {
+      "name": "rehearsal_distance_min",
+      "importance": 0.011965512298047543,
+      "rank": 65,
+      "category": "関係性特徴"
+    },
+    {
+      "name": "pattern_B1",
+      "importance": 0.01019264291971922,
+      "rank": 66,
+      "category": "パターンID"
+    },
+    {
+      "name": "rehearsal_full_match",
+      "importance": 0.00997344683855772,
+      "rank": 67,
+      "category": "関係性特徴"
+    },
+    {
+      "name": "pattern_A1",
+      "importance": 0.00885099358856678,
+      "rank": 68,
+      "category": "パターンID"
+    },
+    {
+      "name": "pattern_B2",
+      "importance": 0.008106289431452751,
+      "rank": 69,
+      "category": "パターンID"
+    },
+    {
+      "name": "rehearsal_digit_3_mean_distance",
+      "importance": 0.0,
+      "rank": 70,
+      "category": "関係性特徴（新規）"
+    },
+    {
+      "name": "rehearsal_distance_bin_0_1",
+      "importance": 0.0,
+      "rank": 71,
+      "category": "関係性特徴（新規）"
+    },
+    {
+      "name": "rehearsal_overlap_digit_3",
+      "importance": 0.0,
+      "rank": 72,
+      "category": "関係性特徴"
+    }
+  ],
+  "category_summary": {
+    "集約特徴": 0.028751159086823463,
+    "位置特徴": 0.10061838198453188,
+    "形状特徴（新規）": 0.04438837803900242,
+    "形状特徴": 0.05869547929614782,
+    "位置特徴（新規）": 0.07441682741045952,
+    "その他": 0.039941463619470596,
+    "関係性特徴": 0.5008668024092913,
+    "パターンID": 0.051865534856915474,
+    "関係性特徴（新規）": 0.10045597050338984
+  }
+}
