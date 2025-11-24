@@ -81,8 +81,8 @@ async function fetchFromAPI<T>(
     if (typeof window === 'undefined') {
       // サーバーサイド（Next.js API Route）から呼び出す場合は絶対URLが必要
       // VERCEL_URLはhttpsを含まないため付与する
-      const baseUrl = process.env.VERCEL_URL 
-        ? `https://${process.env.VERCEL_URL}` 
+      const baseUrl = process.env.VERCEL_URL
+        ? `https://${process.env.VERCEL_URL}`
         : 'http://localhost:3000'; // ローカルフォールバック
       url = `${baseUrl}${endpoint}`;
     } else {
@@ -94,32 +94,59 @@ async function fetchFromAPI<T>(
     url = `${FASTAPI_URL}${endpoint}`;
   }
 
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(body),
+  console.log(`[API Request] ${endpoint}`, {
+    url,
+    body
   });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(
-      `API request failed: ${response.status} ${response.statusText} - ${errorText}`
-    );
-  }
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
 
-  // Vercel Python関数の場合は、レスポンスボディをパースする必要がある
-  if (USE_VERCEL_PYTHON) {
-    const result = await response.json();
-    // Vercel Python関数のレスポンス形式に応じて調整
-    if (result.body) {
-      return JSON.parse(result.body);
+    console.log(`[API Response Status] ${endpoint}: ${response.status} ${response.statusText}`);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`[API Error] ${endpoint}:`, errorText);
+      throw new Error(
+        `API request failed: ${response.status} ${response.statusText} - ${errorText}`
+      );
     }
-    return result;
-  }
 
-  return response.json();
+    // Vercel Python関数の場合は、レスポンスボディをパースする必要がある
+    if (USE_VERCEL_PYTHON) {
+      const result = await response.json();
+      console.log(`[API Response Body] ${endpoint}:`, JSON.stringify(result).substring(0, 200) + '...');
+
+      // Vercel Python関数のレスポンス形式に応じて調整
+      if (result.body) {
+        try {
+          // bodyが文字列（JSON文字列）の場合
+          if (typeof result.body === 'string') {
+            return JSON.parse(result.body);
+          }
+          // bodyがすでにオブジェクトの場合
+          return result.body;
+        } catch (e) {
+          console.error(`[API Parse Error] ${endpoint}: Failed to parse body`, e);
+          return result.body;
+        }
+      }
+      return result;
+    }
+
+    const json = await response.json();
+    console.log(`[API Response Data] ${endpoint}:`, JSON.stringify(json).substring(0, 200) + '...');
+    return json;
+  } catch (error) {
+    console.error(`[API Fetch Error] ${endpoint}:`, error);
+    throw error;
+  }
 }
 
 /**
