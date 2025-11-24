@@ -8,6 +8,29 @@ import pickle
 from pathlib import Path
 from typing import Optional, Dict, Literal, List, Union
 import numpy as np
+
+# 【重要】Vercel環境(x86_64)用の共有ライブラリを強制ロード
+# lightgbmをインポートする前に実行する必要がある
+import ctypes
+import sys
+
+# プロジェクトルートを特定
+if '__file__' in globals():
+    PROJECT_ROOT = Path(__file__).parent.parent
+else:
+    PROJECT_ROOT = Path.cwd()
+
+lib_path = PROJECT_ROOT / 'api' / 'lib' / 'libgomp.so.1'
+if lib_path.exists():
+    try:
+        ctypes.CDLL(str(lib_path))
+        print(f"[model_loader] Successfully loaded {lib_path}")
+    except Exception as e:
+        print(f"[model_loader] Failed to load {lib_path}: {e}")
+else:
+    print(f"[model_loader] libgomp.so.1 not found at {lib_path}")
+
+# libgomp.so.1をロード後にlightgbmをインポート
 import lightgbm as lgb
 
 Pattern = Literal['A1', 'A2', 'B1', 'B2']
