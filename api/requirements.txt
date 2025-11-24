@@ -1,21 +1,13 @@
-# FastAPIサーバー用のrequirements.txt
-
-# Webフレームワーク
-fastapi>=0.104.0
-uvicorn[standard]>=0.24.0
+# Vercel Serverless Function & Local Common Requirements
+# 軽量化のため、必要最小限の依存関係のみ
 
 # データ処理
 pandas>=2.0.0
 numpy>=1.24.0
 
-# 機械学習
-
+# 機械学習（予測モデル）
 lightgbm>=4.0.0
-scikit-learn>=1.3.0
-scipy>=1.10.0
 
 # その他
-pydantic>=2.0.0
 requests>=2.31.0
-beautifulsoup4>=4.12.0
 
