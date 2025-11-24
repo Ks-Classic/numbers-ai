@@ -13,6 +13,14 @@ from typing import Dict, Any, List
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.append(str(PROJECT_ROOT / 'core'))
 
+# デバッグ: パスと環境確認
+print(f"Python Path: {sys.path}")
+try:
+    import numpy
+    print(f"NumPy found at: {numpy.__file__}")
+except ImportError as e:
+    print(f"NumPy import failed: {e}")
+
 from model_loader import load_model_loader
 from chart_generator import load_keisen_master, generate_chart, ChartGenerationError
 from feature_extractor import (
