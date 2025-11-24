@@ -32,19 +32,19 @@ const USE_VERCEL_PYTHON = process.env.USE_VERCEL_PYTHON === 'true';
 export async function POST(request: NextRequest) {
   try {
     console.log('=== Next.js API Route: /api/predict 開始 ===');
-    
+
     // リクエストボディを取得
     const body = await request.json();
-    
+
     console.log('リクエストボディ:', {
       roundNumber: body.roundNumber,
       hasN3Rehearsal: !!body.n3Rehearsal,
       hasN4Rehearsal: !!body.n4Rehearsal,
     });
-    
+
     // バリデーション
     const validationResult = PredictRequestSchema.safeParse(body);
-    
+
     if (!validationResult.success) {
       return NextResponse.json(
         {
@@ -61,9 +61,9 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    
+
     const data = validationResult.data;
-    
+
     // リハーサル数字のチェック
     if (!data.n3Rehearsal && !data.n4Rehearsal) {
       return NextResponse.json(
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    
+
     // 予測結果を格納するオブジェクト
     const result: {
       roundNumber: number;
@@ -150,7 +150,7 @@ export async function POST(request: NextRequest) {
       roundNumber: data.roundNumber,
       generatedAt: new Date().toISOString(),
     };
-    
+
     // N3の予測
     if (data.n3Rehearsal) {
       const n3Result = await predictTarget(
@@ -158,7 +158,7 @@ export async function POST(request: NextRequest) {
         'n3',
         data.n3Rehearsal
       );
-      
+
       result.n3 = {
         box: {
           axisCandidates: n3Result.box.axisCandidates.map((item) => ({
@@ -192,27 +192,27 @@ export async function POST(request: NextRequest) {
         },
       };
     }
-    
+
     // N4の予測
     if (data.n4Rehearsal) {
       console.log('N4予測開始:', {
         roundNumber: data.roundNumber,
         rehearsal: data.n4Rehearsal,
       });
-      
+
       const n4Result = await predictTarget(
         data.roundNumber,
         'n4',
         data.n4Rehearsal
       );
-      
+
       console.log('N4予測結果:', {
         axisCandidatesCount: n4Result.box.axisCandidates.length,
         boxNumberCandidatesCount: n4Result.box.numberCandidates.length,
         straightNumberCandidatesCount: n4Result.straight.numberCandidates.length,
         bestPattern: n4Result.bestPattern,
       });
-      
+
       result.n4 = {
         box: {
           axisCandidates: n4Result.box.axisCandidates.map((item) => ({
@@ -246,7 +246,7 @@ export async function POST(request: NextRequest) {
         },
       };
     }
-    
+
     console.log('=== 予測結果サマリー ===');
     console.log('N3データ:', {
       hasData: !!result.n3,
@@ -259,15 +259,15 @@ export async function POST(request: NextRequest) {
       boxNumberCandidatesCount: result.n4?.box.numberCandidates.length || 0,
     });
     console.log('========================');
-    
+
     return NextResponse.json({
       success: true,
       data: result,
     });
-    
+
   } catch (error) {
     console.error('予測APIエラー:', error);
-    
+
     // エラーの種類に応じて適切なステータスコードを返す
     if (error instanceof Error) {
       if (error.message.includes('VALIDATION_ERROR') || error.message.includes('Invalid')) {
@@ -282,7 +282,7 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
-      
+
       if (error.message.includes('NOT_FOUND') || error.message.includes('見つかりません')) {
         return NextResponse.json(
           {
@@ -295,7 +295,7 @@ export async function POST(request: NextRequest) {
           { status: 404 }
         );
       }
-      
+
       if (error.message.includes('MODEL') || error.message.includes('モデル')) {
         return NextResponse.json(
           {
@@ -309,7 +309,7 @@ export async function POST(request: NextRequest) {
         );
       }
     }
-    
+
     return NextResponse.json(
       {
         success: false,
@@ -323,3 +323,19 @@ export async function POST(request: NextRequest) {
   }
 }
 
+/**
+ * OPTIONSハンドラー（CORSプリフライトリクエスト用）
+ */
+export async function OPTIONS(request: NextRequest) {
+  return NextResponse.json(
+    {},
+    {
+      status: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      },
+    }
+  );
+}
