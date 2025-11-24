@@ -2,5 +2,11 @@
     "buildCommand": "npm run build",
     "devCommand": "npm run dev",
     "framework": "nextjs",
-    "outputDirectory": ".next"
+    "outputDirectory": ".next",
+    "functions": {
+        "api/**/*.py": {
+            "memory": 1024,
+            "maxDuration": 10
+        }
+    }
 }
