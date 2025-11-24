@@ -31,10 +31,10 @@ type CombinationRequest = z.infer<typeof CombinationRequestSchema>;
 export async function POST(request: NextRequest) {
   try {
     console.log('=== Next.js API Route: /api/predict/combination 開始 ===');
-    
+
     // リクエストボディを取得
     const body = await request.json();
-    
+
     console.log('リクエストボディ:', {
       round_number: body.round_number,
       target: body.target,
@@ -44,10 +44,10 @@ export async function POST(request: NextRequest) {
       has_rehearsal_digits: !!body.rehearsal_digits,
       max_combinations: body.max_combinations,
     });
-    
+
     // バリデーション
     const validationResult = CombinationRequestSchema.safeParse(body);
-    
+
     if (!validationResult.success) {
       return NextResponse.json(
         {
@@ -64,9 +64,9 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    
+
     const data = validationResult.data;
-    
+
     // 組み合わせ予測を実行
     const result = await predictCombination(
       data.round_number,
@@ -76,29 +76,29 @@ export async function POST(request: NextRequest) {
       data.top_axis_digits,
       data.rehearsal_digits
     );
-    
+
     console.log('組み合わせ予測結果:', {
       combinationsCount: result.combinations?.length || 0,
     });
-    
+
     return NextResponse.json({
       success: true,
       combinations: result.combinations || [],
     });
-    
+
   } catch (error: any) {
     console.error('組み合わせ予測エラー:', error);
-    
+
     // モデルが見つからない場合は空の結果を返す（エラーではなくスキップ）
-    if (error?.message?.includes('モデルが見つかりません') || 
-        error?.message?.includes('モデルが読み込まれていません')) {
+    if (error?.message?.includes('モデルが見つかりません') ||
+      error?.message?.includes('モデルが読み込まれていません')) {
       console.warn('組み合わせ予測モデルが見つかりません。空の結果を返します。');
       return NextResponse.json({
         success: true,
         combinations: [],
       });
     }
-    
+
     return NextResponse.json(
       {
         success: false,
@@ -112,3 +112,19 @@ export async function POST(request: NextRequest) {
   }
 }
 
+/**
+ * OPTIONSハンドラー（CORSプリフライトリクエスト用）
+ */
+export async function OPTIONS(request: NextRequest) {
+  return NextResponse.json(
+    {},
+    {
+      status: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      },
+    }
+  );
+}
