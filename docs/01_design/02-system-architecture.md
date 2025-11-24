@@ -539,6 +539,23 @@ numbers-ai/
 | 1.0 | 2025-11-02 | 技術リード | 初版作成（元specifications.mdから分割） |
 | 1.1 | 2025-01-XX | 技術リード | 現実装に合わせてディレクトリ構成を更新（Zustand採用、ルーティング構造反映） |
 | 1.2 | 2025-01-XX | 技術リード | FastAPI実装状況を反映（実装済み、デプロイ準備中）、学習データ範囲を4801回分に更新 |
+| 1.3 | 2025-11-24 | 技術リード | Vercel Python Serverless Functions採用、ARM64環境からのデプロイ戦略を追記 |
+
+### 1.3の主な変更点
+
+**Vercel Python Serverless Functions採用:**
+- FastAPIサーバーの代わりに、Vercel Python Serverless Functionsを採用
+- `api/predict/axis.py`, `api/predict/combination.py` を実装
+- Next.js API Routes (`src/app/api/predict/route.ts`) がプロキシとして機能
+
+**ARM64環境からのデプロイ対応:**
+- ローカル環境: Windows ARM64 + WSL (Ubuntu ARM64)
+- Vercel環境: Linux x86_64
+- 対策: 「クリーンクラウドビルド + libgomp手動注入」戦略
+  - `requirements.txt` のみをVercelに送信（venvは除外）
+  - Vercel側でx86_64環境で `pip install` を実行
+  - `libgomp.so.1` (164KB) のみx86_64版を手動配置
+  - `scikit-learn` (100MB) を避けてサイズ制限（250MB）をクリア
 
 ---
 
