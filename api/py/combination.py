@@ -1,7 +1,7 @@
 """
 Vercel Python関数: 組み合わせ予測
 
-/api/predict/combination エンドポイントとして動作します。
+/api/py/combination エンドポイントとして動作します。
 """
 
 import json

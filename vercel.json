@@ -4,10 +4,16 @@
     "framework": "nextjs",
     "outputDirectory": ".next",
     "functions": {
-        "api/**/*.py": {
+        "api/py/**/*.py": {
             "memory": 1024,
-            "maxDuration": 10,
-            "includeFiles": "core/**,data/**,api/predict/**/libgomp.so.1"
+            "maxDuration": 30,
+            "includeFiles": "core/**,data/**,api/py/**/libgomp.so.1"
         }
-    }
+    },
+    "rewrites": [
+        {
+            "source": "/api/py/:path*",
+            "destination": "/api/py/:path*"
+        }
+    ]
 }
