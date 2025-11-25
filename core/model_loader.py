@@ -17,10 +17,29 @@ import sys
 # プロジェクトルートを特定
 if '__file__' in globals():
     PROJECT_ROOT = Path(__file__).parent.parent
+    print(f"[model_loader] __file__ = {__file__}")
+    print(f"[model_loader] PROJECT_ROOT = {PROJECT_ROOT}")
 else:
     PROJECT_ROOT = Path.cwd()
+    print(f"[model_loader] Using cwd: {PROJECT_ROOT}")
 
 lib_path = PROJECT_ROOT / 'api' / 'lib' / 'libgomp.so.1'
+print(f"[model_loader] Checking for libgomp.so.1 at: {lib_path}")
+print(f"[model_loader] File exists: {lib_path.exists()}")
+
+# ディレクトリ構造を確認
+api_dir = PROJECT_ROOT / 'api'
+if api_dir.exists():
+    print(f"[model_loader] api/ directory exists")
+    lib_dir = api_dir / 'lib'
+    if lib_dir.exists():
+        print(f"[model_loader] api/lib/ directory exists")
+        print(f"[model_loader] Contents: {list(lib_dir.iterdir())}")
+    else:
+        print(f"[model_loader] api/lib/ directory NOT found")
+else:
+    print(f"[model_loader] api/ directory NOT found")
+
 if lib_path.exists():
     try:
         ctypes.CDLL(str(lib_path))
