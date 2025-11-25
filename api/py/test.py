@@ -86,8 +86,31 @@ class handler(BaseHTTPRequestHandler):
         try:
             from model_loader import load_model_loader
             import_results['model_loader'] = "OK"
+            
+            # モデルロードテスト
+            models_dir = project_root / 'data' / 'models'
+            import_results['models_dir_exists'] = models_dir.exists()
+            if models_dir.exists():
+                import_results['model_files'] = [f.name for f in models_dir.iterdir() if f.suffix == '.pkl']
+                
+                # 実際にモデルをロード
+                try:
+                    loader = load_model_loader(models_dir)
+                    import_results['model_loader_init'] = "OK"
+                    import_results['available_models'] = loader.get_available_models()
+                except Exception as e:
+                    import_results['model_loader_init'] = f"FAIL: {e}"
         except Exception as e:
             import_results['model_loader'] = f"FAIL: {e}"
+        
+        # past_results.csv 確認
+        csv_path = project_root / 'data' / 'past_results.csv'
+        info['past_results_exists'] = csv_path.exists()
+        if csv_path.exists():
+            import pandas as pd
+            df = pd.read_csv(csv_path)
+            info['past_results_rows'] = len(df)
+            info['past_results_columns'] = list(df.columns)
         
         info['imports'] = import_results
         
