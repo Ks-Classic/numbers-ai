@@ -74,37 +74,56 @@ class ModelLoader:
     
     def _load_all_models(self) -> None:
         """すべてのモデルを読み込む"""
-        # LightGBMモデルファイル名
+        # LightGBMモデルファイル名（ネイティブ形式優先）
         model_files = {
-            'n3_axis': 'n3_axis_lgb.pkl',
-            'n4_axis': 'n4_axis_lgb.pkl',
-            'n3_box_comb': 'n3_box_comb_lgb.pkl',
-            'n3_straight_comb': 'n3_straight_comb_lgb.pkl',
-            'n4_box_comb': 'n4_box_comb_lgb.pkl',
-            'n4_straight_comb': 'n4_straight_comb_lgb.pkl'
+            'n3_axis': 'n3_axis_lgb',
+            'n4_axis': 'n4_axis_lgb',
+            'n3_box_comb': 'n3_box_comb_lgb',
+            'n3_straight_comb': 'n3_straight_comb_lgb',
+            'n4_box_comb': 'n4_box_comb_lgb',
+            'n4_straight_comb': 'n4_straight_comb_lgb'
         }
         
-        for model_name, filename in model_files.items():
-            model_path = self.models_dir / filename
-            if model_path.exists():
+        for model_name, base_filename in model_files.items():
+            # ネイティブ形式（.txt）を優先
+            txt_path = self.models_dir / f"{base_filename}.txt"
+            pkl_path = self.models_dir / f"{base_filename}.pkl"
+            keys_path = self.models_dir / f"{base_filename}_keys.json"
+            
+            if txt_path.exists():
+                # ネイティブ形式で読み込み
                 try:
-                    with open(model_path, 'rb') as f:
+                    self.models[model_name] = lgb.Booster(model_file=str(txt_path))
+                    
+                    # 特徴量キーを読み込む
+                    if keys_path.exists():
+                        import json
+                        with open(keys_path, 'r') as f:
+                            self.feature_keys[model_name] = json.load(f)
+                    else:
+                        self.feature_keys[model_name] = []
+                    
+                    print(f"モデル読み込み完了: {model_name} (LightGBM Native)")
+                except Exception as e:
+                    print(f"警告: モデル読み込みエラー ({model_name}): {e}")
+            elif pkl_path.exists():
+                # 従来のpickle形式（フォールバック）
+                try:
+                    with open(pkl_path, 'rb') as f:
                         model_data = pickle.load(f)
                         
-                    # モデルデータが辞書の場合は、モデルと特徴量キーを分離
                     if isinstance(model_data, dict):
                         self.models[model_name] = model_data.get('model', model_data)
                         self.feature_keys[model_name] = model_data.get('feature_keys', [])
                     else:
-                        # 古い形式（モデルのみ）の場合
                         self.models[model_name] = model_data
                         self.feature_keys[model_name] = []
                     
-                    print(f"モデル読み込み完了: {model_name} (LightGBM)")
+                    print(f"モデル読み込み完了: {model_name} (LightGBM Pickle)")
                 except Exception as e:
                     print(f"警告: モデル読み込みエラー ({model_name}): {e}")
             else:
-                print(f"警告: モデルファイルが見つかりません: {model_path}")
+                print(f"警告: モデルファイルが見つかりません: {txt_path} or {pkl_path}")
     
     def load_model(self, model_name: str) -> Optional[lgb.LGBMClassifier]:
         """指定されたモデルを読み込む
@@ -174,25 +193,42 @@ class ModelLoader:
         if model is None:
             raise ValueError(f"モデルが見つかりません: {model_name}")
         
-        # 次元チェックと自動調整
-        expected_dim = model.n_features_in_
-        actual_dim = features.shape[1] if len(features.shape) > 1 else len(features)
-        
-        if expected_dim != actual_dim:
-            # 次元が一致しない場合は警告を出して調整（1回だけ）
-            if not self.dimension_warnings_shown.get(model_name, False):
-                print(f"警告: {model_name}の特徴量次元が不一致 (期待: {expected_dim}, 実際: {actual_dim})。自動調整します。")
-                self.dimension_warnings_shown[model_name] = True
+        # Booster形式かClassifier形式かを判定
+        if isinstance(model, lgb.Booster):
+            # ネイティブBooster形式
+            expected_dim = model.num_feature()
+            actual_dim = features.shape[1] if len(features.shape) > 1 else len(features)
             
-            if actual_dim < expected_dim:
-                # 不足分を0で埋める
-                padding = np.zeros((features.shape[0], expected_dim - actual_dim))
-                features = np.hstack([features, padding])
-            elif actual_dim > expected_dim:
-                # 余分な次元を削除
-                features = features[:, :expected_dim]
-        
-        return model.predict_proba(features)[:, 1]
+            if expected_dim != actual_dim:
+                if not self.dimension_warnings_shown.get(model_name, False):
+                    print(f"警告: {model_name}の特徴量次元が不一致 (期待: {expected_dim}, 実際: {actual_dim})。自動調整します。")
+                    self.dimension_warnings_shown[model_name] = True
+                
+                if actual_dim < expected_dim:
+                    padding = np.zeros((features.shape[0], expected_dim - actual_dim))
+                    features = np.hstack([features, padding])
+                elif actual_dim > expected_dim:
+                    features = features[:, :expected_dim]
+            
+            # Boosterのpredictは確率を直接返す（binary classification）
+            return model.predict(features)
+        else:
+            # 従来のClassifier形式
+            expected_dim = model.n_features_in_
+            actual_dim = features.shape[1] if len(features.shape) > 1 else len(features)
+            
+            if expected_dim != actual_dim:
+                if not self.dimension_warnings_shown.get(model_name, False):
+                    print(f"警告: {model_name}の特徴量次元が不一致 (期待: {expected_dim}, 実際: {actual_dim})。自動調整します。")
+                    self.dimension_warnings_shown[model_name] = True
+                
+                if actual_dim < expected_dim:
+                    padding = np.zeros((features.shape[0], expected_dim - actual_dim))
+                    features = np.hstack([features, padding])
+                elif actual_dim > expected_dim:
+                    features = features[:, :expected_dim]
+            
+            return model.predict_proba(features)[:, 1]
     
     def predict_combination(
         self,
@@ -216,25 +252,41 @@ class ModelLoader:
         if model is None:
             raise ValueError(f"モデルが見つかりません: {model_name}")
         
-        # 次元チェックと自動調整
-        expected_dim = model.n_features_in_
-        actual_dim = features.shape[1] if len(features.shape) > 1 else len(features)
-        
-        if expected_dim != actual_dim:
-            # 次元が一致しない場合は警告を出して調整（1回だけ）
-            if not self.dimension_warnings_shown.get(model_name, False):
-                print(f"警告: {model_name}の特徴量次元が不一致 (期待: {expected_dim}, 実際: {actual_dim})。自動調整します。")
-                self.dimension_warnings_shown[model_name] = True
+        # Booster形式かClassifier形式かを判定
+        if isinstance(model, lgb.Booster):
+            # ネイティブBooster形式
+            expected_dim = model.num_feature()
+            actual_dim = features.shape[1] if len(features.shape) > 1 else len(features)
             
-            if actual_dim < expected_dim:
-                # 不足分を0で埋める
-                padding = np.zeros((features.shape[0], expected_dim - actual_dim))
-                features = np.hstack([features, padding])
-            elif actual_dim > expected_dim:
-                # 余分な次元を削除
-                features = features[:, :expected_dim]
-        
-        return model.predict_proba(features)[:, 1]
+            if expected_dim != actual_dim:
+                if not self.dimension_warnings_shown.get(model_name, False):
+                    print(f"警告: {model_name}の特徴量次元が不一致 (期待: {expected_dim}, 実際: {actual_dim})。自動調整します。")
+                    self.dimension_warnings_shown[model_name] = True
+                
+                if actual_dim < expected_dim:
+                    padding = np.zeros((features.shape[0], expected_dim - actual_dim))
+                    features = np.hstack([features, padding])
+                elif actual_dim > expected_dim:
+                    features = features[:, :expected_dim]
+            
+            return model.predict(features)
+        else:
+            # 従来のClassifier形式
+            expected_dim = model.n_features_in_
+            actual_dim = features.shape[1] if len(features.shape) > 1 else len(features)
+            
+            if expected_dim != actual_dim:
+                if not self.dimension_warnings_shown.get(model_name, False):
+                    print(f"警告: {model_name}の特徴量次元が不一致 (期待: {expected_dim}, 実際: {actual_dim})。自動調整します。")
+                    self.dimension_warnings_shown[model_name] = True
+                
+                if actual_dim < expected_dim:
+                    padding = np.zeros((features.shape[0], expected_dim - actual_dim))
+                    features = np.hstack([features, padding])
+                elif actual_dim > expected_dim:
+                    features = features[:, :expected_dim]
+            
+            return model.predict_proba(features)[:, 1]
     
     def predict_axis_from_dict(
         self,
