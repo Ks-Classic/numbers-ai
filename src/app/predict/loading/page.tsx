@@ -24,9 +24,9 @@ type ApiError = {
 
 export default function LoadingPage() {
   const router = useRouter();
-  const { 
-    currentSession, 
-    setAxisCandidates, 
+  const {
+    currentSession,
+    setAxisCandidates,
     setFinalPredictions,
     setSessionData,
     setN3Data,
@@ -72,11 +72,19 @@ export default function LoadingPage() {
         ...(currentSession.rehearsalN4 && { n4Rehearsal: currentSession.rehearsalN4 }),
       };
 
+      console.log('========================================');
+      console.log('[フロントエンド] 予測APIリクエスト開始');
+      console.log('リクエストURL:', '/api/predict');
+      console.log('リクエストメソッド:', 'POST');
+      console.log('リクエストボディ:', JSON.stringify(requestBody, null, 2));
+      console.log('========================================');
+
       // タイムアウト付きAPI呼び出し
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
 
       try {
+        const requestStartTime = performance.now();
         const response = await fetch('/api/predict', {
           method: 'POST',
           headers: {
@@ -85,19 +93,44 @@ export default function LoadingPage() {
           body: JSON.stringify(requestBody),
           signal: controller.signal,
         });
+        const requestEndTime = performance.now();
+
+        console.log('========================================');
+        console.log('[フロントエンド] 予測APIレスポンス受信');
+        console.log('レスポンスステータス:', response.status, response.statusText);
+        console.log('レスポンスヘッダー:', Object.fromEntries(response.headers.entries()));
+        console.log('レスポンス時間:', Math.round(requestEndTime - requestStartTime), 'ms');
+        console.log('========================================');
 
         clearTimeout(timeoutId);
         clearInterval(stepInterval);
 
         if (!response.ok) {
-          const errorData = await response.json().catch(() => ({
-            error: { code: 'UNKNOWN_ERROR', message: '予測処理に失敗しました' }
-          }));
-          
+          let errorData;
+          try {
+            errorData = await response.json();
+            console.error('========================================');
+            console.error('[フロントエンド] エラーレスポンスボディ:', JSON.stringify(errorData, null, 2));
+            console.error('========================================');
+          } catch (parseError) {
+            const errorText = await response.text();
+            console.error('========================================');
+            console.error('[フロントエンド] エラーレスポンステキスト:', errorText);
+            console.error('========================================');
+            errorData = {
+              error: { code: 'UNKNOWN_ERROR', message: '予測処理に失敗しました' }
+            };
+          }
+
           throw new Error(errorData.error?.message || `HTTP ${response.status}: ${response.statusText}`);
         }
 
         const result = await response.json();
+        console.log('========================================');
+        console.log('[フロントエンド] 予測APIレスポンスパース成功');
+        console.log('成功フラグ:', result.success);
+        console.log('データキー:', Object.keys(result.data || {}));
+        console.log('========================================');
 
         if (!result.success) {
           throw new Error(result.error?.message || '予測処理に失敗しました');
@@ -110,20 +143,20 @@ export default function LoadingPage() {
 
         // APIレスポンスをストアに保存
         const data = result.data;
-        
+
         console.log('APIレスポンス受信:', {
           hasN3: !!data.n3,
           hasN4: !!data.n4,
           n3AxisCount: data.n3?.box?.axisCandidates?.length || 0,
           n4AxisCount: data.n4?.box?.axisCandidates?.length || 0,
         });
-        
+
         // N3とN4の両方の予測結果を変換して保存
         let n3AxisCandidates: any[] = [];
         let n3FinalPredictions: any = null;
         let n4AxisCandidates: any[] = [];
         let n4FinalPredictions: any = null;
-        
+
         if (data.n3) {
           try {
             console.log('N3データ変換開始:', {
@@ -132,11 +165,11 @@ export default function LoadingPage() {
               boxNumberCandidatesCount: data.n3.box.numberCandidates?.length || 0,
               straightNumberCandidatesCount: data.n3.straight.numberCandidates?.length || 0,
             });
-            
+
             // N3軸数字候補を変換
             n3AxisCandidates = data.n3.box.axisCandidates.map((item: any) => {
               const axisDigit = item.digit;
-              
+
               // 各軸数字に対して、その軸数字を含む組み合わせのみをフィルタリング
               const boxCandidates = (data.n3.box.numberCandidates || [])
                 .filter((c: any) => c.numbers && c.numbers.includes(axisDigit.toString()))
@@ -147,7 +180,7 @@ export default function LoadingPage() {
                   reason: `スコア: ${c.score}`,
                   source: c.source as any,
                 }));
-              
+
               const straightCandidates = (data.n3.straight.numberCandidates || [])
                 .filter((c: any) => c.numbers && c.numbers.includes(axisDigit.toString()))
                 .map((c: any) => ({
@@ -157,14 +190,14 @@ export default function LoadingPage() {
                   reason: `スコア: ${c.score}`,
                   source: c.source as any,
                 }));
-              
+
               console.log(`軸数字${axisDigit}の候補数:`, {
                 box: boxCandidates.length,
                 straight: straightCandidates.length,
                 boxSample: boxCandidates.slice(0, 3).map((c: PredictionItem) => c.number),
                 straightSample: straightCandidates.slice(0, 3).map((c: PredictionItem) => c.number),
               });
-              
+
               return {
                 axis: axisDigit,
                 score: item.score,
@@ -202,7 +235,7 @@ export default function LoadingPage() {
             throw new Error(`N3データの変換に失敗しました: ${e.message}`);
           }
         }
-        
+
         if (data.n4) {
           try {
             console.log('N4データ変換開始:', {
@@ -211,11 +244,11 @@ export default function LoadingPage() {
               boxNumberCandidatesCount: data.n4.box.numberCandidates?.length || 0,
               straightNumberCandidatesCount: data.n4.straight.numberCandidates?.length || 0,
             });
-            
+
             // N4軸数字候補を変換
             n4AxisCandidates = data.n4.box.axisCandidates.map((item: any) => {
               const axisDigit = item.digit;
-              
+
               // 各軸数字に対して、その軸数字を含む組み合わせのみをフィルタリング
               const boxCandidates = (data.n4.box.numberCandidates || [])
                 .filter((c: any) => c.numbers && c.numbers.includes(axisDigit.toString()))
@@ -226,7 +259,7 @@ export default function LoadingPage() {
                   reason: `スコア: ${c.score}`,
                   source: c.source as any,
                 }));
-              
+
               const straightCandidates = (data.n4.straight.numberCandidates || [])
                 .filter((c: any) => c.numbers && c.numbers.includes(axisDigit.toString()))
                 .map((c: any) => ({
@@ -236,14 +269,14 @@ export default function LoadingPage() {
                   reason: `スコア: ${c.score}`,
                   source: c.source as any,
                 }));
-              
+
               console.log(`軸数字${axisDigit}の候補数:`, {
                 box: boxCandidates.length,
                 straight: straightCandidates.length,
                 boxSample: boxCandidates.slice(0, 3).map((c: PredictionItem) => c.number),
                 straightSample: straightCandidates.slice(0, 3).map((c: PredictionItem) => c.number),
               });
-              
+
               return {
                 axis: axisDigit,
                 score: item.score,
@@ -281,21 +314,21 @@ export default function LoadingPage() {
             throw new Error(`N4データの変換に失敗しました: ${e.message}`);
           }
         }
-        
+
         // 現在選択されているnumbersTypeに応じてデータを設定
         const target = currentSession.numbersType.toLowerCase() as 'n3' | 'n4';
         const currentAxisCandidates = target === 'n3' ? n3AxisCandidates : n4AxisCandidates;
         const currentFinalPredictions = target === 'n3' ? n3FinalPredictions : n4FinalPredictions;
-        
+
         // データが存在するか確認
         if (!currentAxisCandidates || currentAxisCandidates.length === 0) {
           const errorMsg = `予測結果が取得できませんでした（${target}）。データ: ${JSON.stringify({ hasN3: !!data.n3, hasN4: !!data.n4 })}`;
           console.error(errorMsg);
           throw new Error(errorMsg);
         }
-        
+
         // 最良パターンをストアに保存
-        const bestPattern = target === 'n3' 
+        const bestPattern = target === 'n3'
           ? (data.n3?.box.axisCandidates[0]?.source || 'A1')
           : (data.n4?.box.axisCandidates[0]?.source || 'A1');
         setSessionData({ patternType: bestPattern });
@@ -306,18 +339,18 @@ export default function LoadingPage() {
           n4AxisCandidatesCount: n4AxisCandidates.length,
           currentTarget: target,
         });
-        
+
         // N3とN4のデータを別々に保存
         if (n3AxisCandidates.length > 0) {
           setN3Data(n3AxisCandidates, n3FinalPredictions);
           console.log('N3データをストアに保存完了');
         }
-        
+
         if (n4AxisCandidates.length > 0) {
           setN4Data(n4AxisCandidates, n4FinalPredictions);
           console.log('N4データをストアに保存完了');
         }
-        
+
         // 現在選択されているnumbersTypeに応じてメインのデータも設定
         if (target === 'n3' && n3AxisCandidates.length > 0) {
           setAxisCandidates(n3AxisCandidates);
@@ -326,12 +359,12 @@ export default function LoadingPage() {
           setAxisCandidates(n4AxisCandidates);
           setFinalPredictions(n4FinalPredictions);
         }
-        
+
         // ローディング状態を解除
         setIsLoading(false);
-        
+
         console.log('予測完了、画面遷移を実行します');
-        
+
         // 少し待ってから次の画面へ
         setTimeout(() => {
           console.log('画面遷移実行:', '/predict/axis');
@@ -340,7 +373,7 @@ export default function LoadingPage() {
       } catch (fetchError: any) {
         clearTimeout(timeoutId);
         clearInterval(stepInterval);
-        
+
         if (fetchError.name === 'AbortError') {
           throw new Error('TIMEOUT_ERROR');
         }
@@ -349,7 +382,7 @@ export default function LoadingPage() {
     } catch (err: any) {
       setIsLoading(false);
       setProgress(0);
-      
+
       // エラーメッセージの処理
       let errorMessage = '予測処理中にエラーが発生しました';
       let errorCode = 'UNKNOWN_ERROR';
@@ -439,21 +472,19 @@ export default function LoadingPage() {
               return (
                 <div
                   key={index}
-                  className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
-                    isCompleted
+                  className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${isCompleted
                       ? 'bg-green-50 text-green-700'
                       : isCurrent
-                      ? 'bg-blue-50 text-blue-700'
-                      : 'bg-muted/50 text-muted-foreground'
-                  }`}
+                        ? 'bg-blue-50 text-blue-700'
+                        : 'bg-muted/50 text-muted-foreground'
+                    }`}
                 >
-                  <div className={`w-5 h-5 rounded-full flex items-center justify-center ${
-                    isCompleted
+                  <div className={`w-5 h-5 rounded-full flex items-center justify-center ${isCompleted
                       ? 'bg-green-500 text-white'
                       : isCurrent
-                      ? 'bg-blue-500 text-white animate-pulse'
-                      : 'bg-muted-foreground/20'
-                  }`}>
+                        ? 'bg-blue-500 text-white animate-pulse'
+                        : 'bg-muted-foreground/20'
+                    }`}>
                     {isCompleted ? (
                       <CheckCircle className="w-3 h-3" />
                     ) : isCurrent ? (

@@ -94,10 +94,21 @@ async function fetchFromAPI<T>(
     url = `${FASTAPI_URL}${endpoint}`;
   }
 
-  console.log(`[API Request] ${endpoint}`, {
-    url,
-    body
+  console.log('========================================');
+  console.log(`[デバッグ] API Request Details for ${endpoint}`);
+  console.log('環境:', {
+    USE_VERCEL_PYTHON,
+    VERCEL_URL: process.env.VERCEL_URL,
+    FASTAPI_URL,
+    isServerSide: typeof window === 'undefined'
   });
+  console.log('リクエスト:', {
+    url,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body, null, 2)
+  });
+  console.log('========================================');
 
   try {
     const response = await fetch(url, {
@@ -108,11 +119,21 @@ async function fetchFromAPI<T>(
       body: JSON.stringify(body),
     });
 
-    console.log(`[API Response Status] ${endpoint}: ${response.status} ${response.statusText}`);
+    console.log('========================================');
+    console.log(`[デバッグ] API Response Details for ${endpoint}`);
+    console.log('ステータス:', response.status, response.statusText);
+    console.log('レスポンスヘッダー:', Object.fromEntries(response.headers.entries()));
+    console.log('========================================');
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`[API Error] ${endpoint}:`, errorText);
+      console.error('========================================');
+      console.error(`[デバッグ] API Error Response for ${endpoint}`);
+      console.error('ステータス:', response.status, response.statusText);
+      console.error('Content-Type:', response.headers.get('content-type'));
+      console.error('エラーボディ:', errorText);
+      console.error('完全なURL:', url);
+      console.error('========================================');
       throw new Error(
         `API request failed: ${response.status} ${response.statusText} - ${errorText}`
       );
@@ -144,7 +165,12 @@ async function fetchFromAPI<T>(
     console.log(`[API Response Data] ${endpoint}:`, JSON.stringify(json).substring(0, 200) + '...');
     return json;
   } catch (error) {
-    console.error(`[API Fetch Error] ${endpoint}:`, error);
+    console.error('========================================');
+    console.error(`[デバッグ] API Fetch Exception for ${endpoint}`);
+    console.error('エラー種類:', error instanceof Error ? error.constructor.name : typeof error);
+    console.error('エラーメッセージ:', error instanceof Error ? error.message : String(error));
+    console.error('スタックトレース:', error instanceof Error ? error.stack : 'N/A');
+    console.error('========================================');
     throw error;
   }
 }
