@@ -100,6 +100,14 @@ def handler(event: Dict[str, Any], context: Any = None) -> Dict[str, Any]:
     Returns:
         レスポンスデータ
     """
+    print("=" * 60)
+    print("[COMBINATION HANDLER] 関数が呼ばれました")
+    print(f"[COMBINATION HANDLER] event type: {type(event)}")
+    print(f"[COMBINATION HANDLER] event keys: {event.keys() if isinstance(event, dict) else 'N/A'}")
+    print(f"[COMBINATION HANDLER] event: {event}")
+    print(f"[COMBINATION HANDLER] context: {context}")
+    print("=" * 60)
+    
     try:
         # データとモデルを読み込む
         load_data_and_models()
