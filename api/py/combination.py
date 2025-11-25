@@ -159,11 +159,12 @@ def predict_combination_logic(data):
         feature_vector = features_to_vector(features)
         
         try:
-            proba = model_loader.predict_combination(target, combo_type, feature_vector.reshape(1, -1))[0]
-            # スコアを3桁の整数に変換（0-999）
-            # probaは0-1の確率なので、1000倍して整数化
-            score = int(round(proba * 1000))
-            # 最低1、最大999に制限
+            raw_score = model_loader.predict_combination(target, combo_type, feature_vector.reshape(1, -1))[0]
+            # raw scoreをsigmoidで確率に変換
+            import math
+            probability = 1 / (1 + math.exp(-raw_score))
+            # スコアを3桁の整数に変換（1-999）
+            score = int(round(probability * 1000))
             score = max(1, min(999, score))
             combo_scores.append({
                 'combination': combo,

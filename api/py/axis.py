@@ -129,9 +129,13 @@ def predict_axis_logic(data):
                     )
                 
                 feature_vector = features_to_vector(features)
-                proba = model_loader.predict_axis(target, feature_vector.reshape(1, -1))[0]
-                # スコアを3桁の整数に変換（0-999）
-                score = int(round(proba * 1000))
+                raw_score = model_loader.predict_axis(target, feature_vector.reshape(1, -1))[0]
+                # raw scoreをsigmoidで確率に変換
+                import math
+                probability = 1 / (1 + math.exp(-raw_score))
+                # スコアを3桁の整数に変換（1-999）
+                # 確率を1000倍して整数化
+                score = int(round(probability * 1000))
                 score = max(1, min(999, score))
                 digit_scores.append({
                     'digit': digit,
