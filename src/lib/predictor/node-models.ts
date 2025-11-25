@@ -8,10 +8,28 @@ type ProxyRequest = {
 
 type ProxyResponse = {
   status_code: number;
-  body: {
-    success: boolean;
-    [key: string]: unknown;
-  };
+  body: Record<string, unknown>;
+};
+
+// 軸数字予測の戻り値型
+export type AxisPredictionResult = {
+  success: boolean;
+  best_pattern: 'A1' | 'A2' | 'B1' | 'B2';
+  pattern_scores: Record<string, number>;
+  axis_candidates: Array<{
+    digit: number;
+    score: number;
+    pattern: string;
+  }>;
+};
+
+// 組み合わせ予測の戻り値型
+export type CombinationPredictionResult = {
+  success: boolean;
+  combinations: Array<{
+    combination: string;
+    score: number;
+  }>;
 };
 
 async function callPythonProxy(payload: ProxyRequest): Promise<ProxyResponse> {
@@ -42,7 +60,7 @@ export async function predictAxis(
   roundNumber: number,
   target: 'n3' | 'n4',
   rehearsalDigits?: string
-) {
+): Promise<AxisPredictionResult> {
   const response = await callPythonProxy({
     endpoint: '/api/predict/axis',
     body: {
@@ -52,11 +70,12 @@ export async function predictAxis(
     },
   });
 
-  if (!response.body.success) {
-    throw new Error(`Axis prediction failed: ${JSON.stringify(response.body)}`);
+  const body = response.body as AxisPredictionResult;
+  if (!body.success) {
+    throw new Error(`Axis prediction failed: ${JSON.stringify(body)}`);
   }
 
-  return response.body;
+  return body;
 }
 
 export async function predictCombination(
@@ -66,7 +85,7 @@ export async function predictCombination(
   bestPattern: 'A1' | 'A2' | 'B1' | 'B2',
   topAxisDigits: number[],
   rehearsalDigits?: string
-) {
+): Promise<CombinationPredictionResult> {
   const response = await callPythonProxy({
     endpoint: '/api/predict/combination',
     body: {
@@ -79,10 +98,11 @@ export async function predictCombination(
     },
   });
 
-  if (!response.body.success) {
-    throw new Error(`Combination prediction failed: ${JSON.stringify(response.body)}`);
+  const body = response.body as CombinationPredictionResult;
+  if (!body.success) {
+    throw new Error(`Combination prediction failed: ${JSON.stringify(body)}`);
   }
 
-  return response.body;
+  return body;
 }
 
