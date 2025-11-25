@@ -302,6 +302,23 @@
 
 → 現状は Next.js API Route を正規ルートとし、FastAPI へは `fastapi-bridge.ts` 経由で必要な処理だけを委譲するハイブリッド構成が最適。
 
+### 3.2.4 Next.js API 完全移行ロードマップ
+
+1. **依存の切り出し** – `fastapi-bridge.ts` の `predictAxis` / `predictCombination` を、Node 版モジュール（例: `src/lib/predictor/node-models.ts`）と同じインターフェースで置き換える実験をローカルで行い、`fastapi-bridge.ts` が FastAPI 呼び出しに依存しないことを確認する。
+2. **モデルの軽量化** – Pickle/LightGBM/`libgomp.so.1` を代替できる ONNX・JSON スコア・簡易統計を検討し、Next.js 環境で読み込める軽量モデルを用意する。プロトタイプを API ルートに組み込んで `pnpm dev`・`npm run build` 通過を確認する。
+3. **Next.js API への統合** – `src/app/api/predict/route.ts` が直接 Node 版ロード・スコア計算を呼び出すように変更し、`FASTAPI_URL` 環境変数や `fastapi-bridge.ts` を本番コードから除外する。ログ/エラーは既存通り Next.js で出力できるため、FastAPI の 405/ECONNREFUSED 問題が消失。
+4. **CI/本番での検証** – Vercel 上で `npm run build` / `next build` を回して `ECONNREFUSED` などのログが出ないこと、`fastapi-bridge.ts` へのアクセスログがなくなることを確認し、デプロイ済みの `predictor.ts` に `/api/predict` のみが含まれることを記録。
+5. **ドキュメント同期** – 本ロードマップと「Next.js API 完全構成で Vercel が唯一の依存」としてこの節を 01_design/02-system-architecture.md に載せ、`docs/01_design/03-data-api-design.md` でも FastAPI direct を補足資料に位置づけることで運用判断を明文化する。
+
+### 3.2.5 Node ベースの予測モジュール設計
+
+- **目標**: 現在の LightGBM モデル（`data/models/*.pkl`）と `libgomp.so.1` を捨てずに、Next.js 側から直接利用できる Node モジュール（`src/lib/predictor/node-models.ts`）を用意する。
+- **アプローチ**:
+  1. Python スクリプト（例: `scripts/node_model_server.py`）を用意し、LightGBM モデルと `libgomp` を `joblib`/`pickle` からロードした上で gRPC または stdin/stdout で特徴量ベクトルを受け取り確率を返す。Next.js とは軽量な IPC（`child_process.spawn` + JSON）で通信する。
+  2. Node モデルロード層では、特徴量キーを `core/feature_extractor.py` 相当の計算結果に変換し、Python 側リクエストを自動化。`fastapi-bridge.ts` と同じ `predictAxis`/`predictCombination` シグネチャを維持することで、API Route の差し替えは容易。
+  3. 必要であれば ONNX や JSON キャッシュに変換し、Python スクリプトの依存を減らす方向に進める。それまでは既存のモデル資産を Python 側で使いつつ、Next.js からは Node モジュール経由で呼び出す。
+- **メリット**: LightGBM そのままを継承しながら、Vercel には Node.js 側のみデプロイ。FastAPI や別サーバーを立てず本番で `localhost:8000` へ接続しない構成を確立でき、ロードマップ Step2~3 に合致。
+
 ### 3.3 AI/ML
 
 **機械学習**

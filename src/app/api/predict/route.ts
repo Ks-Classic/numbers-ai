@@ -8,7 +8,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { predictTarget } from '@/lib/predictor/fastapi-bridge';
+import { predictAxis, predictCombination } from '@/lib/predictor/node-models';
 
 /**
  * リクエストスキーマ
@@ -152,8 +152,78 @@ export async function POST(request: NextRequest) {
     };
 
     // N3の予測
+    const runNodePrediction = async (
+      roundNumber: number,
+      target: 'n3' | 'n4',
+      rehearsalDigits: string
+    ) => {
+      const axisResult = await predictAxis(roundNumber, target, rehearsalDigits);
+
+      const topAxisDigits = axisResult.axis_candidates
+        .slice(0, 10)
+        .map((item: any) => item.digit);
+
+      let boxCombinations = null;
+      let straightCombinations = null;
+
+      try {
+        const boxResponse = await predictCombination(
+          roundNumber,
+          target,
+          'box',
+          axisResult.best_pattern,
+          topAxisDigits,
+          rehearsalDigits
+        );
+        boxCombinations = boxResponse.combinations || [];
+      } catch (error: any) {
+        if (
+          error?.message?.includes('モデルが見つかりません') ||
+          error?.message?.includes('モデルが読み込まれていません')
+        ) {
+          boxCombinations = [];
+        } else {
+          throw error;
+        }
+      }
+
+      try {
+        const straightResponse = await predictCombination(
+          roundNumber,
+          target,
+          'straight',
+          axisResult.best_pattern,
+          topAxisDigits,
+          rehearsalDigits
+        );
+        straightCombinations = straightResponse.combinations || [];
+      } catch (error: any) {
+        if (
+          error?.message?.includes('モデルが見つかりません') ||
+          error?.message?.includes('モデルが読み込まれていません')
+        ) {
+          straightCombinations = [];
+        } else {
+          throw error;
+        }
+      }
+
+      return {
+        bestPattern: axisResult.best_pattern,
+        patternScores: axisResult.pattern_scores,
+        box: {
+          axisCandidates: axisResult.axis_candidates,
+          numberCandidates: boxCombinations,
+        },
+        straight: {
+          axisCandidates: axisResult.axis_candidates,
+          numberCandidates: straightCombinations,
+        },
+      };
+    };
+
     if (data.n3Rehearsal) {
-      const n3Result = await predictTarget(
+      const n3Result = await runNodePrediction(
         data.roundNumber,
         'n3',
         data.n3Rehearsal
@@ -200,7 +270,7 @@ export async function POST(request: NextRequest) {
         rehearsal: data.n4Rehearsal,
       });
 
-      const n4Result = await predictTarget(
+      const n4Result = await runNodePrediction(
         data.roundNumber,
         'n4',
         data.n4Rehearsal

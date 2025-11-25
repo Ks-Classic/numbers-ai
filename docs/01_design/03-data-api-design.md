@@ -631,6 +631,12 @@ export async function POST(request: NextRequest) {
 
 ---
 
+### 3.5.3 Next.js API 単独運用の裏付け
+
+- Vercel 2025-11-25 08:39:07 のログでは `fastapi-bridge.ts` が `http://localhost:8000/api/predict/axis` を呼び出そうとして `ECONNREFUSED` になったため、本番環境で FastAPI に依存する構成は実際に動作せずビルドも失敗した。このため、`/api/predict` のみを実装した Next.js API が本番で動いている唯一の構成であることが確認できた。
+- したがって、FastAPI は資料・実験用途として `api/` に残しつつ、本番・顧客向けデプロイでは Next.js API に一本化する方が「実際にデプロイして動く」ことが証明されている選択肢である。
+- この節のロードマップ（Docs 01_design/02-system-architecture.md 3.2.4）を参照しながら、Step2 以降で Node 側実装へ移行することを優先する。
+
 ### 3.6 CORS設定
 
 **MVP版（Vercel）:**
