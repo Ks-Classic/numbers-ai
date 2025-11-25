@@ -1,7 +1,7 @@
 """
 Vercel Python関数: 軸数字予測
 
-/api/predict/axis エンドポイントとして動作します。
+/api/py/axis エンドポイントとして動作します。
 """
 
 import json
