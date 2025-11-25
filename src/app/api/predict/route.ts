@@ -12,7 +12,7 @@ import {
   predictAxis, 
   predictCombination,
   type CombinationPredictionResult 
-} from '@/lib/predictor/node-models';
+} from '@/lib/predictor/vercel-python';
 
 /**
  * リクエストスキーマ
