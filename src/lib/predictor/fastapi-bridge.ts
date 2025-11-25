@@ -65,7 +65,7 @@ async function postToFastAPI<T>(
   return response.json() as Promise<T>;
 }
 
-async function predictAxis(
+export async function predictAxis(
   roundNumber: number,
   target: Target,
   rehearsalDigits?: string
@@ -77,7 +77,7 @@ async function predictAxis(
   });
 }
 
-async function predictCombination(
+export async function predictCombination(
   roundNumber: number,
   target: Target,
   comboType: 'box' | 'straight',
