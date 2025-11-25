@@ -130,10 +130,12 @@ def predict_axis_logic(data):
                 
                 feature_vector = features_to_vector(features)
                 proba = model_loader.predict_axis(target, feature_vector.reshape(1, -1))[0]
-                score = proba * 1000
+                # スコアを3桁の整数に変換（0-999）
+                score = int(round(proba * 1000))
+                score = max(1, min(999, score))
                 digit_scores.append({
                     'digit': digit,
-                    'score': float(score),
+                    'score': score,
                     'pattern': pattern
                 })
             
