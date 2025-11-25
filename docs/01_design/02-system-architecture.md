@@ -1,4 +1,4 @@
-# システムアーキテクチャ設計書 v1.2
+# システムアーキテクチャ設計書 v2.0
 
 **Document Management Information**
 - Document ID: DOC-02
@@ -322,10 +322,28 @@
 ### 3.3 AI/ML
 
 **機械学習**
-- **XGBoost**: 2.0.0+（メインアルゴリズム）
+- **LightGBM**: 4.5.0+（メインアルゴリズム）
+  - 高速・軽量な勾配ブースティング
+  - Vercel Python Serverless Functionsで実行
 - **scikit-learn**: 1.3.0+（前処理、評価）
 - **Pandas**: 2.1.0+（データ操作）
 - **NumPy**: 1.26.0+（数値計算）
+
+**デプロイ方式（MVP版）**
+- **Vercel Python Serverless Functions**でLightGBMモデルを直接実行
+- `api/predict/axis.py`、`api/predict/combination.py`で予測API提供
+- モデルファイル（`data/models/*.pkl`）をVercelにデプロイ
+
+**libgomp問題と解決策**
+- LightGBMはOpenMP（libgomp.so.1）に依存
+- Vercel環境では標準で利用不可
+- 解決策：LightGBM 4.5.0（OpenMP依存軽減版）を使用
+- フォールバック：scikit-learn GradientBoostingClassifierで代替
+
+**検討済み・不採用の選択肢**
+- ONNX + onnxruntime-node：Next.jsビルド時にメモリ不足
+- ONNX + onnxruntime-web：同様のビルド問題
+- FastAPI別サービス：Vercel単体完結の要件に反する
 
 **実験管理**
 - **Jupyter Notebook**: 開発・実験
@@ -643,4 +661,113 @@ numbers-ai/
 ---
 
 **ドキュメント終了**
+
+
+---
+
+## 3.6 ONNXベース推論アーキテクチャ（v2.0）
+
+### 3.6.1 アーキテクチャ概要
+
+**v2.0で採用したアーキテクチャ:**
+- **ONNX Runtime (Node.js)** によるAI推論
+- FastAPI/Python別サーバー不要
+- Vercel単体で完結
+
+```
+┌─────────────────────────────────────────────────┐
+│                   ユーザー                        │
+│              (スマートフォン/PC)                  │
+└─────────────────┬───────────────────────────────┘
+                  │ HTTPS
+                  ▼
+┌─────────────────────────────────────────────────┐
+│           Vercel (Hosting + CDN)                │
+│  ┌─────────────────────────────────────────┐   │
+│  │       Next.js 14 Application            │   │
+│  │  ┌─────────────┐  ┌─────────────────┐  │   │
+│  │  │  Frontend   │  │  API Routes     │  │   │
+│  │  │  (React)    │  │  (/api/*)       │  │   │
+│  │  └─────────────┘  └─────────────────┘  │   │
+│  │                          │              │   │
+│  │                          ▼              │   │
+│  │                   ┌─────────────────┐  │   │
+│  │                   │ ONNX Runtime    │  │   │
+│  │                   │ (onnxruntime-   │  │   │
+│  │                   │  node)          │  │   │
+│  │                   └─────────────────┘  │   │
+│  │                          │              │   │
+│  │                          ▼              │   │
+│  │                   ┌─────────────────┐  │   │
+│  │                   │  ONNXモデル     │  │   │
+│  │                   │  (*.onnx)       │  │   │
+│  │                   └─────────────────┘  │   │
+│  └─────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────┘
+```
+
+### 3.6.2 旧アーキテクチャとの比較
+
+| 項目 | v1.x (FastAPI) | v2.0 (ONNX) |
+|------|---------------|-------------|
+| 推論サーバー | FastAPI (Python) | Next.js API Routes |
+| モデル形式 | LightGBM (.pkl) | ONNX (.onnx) |
+| 追加サーバー | Railway/Cloud Run必要 | **不要** |
+| デプロイ複雑度 | 高（2サーバー管理） | **低（Vercelのみ）** |
+| 精度 | 基準 | ほぼ同等（誤差1e-6以下） |
+| コールドスタート | Python起動が遅い | **Node.js高速** |
+
+### 3.6.3 ONNXモデル構成
+
+**モデルファイル（6モデル）:**
+| モデル名 | 用途 | ファイル名 |
+|---------|------|-----------|
+| n3_axis | N3軸数字予測 | n3_axis.onnx |
+| n4_axis | N4軸数字予測 | n4_axis.onnx |
+| n3_box_comb | N3ボックス組合せ予測 | n3_box_comb.onnx |
+| n3_straight_comb | N3ストレート組合せ予測 | n3_straight_comb.onnx |
+| n4_box_comb | N4ボックス組合せ予測 | n4_box_comb.onnx |
+| n4_straight_comb | N4ストレート組合せ予測 | n4_straight_comb.onnx |
+
+**配置場所:** `data/models/*.onnx`
+
+### 3.6.4 実装構成
+
+```
+src/lib/predictor/
+├── onnx-loader.ts      # ONNXモデル読み込み・キャッシュ
+├── predictor.ts        # 予測実行（ONNX呼び出し）
+└── feature-extractor.ts # 特徴量計算
+
+src/app/api/predict/
+├── route.ts            # POST /api/predict エンドポイント
+└── combination/
+    └── route.ts        # POST /api/predict/combination エンドポイント
+```
+
+### 3.6.5 技術スタック（v2.0）
+
+**AI/ML推論**
+- **onnxruntime-node**: 1.16.0+ （Node.js用ONNXランタイム）
+- **ONNX形式**: LightGBMからの変換モデル
+
+**学習環境（開発用、本番では使用しない）**
+- **LightGBM**: モデル学習
+- **onnxmltools**: ONNX変換
+- **skl2onnx**: sklearn互換変換
+
+### 3.6.6 廃止されたコンポーネント
+
+以下のコンポーネントはv2.0で**廃止**または**開発用のみ**に変更:
+
+| コンポーネント | 状態 | 理由 |
+|--------------|------|------|
+| `api/main.py` (FastAPI) | 廃止 | ONNX Runtime移行 |
+| `api/predict/axis.py` | 廃止 | Next.js API Routes移行 |
+| `api/predict/combination.py` | 廃止 | Next.js API Routes移行 |
+| `notebooks/model_loader.py` | 開発用 | XGBoost用（学習時のみ） |
+| `core/model_loader.py` | 開発用 | LightGBM用（学習時のみ） |
+| `FASTAPI_URL` 環境変数 | 廃止 | 別サーバー不要 |
+
+---
 

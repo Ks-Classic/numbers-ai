@@ -10,6 +10,9 @@
             "includeFiles": "core/**,data/**,api/py/**/libgomp.so.1"
         }
     },
+    "env": {
+        "LD_LIBRARY_PATH": "/var/task/api/py"
+    },
     "rewrites": [
         {
             "source": "/api/py/:path*",

@@ -1,41 +1,105 @@
-# Vercelデプロイ計画 (Current Sprint)
+# 🚀 Vercelデプロイ計画 (Current Sprint - 最優先)
 
-**目標**: Next.jsフロントエンドとPython Serverless FunctionsバックエンドをVercelに完全デプロイする。
+**最終更新**: 2025-11-25
+**ステータス**: 🔴 ブロック中（libgomp問題）
 
-## 戦略: Clean Cloud Build + libgomp手動注入
-ローカルのARM64環境（WSL/Windows）とVercelのx86_64環境のアーキテクチャ不一致を解消するため、バイナリをリポジトリに含めず、Vercelのビルドプロセスで依存関係を解決させる。ただし、`libgomp.so.1`（164KB）のみx86_64版を手動配置。
+---
 
-## タスク一覧
+## 🎯 目標
+Next.jsフロントエンドとLightGBMモデルによる予測機能を**Vercel単体**で完結させる。
 
-### 1. 構成と設定 (完了)
-- [x] `vercel.json` の設定（Pythonランタイムのメモリ・タイムアウト設定）
-- [x] `next.config.ts` でのCORS設定（Global Headers）
-- [x] `requirements.txt` の統一と軽量化
+---
 
-### 2. アーキテクチャ不一致の解消 (完了)
-- [x] **x86_64版libgomp取得**: scikit-learn wheelから抽出
-- [x] **手動配置**: `api/lib/libgomp.so.1` (164KB)
-- [x] **コード修正**: `axis.py`, `combination.py` に手動ロード処理を追加
-- [x] **依存関係調整**: `requirements.txt` から `scikit-learn` を除外（サイズ削減）
-- [x] **デプロイ**: `vercel deploy --force` によるクリーンビルド成功
+## 📋 現在の状況
 
-### 3. 動作確認 (進行中)
-- [ ] プレビュー環境での予測実行（N3/N4）
-- [ ] エラーログの確認（500エラー、ImportErrorがないこと）
-- [ ] 本番環境（Production）への昇格
+### ✅ 完了済み
+- [x] ONNXモデル変換スクリプト作成（`scripts/convert_to_onnx.py`）
+- [x] LightGBM → ONNX変換実行（6モデル、合計0.5MB）
+- [x] ONNX推論モジュール実装試行
+- [x] ドキュメント更新（本ファイル、02-system-architecture.md、04-algorithm-ai.md）
 
-## プレビュー環境
-- URL: `https://numbers-mygipqj1l-ks-classic.vercel.app`
-- デプロイ日時: 2025-11-24
+### ❌ 不採用となった方針
+| 方針 | 不採用理由 |
+|------|-----------|
+| ONNX + onnxruntime-node | Next.jsビルド時にメモリ不足（SIGKILL） |
+| ONNX + onnxruntime-web | 同様のビルド問題 |
+| FastAPI別サービス | Vercel単体完結の要件に反する |
 
-- ## 4. ドキュメントと追跡
-- [x] `docs/01_design/02-system-architecture.md` に FastAPI vs Next.js API Routes の運用方針とロードマップを追加
-- [x] フロントエンドの `src/lib/predictor/predictor.ts` が `/api/predict` へ統一されていることを確認し、関連ドキュメントにその事実を反映
-- [ ] `docs/01_design/03-data-api-design.md` に `/api/predict/axis` 等を含む 405 発生ルートと FastAPI/Next.js の使い分け基準を追記
-- [ ] `src/lib/predictor/fastapi-bridge.ts` の呼び出し構造と、Next.js API への移行計画をドキュメント化する
-- [ ] Node モデルロード層の実装（`node-models.ts` + Python IPC）を起点に、`api/predict` が FastAPI を使わずに動作することを Vercel ビルドで確認
-- [ ] `node-model-stack` / `api-integration` / `test-deploy` TODO で定義した作業に沿って、FastAPI なしでの `pnpm dev` / `npm run build` をクリアする
+### 🔴 現在のブロッカー
+**libgomp.so.1問題**: Vercel環境でLightGBMが依存するOpenMPライブラリが見つからない
 
-## 関連ドキュメント
-- [CUBE生成ルール](../01_design/CUBE生成ルール.md): 実装済みの仕様
-- [Vercelデプロイ手順](../VERCEL_DEPLOY.md): 詳細な手順書
+---
+
+## 🔧 最終方針: Vercel Python Serverless + LightGBM
+
+### アーキテクチャ
+```
+[ブラウザ] → [Vercel Next.js] → [Vercel Python Serverless] → [LightGBM]
+                  │
+                  ├── /api/predict/axis.py
+                  └── /api/predict/combination.py
+```
+
+### 選定理由
+| 評価軸 | 評価 |
+|--------|------|
+| Vercel単体 | ✅ |
+| モデル改修効率 | ✅ Pythonで直接 |
+| 再デプロイ | ✅ git pushのみ |
+| 実装負荷 | ✅ 既存コード活用 |
+
+---
+
+## 📝 次のアクション（再開時はここから）
+
+### Phase 1: libgomp問題の解決 ⬅️ **ここから再開**
+
+#### 1.1 LightGBM最新版での検証
+```bash
+# api/requirements.txt を更新
+lightgbm==4.5.0  # OpenMP依存軽減版
+
+# Vercelデプロイテスト
+vercel deploy --force
+```
+
+#### 1.2 代替案（1.1で解決しない場合）
+- [ ] scikit-learn `GradientBoostingClassifier` で代替
+  - 精度検証が必要
+  - OpenMP依存なし
+
+### Phase 2: デプロイ・検証
+- [ ] プレビュー環境で予測API動作確認
+- [ ] 本番環境への昇格
+
+### Phase 3: 不要コード整理
+- [ ] `onnxruntime-web`関連の削除確認
+- [ ] 古いFastAPI設定の削除
+
+---
+
+## 🗂️ 関連ファイル
+
+| ファイル | 説明 |
+|----------|------|
+| `api/predict/axis.py` | 軸数字予測API |
+| `api/predict/combination.py` | 組み合わせ予測API |
+| `api/requirements.txt` | Python依存関係 |
+| `core/model_loader.py` | モデルローダー |
+| `data/models/*.pkl` | LightGBMモデル |
+
+---
+
+## 📚 関連ドキュメント
+- [システムアーキテクチャ](../01_design/02-system-architecture.md)
+- [AIアルゴリズム設計](../01_design/04-algorithm-ai.md)
+- [MVP最速デプロイ戦略](../01_design/MVP-最速デプロイ戦略.md)
+
+---
+
+## ⚠️ フォールバック計画
+
+libgomp問題が解決しない場合：
+
+1. **scikit-learn GBM代替** - OpenMP依存なし、精度若干低下の可能性
+2. **FastAPI別サービス**（最終手段） - Railway/Render等で無料デプロイ
