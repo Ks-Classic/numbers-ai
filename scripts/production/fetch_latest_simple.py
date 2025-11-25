@@ -3,254 +3,311 @@
 ナンバーズ過去当選番号・リハーサル番号取得スクリプト（シンプル版）
 
 データソース: https://www.hpfree.com/numbers/rehearsal.html
-最新の1件のみを取得してpast_results.csvに追加します。
+指定回号の前回・前々回の当選番号・リハーサル番号を取得し、past_results.csv に埋めます。
+※ 日付は取得できないため NULL のままです。
 """
 
 import sys
 import re
+import json
+import argparse
 from pathlib import Path
-from typing import Optional, Dict
+from typing import Optional, Dict, List, Any
 
 try:
     import requests
     from bs4 import BeautifulSoup
 except ImportError:
-    print("エラー: 必要なパッケージがインストールされていません。")
-    print("以下のコマンドを実行してください:")
-    print("  pip install requests beautifulsoup4")
+    sys.stderr.write("エラー: 必要なパッケージがインストールされていません。\n")
+    sys.stderr.write("以下のコマンドでインストールしてください: pip install requests beautifulsoup4\n")
     sys.exit(1)
 
-# データソースURL
-LATEST_PAGE_URL = 'https://www.hpfree.com/numbers/rehearsal.html'
+# ------------------------------------------------------------
+# 定数・ユーティリティ
+# ------------------------------------------------------------
+LATEST_PAGE_URL = "https://www.hpfree.com/numbers/rehearsal.html"
+
+def log(msg: str):
+    """標準エラー出力にログを出力（JSON出力を妨げないため）"""
+    sys.stderr.write(f"{msg}\n")
 
 def fetch_page(url: str) -> Optional[str]:
-    """WebページのHTMLを取得"""
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-    }
-    
+    """WebページのHTMLを取得する"""
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
     try:
-        response = requests.get(url, headers=headers, timeout=30)
-        response.raise_for_status()
-        
-        if response.encoding is None or response.encoding == 'ISO-8859-1':
-            response.encoding = response.apparent_encoding or 'shift-jis'
-        
-        return response.text
+        resp = requests.get(url, headers=headers, timeout=30)
+        resp.raise_for_status()
+        if resp.encoding is None or resp.encoding == "ISO-8859-1":
+            resp.encoding = resp.apparent_encoding or "shift-jis"
+        return resp.text
     except Exception as e:
-        print(f"⚠ ページ取得エラー: {e}")
+        log(f"⚠ ページ取得エラー: {e}")
         return None
 
 def extract_number_from_cell(cell_text: str) -> Optional[str]:
-    """
-    セルから数値を抽出（特殊表記に対応）
-    
-    対応する特殊表記:
-    - 取り消し線: 8̶
-    - 変更記号: 7→5, 8̶→0
-    - 括弧付き注釈: (不), (落), (早)
-    """
+    """セル文字列から数値を抽出（取り消し線・括弧・矢印に対応）"""
     if not cell_text:
         return None
-    
-    text = cell_text.strip()
-    
-    # 矢印の後の数字を取得（最終的な値）
-    arrow_match = re.search(r'[→→→](\d+)', text)
-    if arrow_match:
-        return arrow_match.group(1)
-    
-    # 取り消し線を除去
-    text = re.sub(r'[\u0336\u0335\u0332]', '', text)
-    
-    # 括弧付きの注釈を除去
-    text = re.sub(r'\([^)]*\)', '', text)
-    
-    # 数字のみを抽出
-    digits = re.findall(r'\d', text)
+    txt = cell_text.strip()
+    # 矢印（→）の後の数字を取得（例: 8→0）
+    arrow = re.search(r"[→→→](\d+)", txt)
+    if arrow:
+        return arrow.group(1)
+    # 取り消し線を除去（U+0336 など）
+    txt = re.sub(r"[\u0336\u0335\u0332]", "", txt)
+    # 括弧付き注釈を除去 (例: (不), (落))
+    txt = re.sub(r"\([^)]*\)", "", txt)
+    # 数字だけ抽出
+    digits = re.findall(r"\d", txt)
     if digits:
         return digits[0]
-    
     return None
 
-def parse_latest_data(html_content: str) -> Optional[Dict]:
-    """最新のN4とN3データを抽出"""
-    soup = BeautifulSoup(html_content, 'html.parser')
-    
-    n4_data = None
-    n3_data = None
-    
-    # テーブルを探す
-    tables = soup.find_all('table')
-    
+# ------------------------------------------------------------
+# テーブル解析ロジック（N4 と N3 を同一回号でマージ）
+# ------------------------------------------------------------
+def parse_page(soup: BeautifulSoup) -> Dict[int, Dict[str, str]]:
+    """ページ内の全テーブルを走査し、回号ごとに N3/N4 データをマージして返す"""
+    result: Dict[int, Dict[str, str]] = {}
+    tables = soup.find_all("table")
     for table in tables:
-        rows = table.find_all('tr')
-        
+        rows = table.find_all("tr")
         for row in rows:
-            cells = row.find_all(['td', 'th'])
-            
-            # 回号を含むセルを探す
-            row_text = row.get_text()
-            round_match = re.search(r'第(\d+)回', row_text)
-            if not round_match:
+            cells = row.find_all(["td", "th"])
+            if not cells:
                 continue
+            # 回号を探す
+            row_text = row.get_text()
+            m = re.search(r"第(\d+)回", row_text)
+            if not m:
+                continue
+            rnd = int(m.group(1))
             
-            round_number = int(round_match.group(1))
-            
-            # N4データ（10列: 回号 + リハーサル4桁 + リ/本 + 当選4桁）
-            if len(cells) >= 10 and not n4_data:
-                try:
-                    # リハーサル数字（4桁）
-                    n4_rehearsal_digits = []
-                    for i in range(1, 5):
-                        if i < len(cells):
-                            cell_text = cells[i].get_text().strip()
-                            digit = extract_number_from_cell(cell_text)
-                            if digit:
-                                n4_rehearsal_digits.append(digit)
-                    
-                    # 当選番号（4桁）
-                    n4_winning_digits = []
-                    for i in range(6, 10):
-                        if i < len(cells):
-                            cell_text = cells[i].get_text().strip()
-                            digit = extract_number_from_cell(cell_text)
-                            if digit:
-                                n4_winning_digits.append(digit)
-                    
-                    if len(n4_rehearsal_digits) == 4:
-                        n4_data = {
-                            'round_number': round_number,
-                            'n4_rehearsal': ''.join(n4_rehearsal_digits),
-                            'n4_winning': ''.join(n4_winning_digits) if len(n4_winning_digits) == 4 else 'NULL',
-                        }
-                except:
-                    pass
-            
-            # N3データ（8列: 回号 + リハーサル3桁 + リ/本 + 当選3桁）
-            elif len(cells) >= 8 and not n3_data:
-                try:
-                    # リハーサル数字（3桁）
-                    n3_rehearsal_digits = []
-                    for i in range(1, 4):
-                        if i < len(cells):
-                            cell_text = cells[i].get_text().strip()
-                            digit = extract_number_from_cell(cell_text)
-                            if digit:
-                                n3_rehearsal_digits.append(digit)
-                    
-                    # 当選番号（3桁）
-                    n3_winning_digits = []
-                    for i in range(5, 8):
-                        if i < len(cells):
-                            cell_text = cells[i].get_text().strip()
-                            digit = extract_number_from_cell(cell_text)
-                            if digit:
-                                n3_winning_digits.append(digit)
-                    
-                    if len(n3_rehearsal_digits) == 3:
-                        n3_data = {
-                            'round_number': round_number,
-                            'n3_rehearsal': ''.join(n3_rehearsal_digits),
-                            'n3_winning': ''.join(n3_winning_digits) if len(n3_winning_digits) == 3 else 'NULL',
-                        }
-                except:
-                    pass
-            
-            # 両方取得できたら終了
-            if n4_data and n3_data:
-                break
-        
-        if n4_data and n3_data:
-            break
-    
-    # データを結合
-    if n4_data and n3_data and n4_data['round_number'] == n3_data['round_number']:
-        return {
-            'round_number': n4_data['round_number'],
-            'n3_rehearsal': n3_data['n3_rehearsal'],
-            'n4_rehearsal': n4_data['n4_rehearsal'],
-            'n3_winning': n3_data['n3_winning'],
-            'n4_winning': n4_data['n4_winning'],
-        }
-    
-    return None
+            # 初期化または更新
+            entry = result.setdefault(rnd, {
+                "n3_rehearsal": "NULL",
+                "n4_rehearsal": "NULL",
+                "n3_winning": "NULL",
+                "n4_winning": "NULL",
+            })
 
-def update_csv(data: Dict, csv_path: str) -> bool:
-    """CSVファイルを更新"""
-    csv_file = Path(csv_path)
-    
-    if not csv_file.exists():
-        print(f"⚠ CSVファイルが見つかりません: {csv_path}")
+            # N4 テーブルは 10 列以上、N3 は 8 列以上
+            if len(cells) >= 10:
+                # N4 リハーサル 4桁 (1~4 列)
+                n4_re = []
+                for i in range(1, 5):
+                    d = extract_number_from_cell(cells[i].get_text())
+                    if d:
+                        n4_re.append(d)
+                # N4 当選 4桁 (6~9 列)
+                n4_win = []
+                for i in range(6, 10):
+                    d = extract_number_from_cell(cells[i].get_text())
+                    if d:
+                        n4_win.append(d)
+                
+                if len(n4_re) == 4:
+                    entry["n4_rehearsal"] = "".join(n4_re)
+                if len(n4_win) == 4:
+                    entry["n4_winning"] = "".join(n4_win)
+            elif len(cells) >= 8:
+                # N3 リハーサル 3桁 (1~3 列)
+                n3_re = []
+                for i in range(1, 4):
+                    d = extract_number_from_cell(cells[i].get_text())
+                    if d:
+                        n3_re.append(d)
+                # N3 当選 3桁 (5~7 列)
+                n3_win = []
+                for i in range(5, 8):
+                    d = extract_number_from_cell(cells[i].get_text())
+                    if d:
+                        n3_win.append(d)
+                
+                if len(n3_re) == 3:
+                    entry["n3_rehearsal"] = "".join(n3_re)
+                if len(n3_win) == 3:
+                    entry["n3_winning"] = "".join(n3_win)
+    return result
+
+# ------------------------------------------------------------
+# CSV 入出力ユーティリティ
+# ------------------------------------------------------------
+def load_csv(csv_path: str) -> Dict[int, Dict]:
+    path = Path(csv_path)
+    if not path.exists():
+        return {}
+    data: Dict[int, Dict] = {}
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+        for line in lines[1:]:  # ヘッダーはスキップ
+            if not line.strip():
+                continue
+            cols = line.strip().split(",")
+            try:
+                rnd = int(cols[0])
+            except:
+                continue
+            data[rnd] = {
+                "round_number": rnd,
+                "draw_date": cols[1] if len(cols) > 1 else "NULL",
+                "weekday": cols[2] if len(cols) > 2 else "NULL",
+                "n3_rehearsal": cols[3] if len(cols) > 3 else "NULL",
+                "n4_rehearsal": cols[4] if len(cols) > 4 else "NULL",
+                "n3_winning": cols[5] if len(cols) > 5 else "NULL",
+                "n4_winning": cols[6] if len(cols) > 6 else "NULL",
+            }
+    except Exception as e:
+        log(f"⚠ CSV読み込みエラー: {e}")
+    return data
+
+def save_csv(data: Dict[int, Dict], csv_path: str):
+    path = Path(csv_path)
+    # 降順でソート
+    rounds = sorted(data.keys(), reverse=True)
+    with open(path, "w", encoding="utf-8") as f:
+        f.write("round_number,draw_date,weekday,n3_rehearsal,n4_rehearsal,n3_winning,n4_winning\n")
+        for r in rounds:
+            row = data[r]
+            f.write(
+                f"{row['round_number']},{row['draw_date']},{row['weekday']},{row['n3_rehearsal']},{row['n4_rehearsal']},{row['n3_winning']},{row['n4_winning']}\n"
+            )
+
+def has_valid_winning_data(data: Dict[int, Dict], round_num: int) -> bool:
+    """指定回号の当選番号が正しく存在するか（N3/N4ともに）"""
+    row = data.get(round_num)
+    if not row:
         return False
-    
-    # 既存のCSVを読み込み
-    with open(csv_file, 'r', encoding='utf-8') as f:
-        lines = f.readlines()
-    
-    # ヘッダー
-    header = lines[0].strip()
-    
-    # 既存の回号をチェック
-    existing_rounds = []
-    for line in lines[1:]:
-        if line.strip():
-            cols = line.strip().split(',')
-            if cols:
-                try:
-                    existing_rounds.append(int(cols[0]))
-                except:
-                    pass
-    
-    # 既に存在する場合はスキップ
-    if data['round_number'] in existing_rounds:
-        print(f"ℹ️  回号{data['round_number']}は既に存在します。スキップします。")
+    # NULLでないこと、空文字でないこと
+    if row.get("n3_winning") in ["NULL", ""] or row.get("n4_winning") in ["NULL", ""]:
         return False
-    
-    # 新しい行を作成（日付とweekdayはNULL）
-    new_row = f"{data['round_number']},NULL,NULL,{data['n3_rehearsal']},{data['n4_rehearsal']},{data['n3_winning']},{data['n4_winning']}\n"
-    
-    # 最新が一番上になるように挿入
-    lines.insert(1, new_row)
-    
-    # ファイルに書き込み
-    with open(csv_file, 'w', encoding='utf-8') as f:
-        f.writelines(lines)
-    
-    print(f"✅ 回号{data['round_number']}のデータを追加しました")
     return True
 
+# ------------------------------------------------------------
+# メインロジック
+# ------------------------------------------------------------
 def main():
-    print("📥 最新データを取得中...")
-    
-    # HTMLを取得
-    html_content = fetch_page(LATEST_PAGE_URL)
-    
-    if not html_content:
-        print("❌ ページの取得に失敗しました")
-        sys.exit(1)
-    
-    # データを抽出
-    data = parse_latest_data(html_content)
-    
-    if not data:
-        print("❌ データの抽出に失敗しました")
-        sys.exit(1)
-    
-    print(f"✓ 第{data['round_number']}回のデータを取得しました")
-    print(f"  N3リハーサル: {data['n3_rehearsal']}")
-    print(f"  N4リハーサル: {data['n4_rehearsal']}")
-    print(f"  N3当選: {data['n3_winning']}")
-    print(f"  N4当選: {data['n4_winning']}")
-    
-    # CSVを更新
-    csv_path = Path(__file__).parent.parent.parent / 'data' / 'past_results.csv'
-    success = update_csv(data, str(csv_path))
-    
-    if success:
-        print("✅ データ更新完了")
-    else:
-        print("ℹ️  更新なし")
+    parser = argparse.ArgumentParser(description='ナンバーズデータ取得（シンプル版）')
+    parser.add_argument('target_round', type=int, nargs='?', help='対象回号（予測する回号）')
+    parser.add_argument('--force', action='store_true', help='強制的にWebから再取得する')
+    parser.add_argument('--json', action='store_true', default=True, help='結果をJSONで出力する（デフォルトTrue）')
+    args = parser.parse_args()
 
-if __name__ == '__main__':
+    target_round = args.target_round
+    
+    # CSVパス
+    csv_path = Path(__file__).parent.parent.parent / "data" / "past_results.csv"
+    existing = load_csv(str(csv_path))
+
+    # 更新が必要かチェック
+    need_fetch = False
+    if args.force:
+        need_fetch = True
+        log("ℹ️ 強制更新モード")
+    elif target_round:
+        # 1. 前回(n-1)の当選番号チェック
+        if not has_valid_winning_data(existing, target_round - 1):
+            log(f"ℹ️ 第{target_round - 1}回のデータが不足しています")
+            need_fetch = True
+        # 2. 前々回(n-2)の当選番号チェック
+        elif not has_valid_winning_data(existing, target_round - 2):
+            log(f"ℹ️ 第{target_round - 2}回のデータが不足しています")
+            need_fetch = True
+        # 3. 当該回(n)のリハーサル番号チェック（予測時はこれが欲しい）
+        # 既にリハーサル番号があればFetch不要だが、更新されている可能性もあるので
+        # 当選番号がまだない場合（＝未来/当日）は念のため見に行くのが安全
+        elif not has_valid_winning_data(existing, target_round):
+             # 当選番号が決まっていない＝予測段階。リハーサル番号の最新状態を確認しに行く
+            log(f"ℹ️ 第{target_round}回の最新情報を確認します")
+            need_fetch = True
+    else:
+        # target_round指定なし -> 全更新
+        need_fetch = True
+
+    updated_count = 0
+    
+    if need_fetch:
+        log("📥 最新ページ取得中...")
+        html = fetch_page(LATEST_PAGE_URL)
+        if html:
+            soup = BeautifulSoup(html, "html.parser")
+            web_data = parse_page(soup)
+            
+            if web_data:
+                log(f"✓ ページから {len(web_data)} 件の回号データを取得")
+                
+                # 更新対象の設定
+                rounds_to_check = []
+                if target_round:
+                    rounds_to_check = [target_round - 2, target_round - 1, target_round]
+                else:
+                    rounds_to_check = list(web_data.keys())
+
+                for rnd in rounds_to_check:
+                    if rnd <= 0: continue
+                    web_row = web_data.get(rnd)
+                    if not web_row: continue
+
+                    if rnd in existing:
+                        # 既存行あり -> NULL項目のみ更新、または上書き
+                        row = existing[rnd]
+                        changed = False
+                        for key in ["n3_rehearsal", "n4_rehearsal", "n3_winning", "n4_winning"]:
+                            new_val = web_row.get(key)
+                            old_val = row.get(key)
+                            # NULLまたは空なら更新。値があってもWeb側のデータが新しければ更新（修正など）
+                            # ここでは「NULLから値が入った」または「値が変わった」場合のみ更新
+                            if new_val and new_val != "NULL" and new_val != old_val:
+                                row[key] = new_val
+                                changed = True
+                        if changed:
+                            updated_count += 1
+                    else:
+                        # 新規追加
+                        existing[rnd] = {
+                            "round_number": rnd,
+                            "draw_date": "NULL",
+                            "weekday": "NULL",
+                            "n3_rehearsal": web_row.get("n3_rehearsal", "NULL"),
+                            "n4_rehearsal": web_row.get("n4_rehearsal", "NULL"),
+                            "n3_winning": web_row.get("n3_winning", "NULL"),
+                            "n4_winning": web_row.get("n4_winning", "NULL"),
+                        }
+                        updated_count += 1
+                        log(f"   ✓ 第{rnd}回を追加")
+            else:
+                log("❌ ページから有効データが取得できませんでした")
+        else:
+            log("❌ ページ取得失敗")
+
+    # 保存
+    if updated_count > 0:
+        save_csv(existing, str(csv_path))
+        log(f"✅ {updated_count} 件のデータを更新しました")
+    else:
+        log("ℹ️ 更新データはありませんでした")
+
+    # 結果出力 (JSON)
+    result = {
+        "success": True,
+        "updated_count": updated_count,
+        "target_round": target_round,
+        "data": None
+    }
+    
+    if target_round:
+        row = existing.get(target_round, {})
+        result["data"] = {
+            "round_number": target_round,
+            "n3_rehearsal": row.get("n3_rehearsal"),
+            "n4_rehearsal": row.get("n4_rehearsal"),
+            "n3_winning": row.get("n3_winning"),
+            "n4_winning": row.get("n4_winning"),
+            "exists": target_round in existing
+        }
+    
+    print(json.dumps(result, ensure_ascii=False))
+
+if __name__ == "__main__":
     main()

@@ -35,7 +35,7 @@
 
 - すべてのスクリプトは**仮想環境を有効化した状態**で実行してください
 - `python3`ではなく`python3`を使用してください
-- 例: `python3 scripts/production/fetch_past_results.py`
+- 例: `python3 scripts/production/fetch_latest_simple.py`
 
 ---
 
@@ -45,72 +45,42 @@
 
 #### データ取得・更新が必要な時
 
-**`fetch_past_results.py`** - 過去データ取得
+**`fetch_latest_simple.py`** - 最新データ取得（オンデマンド）
 
-**目的**: ナンバーズの過去当選番号・リハーサル番号をWebページから取得してCSVに保存
+**目的**: ナンバーズの過去当選番号・リハーサル番号をWebページ（hpfree.com）から取得してCSVに保存。ユーザーが回号を入力したタイミングで実行されます。
 
 **使用シーン**:
-- 手動でデータを更新したい場合
-- 初回データ取得時
-- データが古いと感じた時
+- ユーザーが予測画面で回号を入力した時（API経由で自動実行）
+- 手動で特定回号のデータを確認・更新したい場合
 
 **使い方**:
 ```bash
-# 基本（デフォルト: data/past_results.csv）
-python3 scripts/production/fetch_past_results.py
+# 全データチェック＆更新（引数なし）
+python3 scripts/production/fetch_latest_simple.py
 
-# 出力ファイルを指定
-python3 scripts/production/fetch_past_results.py data/past_results.csv
+# 特定の回号をターゲットとしてチェック（前回・前々回の不足確認含む）
+python3 scripts/production/fetch_latest_simple.py 6865
 
-# 取得件数を制限
-python3 scripts/production/fetch_past_results.py --limit 100
+# 結果をJSON形式で出力（API連携用）
+python3 scripts/production/fetch_latest_simple.py 6865 --json
 
-# 最新の1回分のみ取得してマージ（cron用）
-python3 scripts/production/fetch_past_results.py --merge
+# 強制的にWebから取得
+python3 scripts/production/fetch_latest_simple.py --force
 ```
 
 **オプション**:
-- `output_file`: 出力ファイルパス（デフォルト: `data/past_results.csv`）
-- `--limit N`: 取得する最大件数（デフォルト: 300）
-- `--use-fallback`: Webスクレイピング失敗時に検索APIを使用
-- `--merge`: 最新の1回分のみ取得して既存CSVとマージ
+- `target_round`: チェック対象の回号（省略可能）
+- `--force`: データの有無に関わらず強制的にWebから再取得
+- `--json`: 結果をJSON形式で出力（デフォルトTrue）
+
+**動作**:
+1. 指定された回号（または最新）の前回・前々回のデータがCSVに存在するかチェック
+2. 不足している場合、または強制フラグがある場合、Webからデータを取得
+3. `data/past_results.csv` を更新
+4. 結果をJSONで出力（APIがこれをパースしてフロントエンドに返す）
 
 **データソース**:
 - https://www.hpfree.com/numbers/rehearsal.html
-- https://www.mizuhobank.co.jp/takarakuji/check/numbers/backnumber/ (4800回以前)
-
----
-
-**`auto_update_past_results.py`** - 自動データ更新
-
-**目的**: 抽選日を判定し、必要に応じて`fetch_past_results.py`を実行してデータを自動更新
-
-**使用シーン**:
-- cronジョブで定期実行したい場合（推奨）
-- 手動でテスト実行したい場合
-
-**使い方**:
-```bash
-# 基本実行
-python3 scripts/production/auto_update_past_results.py
-```
-
-**cron設定**:
-```bash
-# cron設定スクリプトを実行（推奨）
-bash scripts/setup_cron.sh
-
-# 手動でcron設定
-crontab -e
-# 以下を追加:
-# 0 15 * * 1-5 cd /path/to/numbers-ai && python3 scripts/production/auto_update_past_results.py >> logs/cron.log 2>&1
-```
-
-**動作**:
-1. 今日が抽選日（月〜金）か判定
-2. 抽選日でない場合はスキップ
-3. 抽選日の場合は`fetch_past_results.py --merge`を実行
-4. ログを`logs/data_update_YYYY-MM-DD.log`に出力
 
 ---
 
@@ -207,12 +177,4 @@ python3 scripts/production/generate_extreme_cube.py --round 6849 --round 6850 --
 ## エラーハンドリング
 
 - すべてのスクリプトは適切なエラーメッセージを出力します
-- `auto_update_past_results.py`はログファイルに記録します
 - エラー時は適切な終了コードを返します
-
----
-
-## ログ
-
-- `auto_update_past_results.py`: `logs/data_update_YYYY-MM-DD.log`
-- cron実行: `logs/cron.log`

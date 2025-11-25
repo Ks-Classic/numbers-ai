@@ -70,6 +70,7 @@ export default function LoadingPage() {
         roundNumber: currentSession.roundNumber,
         ...(currentSession.rehearsalN3 && { n3Rehearsal: currentSession.rehearsalN3 }),
         ...(currentSession.rehearsalN4 && { n4Rehearsal: currentSession.rehearsalN4 }),
+        useGitHubData: currentSession.useGitHubData,
       };
 
       console.log('========================================');
@@ -473,17 +474,17 @@ export default function LoadingPage() {
                 <div
                   key={index}
                   className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${isCompleted
-                      ? 'bg-green-50 text-green-700'
-                      : isCurrent
-                        ? 'bg-blue-50 text-blue-700'
-                        : 'bg-muted/50 text-muted-foreground'
+                    ? 'bg-green-50 text-green-700'
+                    : isCurrent
+                      ? 'bg-blue-50 text-blue-700'
+                      : 'bg-muted/50 text-muted-foreground'
                     }`}
                 >
                   <div className={`w-5 h-5 rounded-full flex items-center justify-center ${isCompleted
-                      ? 'bg-green-500 text-white'
-                      : isCurrent
-                        ? 'bg-blue-500 text-white animate-pulse'
-                        : 'bg-muted-foreground/20'
+                    ? 'bg-green-500 text-white'
+                    : isCurrent
+                      ? 'bg-blue-500 text-white animate-pulse'
+                      : 'bg-muted-foreground/20'
                     }`}>
                     {isCompleted ? (
                       <CheckCircle className="w-3 h-3" />

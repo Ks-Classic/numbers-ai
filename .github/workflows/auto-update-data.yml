@@ -1,7 +1,12 @@
 name: データ自動更新
 
 on:
-  workflow_dispatch: # 手動実行のみ
+  workflow_dispatch:
+    inputs:
+      round_number:
+        description: '目標回号（前回・前々回のデータを取得）'
+        required: false
+        type: number
 
 permissions:
   contents: write # コミット・プッシュに必要
@@ -28,7 +33,12 @@ jobs:
       - name: 最新データを取得
         run: |
           cd scripts/production
-          python3 fetch_latest_simple.py
+          if [ -n "${{ github.event.inputs.round_number }}" ]; then
+            echo "目標回号: ${{ github.event.inputs.round_number }}"
+            python3 fetch_latest_simple.py ${{ github.event.inputs.round_number }}
+          else
+            python3 fetch_latest_simple.py
+          fi
 
       - name: 変更をコミット・プッシュ
         run: |
