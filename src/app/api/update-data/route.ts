@@ -1,147 +1,184 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readFileSync } from 'fs';
-import { join } from 'path';
-import { fetchPastResultsFromGitHub, shouldUseGitHubData } from '@/lib/data-loader/github-data';
 
 /**
  * データ更新API
- * GitHub Actionsのワークフローを手動実行してデータを更新します
- * 事前に最新データかどうかをチェックします
+ * 
+ * 2つの更新方式をサポート:
+ * 1. GitHub Actions方式（デフォルト）: ワークフローをトリガー（自動スクレイピング）
+ * 2. シンプル方式: 手動でデータを追加
+ * 
+ * リクエストボディ（シンプル方式の場合）:
+ * {
+ *   "useSimple": true,
+ *   "roundNumber": 6702,
+ *   "drawDate": "2025-11-26",
+ *   "n3Rehearsal": "123",
+ *   "n4Rehearsal": "4567",
+ *   "n3Winning": "456",  // オプション
+ *   "n4Winning": "7890"  // オプション
+ * }
  */
 export async function POST(request: NextRequest) {
   try {
-    // まず、現在のデータの最新回号を取得
-    let currentLatestRound: number | null = null;
-    try {
-      let csvContent: string;
-      
-      // 環境に応じてデータソースを決定
-      if (shouldUseGitHubData()) {
-        // GitHubから取得
-        csvContent = await fetchPastResultsFromGitHub();
-      } else {
-        // ローカルファイルから取得
-        const csvPath = join(process.cwd(), 'data', 'past_results.csv');
-        csvContent = readFileSync(csvPath, 'utf-8');
-      }
-      
-      const lines = csvContent.trim().split('\n');
-      if (lines.length >= 2) {
-        const firstDataLine = lines[1];
-        const columns = firstDataLine.split(',');
-        currentLatestRound = parseInt(columns[0], 10);
-      }
-    } catch (error) {
-      console.warn('現在のデータファイルの読み込みに失敗:', error);
-    }
+    const body = await request.json();
+    const useSimple = body.useSimple === true;
 
-    // 外部から最新回号を取得（簡易版：GitHub Actionsに任せる）
-    // 実際の最新回号チェックはGitHub Actions側で行うため、
-    // ここではワークフローをトリガーするだけ
-    
-    // GitHub Actions APIを使用してワークフローを手動実行
-    const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+    const PAT_TOKEN = process.env.PAT_TOKEN;
     const GITHUB_REPO = process.env.GITHUB_REPO || 'Ks-Classic/numbers-ai';
-    const WORKFLOW_FILE = 'auto-update-data.yml'; // ファイル名のみ（.github/workflows/からの相対パス）
+    const GITHUB_BRANCH = process.env.GITHUB_BRANCH || 'main';
 
-    if (!GITHUB_TOKEN) {
-      console.error('GITHUB_TOKENが設定されていません');
+    if (!PAT_TOKEN) {
       return NextResponse.json(
-        { error: 'GitHubトークンが設定されていません。環境変数GITHUB_TOKENを設定してください。' },
+        { error: 'PAT_TOKENが設定されていません' },
         { status: 500 }
       );
     }
 
-    const apiUrl = `https://api.github.com/repos/${GITHUB_REPO}/actions/workflows/${WORKFLOW_FILE}/dispatches`;
-    console.log(`GitHub Actions API呼び出し: ${apiUrl}`);
-    console.log(`リポジトリ: ${GITHUB_REPO}`);
-    console.log(`ワークフローファイル: ${WORKFLOW_FILE}`);
-    console.log(`現在の最新回号: ${currentLatestRound || '不明'}`);
+    // シンプル方式: API経由で直接CSVを更新
+    if (useSimple) {
+      const { roundNumber, drawDate, n3Rehearsal, n4Rehearsal, n3Winning, n4Winning } = body;
 
-    // GitHub Actions APIでワークフローを手動実行
-    // workflow_dispatchイベントをトリガー
+      if (!roundNumber || !drawDate) {
+        return NextResponse.json(
+          { error: 'roundNumberとdrawDateは必須です' },
+          { status: 400 }
+        );
+      }
+
+      // 1. 現在のCSVファイルを取得
+      const fileUrl = `https://api.github.com/repos/${GITHUB_REPO}/contents/data/past_results.csv?ref=${GITHUB_BRANCH}`;
+
+      const getResponse = await fetch(fileUrl, {
+        headers: {
+          'Authorization': `Bearer ${PAT_TOKEN}`,
+          'Accept': 'application/vnd.github.v3+json',
+        },
+      });
+
+      if (!getResponse.ok) {
+        throw new Error(`ファイル取得失敗: ${getResponse.status}`);
+      }
+
+      const fileData = await getResponse.json();
+      const currentContent = Buffer.from(fileData.content, 'base64').toString('utf-8');
+      const sha = fileData.sha;
+
+      // 2. 新しい行を追加
+      const lines = currentContent.trim().split('\n');
+
+      // 曜日を計算
+      const date = new Date(drawDate);
+      const dayOfWeek = date.getDay();
+      const weekday = dayOfWeek >= 1 && dayOfWeek <= 5 ? dayOfWeek - 1 : null;
+
+      // 新しい行を作成
+      const newRow = [
+        roundNumber,
+        drawDate,
+        weekday !== null ? weekday : 'NULL',
+        n3Rehearsal || 'NULL',
+        n4Rehearsal || 'NULL',
+        n3Winning || 'NULL',
+        n4Winning || 'NULL',
+      ].join(',');
+
+      // 既存の回号をチェック
+      const existingRounds = lines.slice(1).map(line => {
+        const cols = line.split(',');
+        return parseInt(cols[0], 10);
+      });
+
+      if (existingRounds.includes(roundNumber)) {
+        return NextResponse.json(
+          { error: `回号${roundNumber}は既に存在します`, existingData: true },
+          { status: 409 }
+        );
+      }
+
+      // 新しい行を追加（最新が一番上）
+      lines.splice(1, 0, newRow);
+      const newContent = lines.join('\n') + '\n';
+
+      // 3. GitHubにコミット
+      const updateResponse = await fetch(fileUrl, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${PAT_TOKEN}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: `chore: 回号${roundNumber}のデータを追加 [skip ci]`,
+          content: Buffer.from(newContent, 'utf-8').toString('base64'),
+          sha: sha,
+          branch: GITHUB_BRANCH,
+        }),
+      });
+
+      if (!updateResponse.ok) {
+        const errorData = await updateResponse.json();
+        throw new Error(`ファイル更新失敗: ${JSON.stringify(errorData)}`);
+      }
+
+      const result = await updateResponse.json();
+
+      return NextResponse.json({
+        success: true,
+        message: `回号${roundNumber}のデータを追加しました（シンプル方式）`,
+        method: 'simple',
+        roundNumber,
+        commitUrl: result.commit?.html_url,
+      });
+    }
+
+    // GitHub Actions方式: ワークフローをトリガー
+    const WORKFLOW_FILE = 'auto-update-data.yml';
+    const apiUrl = `https://api.github.com/repos/${GITHUB_REPO}/actions/workflows/${WORKFLOW_FILE}/dispatches`;
+
+    console.log(`GitHub Actions API呼び出し: ${apiUrl}`);
+
     const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${GITHUB_TOKEN}`,
+        'Authorization': `Bearer ${PAT_TOKEN}`,
         'Accept': 'application/vnd.github.v3+json',
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        ref: 'main', // mainブランチで実行
+        ref: GITHUB_BRANCH,
       }),
     });
 
     const responseStatus = response.status;
-    const responseText = await response.text();
-    
-    console.log(`GitHub Actions API レスポンス: ${responseStatus}`);
-    console.log(`レスポンス本文: ${responseText}`);
 
-    // GitHub Actions APIは成功時に204 No Contentを返すことがある
     if (responseStatus === 204 || (responseStatus >= 200 && responseStatus < 300)) {
-      // ワークフローIDを取得（ファイル名から）
-      // ワークフローIDを取得するために、ワークフローファイルのIDを取得
-      const workflowInfoUrl = `https://api.github.com/repos/${GITHUB_REPO}/actions/workflows/${WORKFLOW_FILE}`;
-      let workflowId: string | null = null;
-      
-      try {
-        const workflowInfoResponse = await fetch(workflowInfoUrl, {
-          headers: {
-            'Authorization': `Bearer ${GITHUB_TOKEN}`,
-            'Accept': 'application/vnd.github.v3+json',
-          },
-        });
-        
-        if (workflowInfoResponse.ok) {
-          const workflowInfo = await workflowInfoResponse.json();
-          workflowId = workflowInfo.id?.toString() || WORKFLOW_FILE;
-        } else {
-          workflowId = WORKFLOW_FILE; // フォールバック
-        }
-      } catch (error) {
-        console.warn('ワークフローID取得に失敗:', error);
-        workflowId = WORKFLOW_FILE; // フォールバック
-      }
-      
       return NextResponse.json({
         success: true,
-        message: 'データ更新を開始しました。数分後に完了します。',
-        detail: `GitHub Actionsワークフローをトリガーしました（ステータス: ${responseStatus}）。GitHubリポジトリの「Actions」タブで実行状況を確認できます。`,
+        message: 'データ更新を開始しました（GitHub Actions方式）',
+        method: 'github_actions',
+        detail: 'ワークフローが実行されています。GitHubのActionsタブで進捗を確認できます。',
         workflowUrl: `https://github.com/${GITHUB_REPO}/actions/workflows/${WORKFLOW_FILE}`,
-        workflowId: workflowId,
-        currentLatestRound,
       });
     }
 
-    // エラーレスポンスの場合
-    let errorDetail;
-    try {
-      errorDetail = JSON.parse(responseText);
-    } catch {
-      errorDetail = responseText;
-    }
-
-    console.error(`GitHub Actions API エラー: ${responseStatus} - ${JSON.stringify(errorDetail)}`);
-    
+    const errorText = await response.text();
     return NextResponse.json(
-      { 
+      {
         error: 'データ更新の開始に失敗しました',
-        detail: errorDetail,
+        detail: errorText,
         status: responseStatus,
-        apiUrl: apiUrl,
       },
       { status: responseStatus }
     );
+
   } catch (error) {
     console.error('データ更新API エラー:', error);
     return NextResponse.json(
-      { 
-        error: 'データ更新の開始に失敗しました',
+      {
+        error: 'データ更新に失敗しました',
         detail: error instanceof Error ? error.message : String(error)
       },
       { status: 500 }
     );
   }
 }
-
