@@ -16,12 +16,31 @@ sys.path.append(str(PROJECT_ROOT / 'core'))
 # 【重要】Vercel環境(x86_64)用の共有ライブラリを強制ロード
 import ctypes
 lib_path = PROJECT_ROOT / 'api' / 'lib' / 'libgomp.so.1'
+print(f"[axis.py] PROJECT_ROOT = {PROJECT_ROOT}")
+print(f"[axis.py] lib_path = {lib_path}")
+print(f"[axis.py] lib_path.exists() = {lib_path.exists()}")
+
+# ディレクトリ構造を確認
+api_dir = PROJECT_ROOT / 'api'
+if api_dir.exists():
+    print(f"[axis.py] api/ directory exists")
+    lib_dir = api_dir / 'lib'
+    if lib_dir.exists():
+        print(f"[axis.py] api/lib/ directory exists")
+        print(f"[axis.py] Contents: {list(lib_dir.iterdir())}")
+    else:
+        print(f"[axis.py] api/lib/ directory NOT found")
+else:
+    print(f"[axis.py] api/ directory NOT found")
+
 if lib_path.exists():
     try:
         ctypes.CDLL(str(lib_path))
         print(f"Successfully loaded {lib_path}")
     except Exception as e:
         print(f"Failed to load {lib_path}: {e}")
+else:
+    print(f"[axis.py] libgomp.so.1 NOT FOUND at {lib_path}")
 
 # デバッグ: パスと環境確認
 print(f"Python Path: {sys.path}")
