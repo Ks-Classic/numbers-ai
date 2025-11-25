@@ -1,7 +1,7 @@
-# 🚀 Vercelデプロイ計画 (Current Sprint - 最優先)
+# 🚀 Vercelデプロイ計画 (Current Sprint - ✅ 完了)
 
 **最終更新**: 2025-11-25
-**ステータス**: 🔴 ブロック中（libgomp問題）
+**ステータス**: ✅ **完了** - Python Serverless Functions動作確認済み
 
 ---
 
@@ -10,71 +10,70 @@ Next.jsフロントエンドとLightGBMモデルによる予測機能を**Vercel
 
 ---
 
-## 📋 現在の状況
+## 📋 完了した作業
 
-### ✅ 完了済み
-- [x] ONNXモデル変換スクリプト作成（`scripts/convert_to_onnx.py`）
-- [x] LightGBM → ONNX変換実行（6モデル、合計0.5MB）
-- [x] ONNX推論モジュール実装試行
-- [x] ドキュメント更新（本ファイル、02-system-architecture.md、04-algorithm-ai.md）
+### ✅ Phase 1: libgomp問題の解決
+- [x] LightGBM 4.5.0 に更新（OpenMP依存軽減版）
+- [x] `LD_LIBRARY_PATH` 環境変数設定（vercel.json）
+- [x] `libgomp.so.1` の配置（api/py/）
+- [x] `ctypes.CDLL` による明示的ロード
 
-### ❌ 不採用となった方針
-| 方針 | 不採用理由 |
-|------|-----------|
-| ONNX + onnxruntime-node | Next.jsビルド時にメモリ不足（SIGKILL） |
-| ONNX + onnxruntime-web | 同様のビルド問題 |
-| FastAPI別サービス | Vercel単体完結の要件に反する |
+### ✅ Phase 2: scikit-learn依存の除去
+- [x] モデルをLightGBMネイティブ形式（.txt）に変換
+- [x] 特徴量キーをJSON形式で保存
+- [x] `model_loader.py` をBooster形式に対応
+- [x] requirements.txtからscikit-learn削除（サイズ制限対策）
 
-### 🔴 現在のブロッカー
-**libgomp.so.1問題**: Vercel環境でLightGBMが依存するOpenMPライブラリが見つからない
+### ✅ Phase 3: デプロイ・検証
+- [x] プレビュー環境で予測API動作確認
+- [x] `/api/py/axis` エンドポイント: 正常動作
+- [x] `/api/py/combination` エンドポイント: 正常動作
 
 ---
 
-## 🔧 最終方針: Vercel Python Serverless + LightGBM
+## 🔧 最終アーキテクチャ
 
-### アーキテクチャ
 ```
-[ブラウザ] → [Vercel Next.js] → [Vercel Python Serverless] → [LightGBM]
+[ブラウザ] → [Vercel Next.js] → [Vercel Python Serverless] → [LightGBM Native]
                   │
-                  ├── /api/predict/axis.py
-                  └── /api/predict/combination.py
+                  ├── /api/py/axis.py      (軸数字予測)
+                  └── /api/py/combination.py (組み合わせ予測)
 ```
 
-### 選定理由
-| 評価軸 | 評価 |
-|--------|------|
-| Vercel単体 | ✅ |
-| モデル改修効率 | ✅ Pythonで直接 |
-| 再デプロイ | ✅ git pushのみ |
-| 実装負荷 | ✅ 既存コード活用 |
+### 技術スタック
+| コンポーネント | 技術 |
+|--------------|------|
+| フロントエンド | Next.js 15.5.4 |
+| Python関数 | Vercel Serverless Functions |
+| 機械学習 | LightGBM 4.5.0（ネイティブ形式） |
+| データ | pandas, numpy |
 
 ---
 
-## 📝 次のアクション（再開時はここから）
+## 📝 解決した技術的課題
 
-### Phase 1: libgomp問題の解決 ⬅️ **ここから再開**
+### 1. libgomp.so.1問題
+**問題**: LightGBMがOpenMP（libgomp.so.1）に依存、Vercel環境で見つからない
 
-#### 1.1 LightGBM最新版での検証
-```bash
-# api/requirements.txt を更新
-lightgbm==4.5.0  # OpenMP依存軽減版
+**解決策**:
+1. `libgomp.so.1` をapi/py/に同梱
+2. vercel.jsonで`LD_LIBRARY_PATH`を設定
+3. Python関数内で`ctypes.CDLL`で明示的ロード
 
-# Vercelデプロイテスト
-vercel deploy --force
-```
+### 2. サイズ制限（250MB）超過
+**問題**: scikit-learn追加でServerless関数が250MB制限を超過
 
-#### 1.2 代替案（1.1で解決しない場合）
-- [ ] scikit-learn `GradientBoostingClassifier` で代替
-  - 精度検証が必要
-  - OpenMP依存なし
+**解決策**:
+1. モデルをpickle形式からLightGBMネイティブ形式（.txt）に変換
+2. `lgb.Booster`で直接ロード（scikit-learn不要）
+3. 特徴量キーを別ファイル（JSON）で管理
 
-### Phase 2: デプロイ・検証
-- [ ] プレビュー環境で予測API動作確認
-- [ ] 本番環境への昇格
+### 3. Next.js APIルートとの競合
+**問題**: `api/predict/`がNext.js API Routeと競合
 
-### Phase 3: 不要コード整理
-- [ ] `onnxruntime-web`関連の削除確認
-- [ ] 古いFastAPI設定の削除
+**解決策**:
+- Python関数を`api/py/`に移動
+- vercel.jsonでrewriteルール設定
 
 ---
 
@@ -82,11 +81,14 @@ vercel deploy --force
 
 | ファイル | 説明 |
 |----------|------|
-| `api/predict/axis.py` | 軸数字予測API |
-| `api/predict/combination.py` | 組み合わせ予測API |
-| `api/requirements.txt` | Python依存関係 |
-| `core/model_loader.py` | モデルローダー |
-| `data/models/*.pkl` | LightGBMモデル |
+| `api/py/axis.py` | 軸数字予測API |
+| `api/py/combination.py` | 組み合わせ予測API |
+| `api/py/requirements.txt` | Python依存関係 |
+| `api/py/libgomp.so.1` | OpenMPライブラリ |
+| `core/model_loader.py` | モデルローダー（Booster対応） |
+| `data/models/*.txt` | LightGBMネイティブモデル |
+| `data/models/*_keys.json` | 特徴量キー定義 |
+| `vercel.json` | Vercel設定（LD_LIBRARY_PATH含む） |
 
 ---
 
@@ -97,9 +99,9 @@ vercel deploy --force
 
 ---
 
-## ⚠️ フォールバック計画
+## 🔜 次のステップ
 
-libgomp問題が解決しない場合：
-
-1. **scikit-learn GBM代替** - OpenMP依存なし、精度若干低下の可能性
-2. **FastAPI別サービス**（最終手段） - Railway/Render等で無料デプロイ
+1. **本番デプロイ**: `vercel --prod`
+2. **フロントエンド統合**: Next.js API RouteからPython関数を呼び出す
+3. **テスト関数削除**: `api/py/test.py`をプロダクション前に削除
+4. **パフォーマンス監視**: Vercel Analyticsで応答時間を監視
