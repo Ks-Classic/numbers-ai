@@ -251,6 +251,57 @@
 **なぜMVPではNext.js API Routesを使うのか:**
 詳細は [06-implementation-plan.md](./06-implementation-plan.md) の「MVP実装計画」を参照
 
+### 3.2.1 予測APIルーティング選定
+
+**現状（MVP）**
+- `src/app/api/predict/route.ts` が `POST /api/predict` を唯一のエンドポイントで、Next.js API Routes 内で特徴量計算・モデル呼び出しを完結させる。
+- `src/lib/predictor/predictor.ts` は `fetch('/api/predict/axis')` を連携先として持っているが、Next.js API 側では `/axis` を受け付けていないため、リクエスト先は `POST /api/predict` に統一する必要がある。
+- デプロイサイズ・ライブラリ制限を考えると、Vercel上で Python + `libgomp.so.1` を組みこむ FastAPI よりも、Next.js API Routes 単体での完結が安定する。
+
+**FastAPIの位置付け**
+- `api/main.py` には FastAPI による `/api/predict/axis` や `/api/predict/combination` の実装が存在するが、Vercel で Python 関数にモデルファイルとネイティブライブラリを含めると関数サイズ制限で失敗する恐れがあるため、本番環境での運用は控えている。
+- FastAPI を活用するためには `USE_VERCEL_PYTHON` を `true` に切り替え、Next.js API ルートからプロキシして FastAPI を呼び出すパターンが必要になるが、現在は `/api/predict` を直接 Next.js で処理する方針。
+- FastAPI を維持しつつ Vercel にデプロイするには `api/lib/libgomp.so.1` を手動配置する実績があるため、モデル検証や資料用としては残す価値がある。
+
+**推奨方針**
+- デプロイ済みの要求は `POST /api/predict` を正規ルートとし、Next.js API Routes で処理すること。
+- FastAPI は文書化・実験用途、あるいは将来専用サービスとして分離する。ローカル開発では `uvicorn api.main:app` で容易にテストできるので、実験資産として維持。
+- フロントエンドから FastAPI を使う場合は、ドキュメント上で `/api/predict/axis` への呼び出しが 405 になる点と、Next.js ルートへの統一が必要であることを明示する。
+
+### 3.2.2 予測エンドポイントの実装構成
+
+```
+[フロントエンド predictor.ts]
+         │
+         ▼
+   POST /api/predict       ←─ フロントは `/api/predict/axis` を直接呼ばず、Next.js ルートに集約
+         │
+         ▼
+[Next.js API Route]       ← バリデーション / レスポンス整形 / ログ制御
+         │
+         ▼
+[fastapi-bridge.ts]      ← 軽量な内部 fetch で `/api/predict/axis` と `/api/predict/combination` を呼ぶ
+         │
+         ▼
+[FastAPI Predict API]    ← Python/LightGBM モデルで推論 → JSON を返却
+```
+
+- Next.js 側でバリデーション・エラー処理を行うため、FastAPI の失敗（モデル読み込みタイムアウトなど）も Next.js で 500 へ統一できる。
+- `/api/predict/axis` へのアクセスは `src/lib/predictor/fastapi-bridge.ts` のみで、他に直接叩いている箇所は存在しない（`rg /api/predict/axis` で確認）。
+- ローカルでは `pnpm dev` + `uvicorn api.main:app` でも同じフローを再現でき、以降のログがプロダクションと同じ順序になる。
+
+### 3.2.3 FastAPI vs Next.js API 完結の比較
+
+| 評価軸 | Next.js API Route（現行：`/api/predict`） | FastAPI（`/api/predict/axis` 等） |
+|--------|---------------------------------------------|----------------------------------|
+| デプロイサイズ / 依存 | Node.js + TypeScript の軽量構成。Vercel の関数サイズ制限に収まりやすい | LightGBM + `libgomp.so.1` + Pickle を含むため、Vercel の ZIP 圧縮でサイズ超過リスクが高い |
+| モデル検証・改修 | `fastapi-bridge.ts` で Python 資産へアクセスしつつ、必要部分を Next.js だけで置き換え可能 | 既存 Python 実装をそのまま使えるため、実験サイクルが速い |
+| ローカル開発・デバッグ | `pnpm dev` の Next.js だけで UI→API→FastAPI の流れを追え、ログも統一できる | `uvicorn api.main:app` + Next.js の併走が必要でログが分散しやすい |
+| 特徴量処理と再利用 | `predictor.ts` を通じて UI/Next.js のロジックを共有できる | 再利用想定なら Node 側で再実装が必要 |
+| 本番の安定性 | Next.js ルートだけで完結するため運用負荷が低い | FastAPI を Vercel Python 関数としてデプロイすると 405 や依存サイズの問題が出やすい |
+
+→ 現状は Next.js API Route を正規ルートとし、FastAPI へは `fastapi-bridge.ts` 経由で必要な処理だけを委譲するハイブリッド構成が最適。
+
 ### 3.3 AI/ML
 
 **機械学習**

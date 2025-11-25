@@ -28,6 +28,12 @@
 - URL: `https://numbers-mygipqj1l-ks-classic.vercel.app`
 - デプロイ日時: 2025-11-24
 
+## 4. ドキュメントと追跡
+- [x] `docs/01_design/02-system-architecture.md` に FastAPI vs Next.js API Routes の運用方針を追加
+- [x] フロントエンドの `src/lib/predictor/predictor.ts` が `/api/predict` へ統一されていることを確認し、関連ドキュメントにその事実を反映
+- [ ] `docs/01_design/03-data-api-design.md` に `/api/predict/axis` 等を含む 405 発生ルートと FastAPI/Next.js の使い分け基準を追記
+- [ ] `src/lib/predictor/fastapi-bridge.ts` の構造と呼び出しの流れがドキュメントで説明されているか確認する
+
 ## 関連ドキュメント
 - [CUBE生成ルール](../01_design/CUBE生成ルール.md): 実装済みの仕様
 - [Vercelデプロイ手順](../VERCEL_DEPLOY.md): 詳細な手順書
