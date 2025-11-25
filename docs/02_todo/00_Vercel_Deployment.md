@@ -28,11 +28,13 @@
 - URL: `https://numbers-mygipqj1l-ks-classic.vercel.app`
 - デプロイ日時: 2025-11-24
 
-## 4. ドキュメントと追跡
-- [x] `docs/01_design/02-system-architecture.md` に FastAPI vs Next.js API Routes の運用方針を追加
+- ## 4. ドキュメントと追跡
+- [x] `docs/01_design/02-system-architecture.md` に FastAPI vs Next.js API Routes の運用方針とロードマップを追加
 - [x] フロントエンドの `src/lib/predictor/predictor.ts` が `/api/predict` へ統一されていることを確認し、関連ドキュメントにその事実を反映
 - [ ] `docs/01_design/03-data-api-design.md` に `/api/predict/axis` 等を含む 405 発生ルートと FastAPI/Next.js の使い分け基準を追記
-- [ ] `src/lib/predictor/fastapi-bridge.ts` の構造と呼び出しの流れがドキュメントで説明されているか確認する
+- [ ] `src/lib/predictor/fastapi-bridge.ts` の呼び出し構造と、Next.js API への移行計画をドキュメント化する
+- [ ] Node モデルロード層の実装（`node-models.ts` + Python IPC）を起点に、`api/predict` が FastAPI を使わずに動作することを Vercel ビルドで確認
+- [ ] `node-model-stack` / `api-integration` / `test-deploy` TODO で定義した作業に沿って、FastAPI なしでの `pnpm dev` / `npm run build` をクリアする
 
 ## 関連ドキュメント
 - [CUBE生成ルール](../01_design/CUBE生成ルール.md): 実装済みの仕様
