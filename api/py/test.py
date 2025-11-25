@@ -98,8 +98,21 @@ class handler(BaseHTTPRequestHandler):
                     loader = load_model_loader(models_dir)
                     import_results['model_loader_init'] = "OK"
                     import_results['available_models'] = loader.get_available_models()
+                    
+                    # 個別のモデルファイルを直接読み込んでテスト
+                    import pickle
+                    test_model_path = models_dir / 'n3_axis_lgb.pkl'
+                    if test_model_path.exists():
+                        try:
+                            with open(test_model_path, 'rb') as f:
+                                test_model = pickle.load(f)
+                            import_results['direct_pickle_load'] = f"OK: type={type(test_model).__name__}"
+                        except Exception as e:
+                            import_results['direct_pickle_load'] = f"FAIL: {e}"
                 except Exception as e:
+                    import traceback
                     import_results['model_loader_init'] = f"FAIL: {e}"
+                    import_results['model_loader_traceback'] = traceback.format_exc()
         except Exception as e:
             import_results['model_loader'] = f"FAIL: {e}"
         
