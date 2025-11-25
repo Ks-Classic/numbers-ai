@@ -56,6 +56,7 @@ build/
 /env/
 /.venv/
 /api/venv/
+/api_venv/
 /notebooks/venv/
 /scripts/venv/
 

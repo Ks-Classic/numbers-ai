@@ -55,6 +55,7 @@ venv/
 env/
 .venv/
 api/venv/
+api_venv/
 notebooks/venv/
 
 # CUBE data (analysis purposes only, too many files for Git)
