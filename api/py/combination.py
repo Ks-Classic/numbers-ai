@@ -97,27 +97,28 @@ def predict_combination_logic(data):
     if rehearsal_digits:
         rehearsal_positions = get_rehearsal_positions(grid, rows, cols, rehearsal_digits)
     
-    # 組み合わせを生成
-    combinations = []
+    # 組み合わせを生成（重複なし）
+    combinations_set = set()
     for axis_digit in top_axis_digits[:5]:
         other_digits = [d for d in range(10) if d != axis_digit]
         
         if target == 'n3':
             for i, d1 in enumerate(other_digits):
                 for d2 in other_digits[i+1:]:
+                    # ソートして正規化（重複防止）
                     combo = ''.join(map(str, sorted([axis_digit, d1, d2])))
-                    if combo not in combinations:
-                        combinations.append(combo)
+                    combinations_set.add(combo)
         else:
             for i, d1 in enumerate(other_digits):
                 for j, d2 in enumerate(other_digits[i+1:]):
                     for d3 in other_digits[i+j+2:]:
                         combo = ''.join(map(str, sorted([axis_digit, d1, d2, d3])))
-                        if combo not in combinations:
-                            combinations.append(combo)
+                        combinations_set.add(combo)
         
-        if len(combinations) >= max_combinations:
+        if len(combinations_set) >= max_combinations:
             break
+    
+    combinations = list(combinations_set)
     
     # モデル確認
     model_name = f"{target}_{combo_type}_comb"
@@ -159,10 +160,14 @@ def predict_combination_logic(data):
         
         try:
             proba = model_loader.predict_combination(target, combo_type, feature_vector.reshape(1, -1))[0]
-            score = proba * 1000
+            # スコアを3桁の整数に変換（0-999）
+            # probaは0-1の確率なので、1000倍して整数化
+            score = int(round(proba * 1000))
+            # 最低1、最大999に制限
+            score = max(1, min(999, score))
             combo_scores.append({
                 'combination': combo,
-                'score': float(score)
+                'score': score
             })
         except ValueError as e:
             if "モデルが見つかりません" in str(e):
