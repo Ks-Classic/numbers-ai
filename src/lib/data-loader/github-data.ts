@@ -16,31 +16,31 @@ const GITHUB_RAW_URL = `https://raw.githubusercontent.com/${GITHUB_REPO}/${GITHU
 export async function fetchPastResultsFromGitHub(): Promise<string> {
   const repo = process.env.GITHUB_REPO || GITHUB_REPO;
   const branch = process.env.GITHUB_BRANCH || GITHUB_BRANCH;
-  
+
   // まず、raw.githubusercontent.comを試す（パブリックリポジトリの場合）
   const rawUrl = `https://raw.githubusercontent.com/${repo}/${branch}/data/past_results.csv`;
   const apiUrl = `https://api.github.com/repos/${repo}/contents/data/past_results.csv?ref=${branch}`;
-  
+
   console.log('[fetchPastResultsFromGitHub] GitHub URL (raw):', rawUrl);
   console.log('[fetchPastResultsFromGitHub] GitHub URL (API):', apiUrl);
   console.log('[fetchPastResultsFromGitHub] 環境変数:', {
     GITHUB_REPO: process.env.GITHUB_REPO,
     GITHUB_BRANCH: process.env.GITHUB_BRANCH,
-    GITHUB_TOKEN: process.env.GITHUB_TOKEN ? '***設定済み***' : '未設定',
+    PAT_TOKEN: process.env.PAT_TOKEN ? '***設定済み***' : '未設定',
     defaultRepo: repo,
     defaultBranch: branch,
   });
-  
-  // GITHUB_TOKENが設定されている場合はGitHub APIを使用
-  const useApi = !!process.env.GITHUB_TOKEN;
-  
+
+  // PAT_TOKENが設定されている場合はGitHub APIを使用
+  const useApi = !!process.env.PAT_TOKEN;
+
   if (useApi) {
     // GitHub APIを使用（プライベートリポジトリ対応）
     try {
       console.log('[fetchPastResultsFromGitHub] GitHub APIを使用して取得中...');
       const response = await fetch(apiUrl, {
         headers: {
-          'Authorization': `Bearer ${process.env.GITHUB_TOKEN}`,
+          'Authorization': `Bearer ${process.env.PAT_TOKEN}`,
           'Accept': 'application/vnd.github.v3+json',
           'User-Agent': 'numbers-ai',
         },
@@ -64,19 +64,19 @@ export async function fetchPastResultsFromGitHub(): Promise<string> {
       }
 
       const data = await response.json();
-      
+
       // base64エンコードされたコンテンツをデコード
       if (!data.content) {
         throw new Error('GitHub APIレスポンスにcontentフィールドがありません');
       }
-      
+
       const csvContent = Buffer.from(data.content, 'base64').toString('utf-8');
       console.log('[fetchPastResultsFromGitHub] ✅ GitHub APIからデータ取得成功:', {
         contentLength: csvContent.length,
         firstLine: csvContent.split('\n')[0],
         sha: data.sha,
       });
-      
+
       return csvContent;
     } catch (error) {
       console.error('[fetchPastResultsFromGitHub] GitHub APIエラー:', error);
@@ -84,7 +84,7 @@ export async function fetchPastResultsFromGitHub(): Promise<string> {
       console.log('[fetchPastResultsFromGitHub] raw URLを試行中...');
     }
   }
-  
+
   // raw.githubusercontent.comを試す（パブリックリポジトリの場合、またはAPI失敗時のフォールバック）
   try {
     console.log('[fetchPastResultsFromGitHub] raw.githubusercontent.comから取得中...');

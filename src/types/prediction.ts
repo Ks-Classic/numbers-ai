@@ -51,6 +51,7 @@ export interface PredictionState {
     rehearsalN3: string;
     rehearsalN4: string;
     selectedAxes: number[];
+    useGitHubData?: boolean;
   };
 
   // 軸候補（現在選択中のnumbersTypeに対応）

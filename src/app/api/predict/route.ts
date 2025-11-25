@@ -8,10 +8,10 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { 
-  predictAxis, 
+import {
+  predictAxis,
   predictCombination,
-  type CombinationPredictionResult 
+  type CombinationPredictionResult
 } from '@/lib/predictor/vercel-python';
 
 /**
@@ -21,6 +21,7 @@ const PredictRequestSchema = z.object({
   roundNumber: z.number().int().min(1).max(9999),
   n3Rehearsal: z.string().regex(/^[0-9]{3}$/).optional(),
   n4Rehearsal: z.string().regex(/^[0-9]{4}$/).optional(),
+  useGitHubData: z.boolean().optional(),
 });
 
 type PredictRequest = z.infer<typeof PredictRequestSchema>;
@@ -29,6 +30,8 @@ type PredictRequest = z.infer<typeof PredictRequestSchema>;
  * 環境変数の確認（Vercel Python関数を使用するかどうか）
  */
 const USE_VERCEL_PYTHON = process.env.USE_VERCEL_PYTHON === 'true';
+
+import { fetchPastResultsFromGitHub } from '@/lib/data-loader/github-data';
 
 /**
  * POSTハンドラー
@@ -44,6 +47,7 @@ export async function POST(request: NextRequest) {
       roundNumber: body.roundNumber,
       hasN3Rehearsal: !!body.n3Rehearsal,
       hasN4Rehearsal: !!body.n4Rehearsal,
+      useGitHubData: body.useGitHubData,
     });
 
     // バリデーション
@@ -67,6 +71,30 @@ export async function POST(request: NextRequest) {
     }
 
     const data = validationResult.data;
+
+    // GitHubデータの取得（必要な場合）
+    let csvContent: string | undefined = undefined;
+    if (data.useGitHubData) {
+      try {
+        console.log('GitHubから最新データを取得中...');
+        csvContent = await fetchPastResultsFromGitHub();
+        console.log('GitHubデータ取得成功');
+      } catch (error) {
+        console.error('GitHubデータ取得失敗:', error);
+        // エラーでも続行するか、エラーを返すか？
+        // ここではエラーとして返す
+        return NextResponse.json(
+          {
+            success: false,
+            error: {
+              code: 'GITHUB_DATA_ERROR',
+              message: 'Failed to fetch data from GitHub',
+            },
+          },
+          { status: 500 }
+        );
+      }
+    }
 
     // リハーサル数字のチェック
     if (!data.n3Rehearsal && !data.n4Rehearsal) {
@@ -161,7 +189,7 @@ export async function POST(request: NextRequest) {
       target: 'n3' | 'n4',
       rehearsalDigits: string
     ) => {
-      const axisResult = await predictAxis(roundNumber, target, rehearsalDigits);
+      const axisResult = await predictAxis(roundNumber, target, rehearsalDigits, csvContent);
 
       const topAxisDigits = axisResult.axis_candidates
         .slice(0, 10)
@@ -177,7 +205,8 @@ export async function POST(request: NextRequest) {
           'box',
           axisResult.best_pattern,
           topAxisDigits,
-          rehearsalDigits
+          rehearsalDigits,
+          csvContent
         );
         boxCombinations = boxResponse.combinations || [];
       } catch (error: any) {
@@ -198,7 +227,8 @@ export async function POST(request: NextRequest) {
           'straight',
           axisResult.best_pattern,
           topAxisDigits,
-          rehearsalDigits
+          rehearsalDigits,
+          csvContent
         );
         straightCombinations = straightResponse.combinations || [];
       } catch (error: any) {

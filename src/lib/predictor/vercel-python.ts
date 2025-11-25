@@ -49,13 +49,14 @@ function getBaseUrl(): string {
 export async function predictAxis(
   roundNumber: number,
   target: 'n3' | 'n4',
-  rehearsalDigits?: string
+  rehearsalDigits?: string,
+  csvContent?: string
 ): Promise<AxisPredictionResult> {
   const baseUrl = getBaseUrl();
   const url = `${baseUrl}/api/py/axis`;
-  
+
   console.log(`[predictAxis] Calling ${url}`);
-  
+
   const response = await fetch(url, {
     method: 'POST',
     headers: {
@@ -65,6 +66,7 @@ export async function predictAxis(
       round_number: roundNumber,
       target,
       rehearsal_digits: rehearsalDigits,
+      csv_content: csvContent,
     }),
   });
 
@@ -74,7 +76,7 @@ export async function predictAxis(
   }
 
   const result = await response.json() as AxisPredictionResult;
-  
+
   if (!result.success) {
     throw new Error(`Axis prediction failed: ${JSON.stringify(result)}`);
   }
@@ -91,13 +93,14 @@ export async function predictCombination(
   comboType: 'box' | 'straight',
   bestPattern: 'A1' | 'A2' | 'B1' | 'B2',
   topAxisDigits: number[],
-  rehearsalDigits?: string
+  rehearsalDigits?: string,
+  csvContent?: string
 ): Promise<CombinationPredictionResult> {
   const baseUrl = getBaseUrl();
   const url = `${baseUrl}/api/py/combination`;
-  
+
   console.log(`[predictCombination] Calling ${url}`);
-  
+
   const response = await fetch(url, {
     method: 'POST',
     headers: {
@@ -110,6 +113,7 @@ export async function predictCombination(
       best_pattern: bestPattern,
       top_axis_digits: topAxisDigits,
       rehearsal_digits: rehearsalDigits,
+      csv_content: csvContent,
     }),
   });
 
@@ -119,7 +123,7 @@ export async function predictCombination(
   }
 
   const result = await response.json() as CombinationPredictionResult;
-  
+
   if (!result.success) {
     throw new Error(`Combination prediction failed: ${JSON.stringify(result)}`);
   }

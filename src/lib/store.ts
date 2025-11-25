@@ -11,7 +11,8 @@ export const usePredictionStore = create<PredictionState>((set) => ({
     patternType: 'A1', // デフォルトはA1
     rehearsalN3: '',
     rehearsalN4: '',
-    selectedAxes: []
+    selectedAxes: [],
+    useGitHubData: false
   },
   axisCandidates: [],
   finalPredictions: null,
@@ -31,7 +32,7 @@ export const usePredictionStore = create<PredictionState>((set) => ({
   })),
 
   setAxisCandidates: (candidates) => set({ axisCandidates: candidates }),
-  
+
   setN3Data: (candidates, predictions) => set((state) => ({
     n3AxisCandidates: candidates,
     n3FinalPredictions: predictions,
@@ -41,7 +42,7 @@ export const usePredictionStore = create<PredictionState>((set) => ({
       finalPredictions: predictions,
     }),
   })),
-  
+
   setN4Data: (candidates, predictions) => set((state) => ({
     n4AxisCandidates: candidates,
     n4FinalPredictions: predictions,
@@ -71,7 +72,8 @@ export const usePredictionStore = create<PredictionState>((set) => ({
       patternType: 'A1', // デフォルトはA1
       rehearsalN3: '',
       rehearsalN4: '',
-      selectedAxes: []
+      selectedAxes: [],
+      useGitHubData: false
     },
     axisCandidates: [],
     finalPredictions: null,

@@ -74,14 +74,8 @@ def load_data_and_models():
 
 def predict_combination_logic(data):
     """組み合わせ予測のロジック"""
-    load_data_and_models()
-    
-    if model_loader is None:
-        return {'success': False, 'error': 'モデルが読み込まれていません'}
-    
-    if df is None or keisen_master is None:
-        return {'success': False, 'error': 'データが読み込まれていません'}
-    
+    import io
+
     round_number = int(data.get('round_number'))
     target = data.get('target', 'n3')
     combo_type = data.get('combo_type', 'box')
@@ -89,9 +83,43 @@ def predict_combination_logic(data):
     top_axis_digits = data.get('top_axis_digits', [])
     rehearsal_digits = data.get('rehearsal_digits')
     max_combinations = int(data.get('max_combinations', 100))
+    csv_content = data.get('csv_content')
+
+    # データ読み込み
+    current_df = None
+    
+    if csv_content:
+        try:
+            current_df = pd.read_csv(io.StringIO(csv_content))
+            # 前処理
+            current_df['n3_winning'] = current_df['n3_winning'].astype(str).str.replace('.0', '', regex=False)
+            current_df['n4_winning'] = current_df['n4_winning'].astype(str).str.replace('.0', '', regex=False)
+            current_df['n3_winning'] = current_df['n3_winning'].apply(lambda x: str(x).zfill(3) if pd.notna(x) and str(x) != 'NULL' else x)
+            current_df['n4_winning'] = current_df['n4_winning'].apply(lambda x: str(x).zfill(4) if pd.notna(x) and str(x) != 'NULL' else x)
+        except Exception as e:
+            return {'success': False, 'error': f'CSVデータの解析に失敗: {e}'}
+    else:
+        # 通常のデータ読み込み
+        load_data_and_models()
+        if df is None:
+            return {'success': False, 'error': 'データが読み込まれていません'}
+        current_df = df
+
+    # モデル読み込み（データとは独立）
+    if model_loader is None:
+        load_data_and_models() # モデルだけロードするために呼ぶ（dfはロード済みならスキップされる）
+    
+    if model_loader is None:
+        return {'success': False, 'error': 'モデルが読み込まれていません'}
+    
+    if keisen_master is None:
+        load_data_and_models()
+        
+    if keisen_master is None:
+        return {'success': False, 'error': '罫線マスターが読み込まれていません'}
     
     # 予測表を生成
-    grid, rows, cols = generate_chart(df, keisen_master, round_number, best_pattern, target)
+    grid, rows, cols = generate_chart(current_df, keisen_master, round_number, best_pattern, target)
     
     rehearsal_positions = None
     if rehearsal_digits:
@@ -128,8 +156,8 @@ def predict_combination_logic(data):
     # 前回・前々回の当選番号を取得
     previous_winning = None
     previous_previous_winning = None
-    previous_row = df[df['round_number'] == round_number - 1]
-    previous_previous_row = df[df['round_number'] == round_number - 2]
+    previous_row = current_df[current_df['round_number'] == round_number - 1]
+    previous_previous_row = current_df[current_df['round_number'] == round_number - 2]
     
     if len(previous_row) > 0:
         previous_winning = str(previous_row[f'{target}_winning'].iloc[0]).replace('.0', '')
