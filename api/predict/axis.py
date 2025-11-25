@@ -15,14 +15,28 @@ sys.path.append(str(PROJECT_ROOT / 'core'))
 
 # 【重要】Vercel環境(x86_64)用の共有ライブラリを強制ロード
 import ctypes
-lib_path = PROJECT_ROOT / 'api' / 'lib' / 'libgomp.so.1'
+import os
+
+# カレントディレクトリ（api/predict/）にあるlibgomp.so.1を探す
+current_dir = Path(__file__).resolve().parent
+lib_path = current_dir / 'libgomp.so.1'
+
 if lib_path.exists():
     try:
-        # RTLD_GLOBALモードでロードして、LightGBMからも見えるようにする
+        # RTLD_GLOBALモードでロード
         ctypes.CDLL(str(lib_path), mode=ctypes.RTLD_GLOBAL)
         print(f"Successfully loaded {lib_path} with RTLD_GLOBAL")
     except Exception as e:
         print(f"Failed to load {lib_path}: {e}")
+else:
+    # フォールバック: api/lib/を探す
+    lib_path = PROJECT_ROOT / 'api' / 'lib' / 'libgomp.so.1'
+    if lib_path.exists():
+        try:
+            ctypes.CDLL(str(lib_path), mode=ctypes.RTLD_GLOBAL)
+            print(f"Successfully loaded {lib_path} with RTLD_GLOBAL (fallback)")
+        except Exception as e:
+            print(f"Failed to load {lib_path}: {e}")
 
 # デバッグ: パスと環境確認
 print(f"Python Path: {sys.path}")
