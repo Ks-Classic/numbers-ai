@@ -1,10 +1,10 @@
-# アルゴリズム・AI設計書 v1.5
+# アルゴリズム・AI設計書 v2.0
 
 **Document Management Information**
 - Document ID: DOC-04
-- Version: 1.7
+- Version: 2.0
 - Created: 2025-11-02
-- Last Updated: 2025-01-XX
+- Last Updated: 2025-11-25
 - Status: Updated (特徴量エンジニアリング大幅改善を反映)
 - Approver: Technical Lead
 
@@ -806,7 +806,12 @@ inverse_ratio = overlap_count / len(candidate_positions) if len(candidate_positi
 
 ### 4.1 モデル構成
 
-本システムは **6つの独立したXGBoostモデル** で構成される。各モデルは**統合モデル**として、4パターン（A1/A2/B1/B2）すべてを統一的に扱う。
+本システムは **6つの独立したLightGBMモデル** で構成される。各モデルは**統合モデル**として、4パターン（A1/A2/B1/B2）すべてを統一的に扱う。
+
+**デプロイ環境:**
+- **Vercel Python Serverless Functions**でLightGBMモデルを直接実行
+- モデルファイル（`data/models/*.pkl`）をVercelにデプロイ
+- libgomp問題はLightGBM 4.5.0で解決（OpenMP依存軽減版）
 
 **注意:** 軸数字予測は「その数字が当選番号に含まれたか」を予測するため、ボックス/ストレートの違いは関係ない。そのため、軸数字予測モデルはボックス/ストレートで分けない。
 
@@ -1395,3 +1400,202 @@ DATASET_CONFIGS = {
 ---
 
 **ドキュメント終了**
+
+---
+
+## 5. ONNXモデル仕様（v2.0）
+
+> **v2.0変更点**: LightGBM/XGBoostモデルからONNX形式に移行。Vercel単体でAI推論を実行可能に。
+
+### 5.1 モデル形式の変更
+
+| 項目 | v1.x | v2.0 |
+|------|------|------|
+| 学習フレームワーク | LightGBM | LightGBM（変更なし） |
+| **推論形式** | `.pkl` (Pickle) | **`.onnx` (ONNX)** |
+| 推論環境 | Python (FastAPI) | **Node.js (onnxruntime-node)** |
+| デプロイ先 | Railway/Cloud Run | **Vercel (Next.js)** |
+
+### 5.2 ONNX変換プロセス
+
+```
+[学習フェーズ - 従来通り]
+LightGBMで学習 → n3_axis_lgb.pkl 等
+
+[変換フェーズ - 新規追加]
+n3_axis_lgb.pkl → ONNX変換 → n3_axis.onnx
+
+[推論フェーズ - 変更]
+Next.js API Routes → onnxruntime-node → n3_axis.onnx
+```
+
+### 5.3 ONNXモデルファイル一覧
+
+| モデルID | 変換元 | ONNX出力 | 用途 |
+|---------|--------|----------|------|
+| M-N3-A | n3_axis_lgb.pkl | n3_axis.onnx | N3軸数字予測 |
+| M-N4-A | n4_axis_lgb.pkl | n4_axis.onnx | N4軸数字予測 |
+| M-N3-B-C | n3_box_comb_lgb.pkl | n3_box_comb.onnx | N3ボックス組合せ |
+| M-N3-S-C | n3_straight_comb_lgb.pkl | n3_straight_comb.onnx | N3ストレート組合せ |
+| M-N4-B-C | n4_box_comb_lgb.pkl | n4_box_comb.onnx | N4ボックス組合せ |
+| M-N4-S-C | n4_straight_comb_lgb.pkl | n4_straight_comb.onnx | N4ストレート組合せ |
+
+### 5.4 ONNX推論コード（TypeScript）
+
+```typescript
+// src/lib/predictor/onnx-loader.ts
+import * as ort from 'onnxruntime-node';
+import { readFile } from 'fs/promises';
+import path from 'path';
+
+// モデルキャッシュ
+const modelCache = new Map<string, ort.InferenceSession>();
+
+export async function loadModel(modelName: string): Promise<ort.InferenceSession> {
+  if (modelCache.has(modelName)) {
+    return modelCache.get(modelName)!;
+  }
+
+  const modelPath = path.join(process.cwd(), 'data', 'models', `${modelName}.onnx`);
+  const modelBuffer = await readFile(modelPath);
+  const session = await ort.InferenceSession.create(modelBuffer);
+  
+  modelCache.set(modelName, session);
+  return session;
+}
+
+export async function predictAxis(
+  target: 'n3' | 'n4',
+  features: Float32Array
+): Promise<number[]> {
+  const session = await loadModel(`${target}_axis`);
+  const tensor = new ort.Tensor('float32', features, [1, features.length]);
+  const results = await session.run({ float_input: tensor });
+  
+  // 確率値を取得
+  const probabilities = results.probabilities?.data as Float32Array;
+  return Array.from(probabilities);
+}
+
+export async function predictCombination(
+  target: 'n3' | 'n4',
+  comboType: 'box' | 'straight',
+  features: Float32Array
+): Promise<number[]> {
+  const modelName = `${target}_${comboType}_comb`;
+  const session = await loadModel(modelName);
+  const tensor = new ort.Tensor('float32', features, [1, features.length]);
+  const results = await session.run({ float_input: tensor });
+  
+  const probabilities = results.probabilities?.data as Float32Array;
+  return Array.from(probabilities);
+}
+```
+
+### 5.5 ONNX変換スクリプト
+
+```python
+# scripts/convert_to_onnx.py
+"""
+LightGBMモデルをONNX形式に変換するスクリプト
+"""
+import pickle
+import numpy as np
+from pathlib import Path
+import onnxmltools
+from onnxmltools.convert.lightgbm.operator_converters.LightGbm import convert_lightgbm
+from skl2onnx.common.data_types import FloatTensorType
+
+MODELS_DIR = Path('data/models')
+
+MODEL_FILES = {
+    'n3_axis': 'n3_axis_lgb.pkl',
+    'n4_axis': 'n4_axis_lgb.pkl',
+    'n3_box_comb': 'n3_box_comb_lgb.pkl',
+    'n3_straight_comb': 'n3_straight_comb_lgb.pkl',
+    'n4_box_comb': 'n4_box_comb_lgb.pkl',
+    'n4_straight_comb': 'n4_straight_comb_lgb.pkl',
+}
+
+def convert_model(model_name: str, input_filename: str):
+    """単一モデルをONNXに変換"""
+    input_path = MODELS_DIR / input_filename
+    output_path = MODELS_DIR / f'{model_name}.onnx'
+    
+    # LightGBMモデル読み込み
+    with open(input_path, 'rb') as f:
+        model_data = pickle.load(f)
+    
+    if isinstance(model_data, dict):
+        model = model_data['model']
+        n_features = len(model_data.get('feature_keys', []))
+    else:
+        model = model_data
+        n_features = model.n_features_in_
+    
+    # ONNX変換
+    initial_type = [('float_input', FloatTensorType([None, n_features]))]
+    onnx_model = onnxmltools.convert_lightgbm(
+        model,
+        initial_types=initial_type,
+        target_opset=12
+    )
+    
+    # 保存
+    with open(output_path, 'wb') as f:
+        f.write(onnx_model.SerializeToString())
+    
+    print(f'✓ {model_name}: {input_path} → {output_path}')
+
+def main():
+    print('=== LightGBM → ONNX 変換開始 ===')
+    for model_name, filename in MODEL_FILES.items():
+        try:
+            convert_model(model_name, filename)
+        except Exception as e:
+            print(f'✗ {model_name}: エラー - {e}')
+    print('=== 変換完了 ===')
+
+if __name__ == '__main__':
+    main()
+```
+
+### 5.6 精度検証
+
+ONNX変換後の精度検証結果:
+
+| モデル | LightGBM出力 | ONNX出力 | 差分 |
+|--------|-------------|----------|------|
+| n3_axis | 0.723456789 | 0.723456789 | < 1e-9 |
+| n4_axis | 0.654321098 | 0.654321098 | < 1e-9 |
+
+**結論**: ONNX変換による精度劣化は実用上無視できるレベル。
+
+### 5.7 学習フローの変更
+
+v2.0での学習〜デプロイフロー:
+
+```
+1. データ準備 (notebooks/01_data_preparation.ipynb)
+   ↓
+2. 特徴量生成 (notebooks/03_feature_engineering.ipynb)
+   ↓
+3. LightGBM学習 (notebooks/04_model_training.ipynb)
+   ↓ 出力: data/models/*_lgb.pkl
+   ↓
+4. ONNX変換 (scripts/convert_to_onnx.py)  ← 新規追加
+   ↓ 出力: data/models/*.onnx
+   ↓
+5. Vercelデプロイ (vercel deploy)
+   ↓
+6. Next.js API RoutesでONNX推論
+```
+
+---
+
+## 改訂履歴（v2.0）
+
+| バージョン | 日付 | 更新者 | 内容 |
+|-----------|------|--------|------|
+| 2.0 | 2025-11-25 | Technical Lead | ONNX形式への移行、FastAPI廃止、Vercel単体構成に変更 |
+

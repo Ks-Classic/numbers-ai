@@ -2,11 +2,30 @@
 Vercel Python関数: デバッグテスト
 """
 
+import os
+import sys
+from pathlib import Path
+
+# 【重要】LightGBMインポート前にlibgomp.so.1をロード
+current_dir = Path(__file__).resolve().parent
+libgomp_path = current_dir / 'libgomp.so.1'
+
+if libgomp_path.exists():
+    # LD_LIBRARY_PATH を設定
+    os.environ['LD_LIBRARY_PATH'] = str(current_dir) + ':' + os.environ.get('LD_LIBRARY_PATH', '')
+    
+    # ctypes で明示的にロード
+    import ctypes
+    try:
+        ctypes.CDLL(str(libgomp_path), mode=ctypes.RTLD_GLOBAL)
+        LIBGOMP_LOADED = True
+    except Exception as e:
+        LIBGOMP_LOADED = f"FAIL: {e}"
+else:
+    LIBGOMP_LOADED = "NOT_FOUND"
+
 from http.server import BaseHTTPRequestHandler
 import json
-import sys
-import os
-from pathlib import Path
 
 
 class handler(BaseHTTPRequestHandler):
