@@ -6,4 +6,5 @@ pandas>=2.0.0
 numpy>=1.24.0
 
 # 機械学習（予測モデル）
-lightgbm>=4.0.0
+# LightGBM 4.5.0: OpenMP依存軽減版（libgomp.so.1問題対策）
+lightgbm==4.5.0
