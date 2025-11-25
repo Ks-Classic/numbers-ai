@@ -108,7 +108,20 @@ def handler(event: Dict[str, Any], context: Any = None) -> Dict[str, Any]:
     print(f"[AXIS HANDLER] context: {context}")
     print("=" * 60)
     
-    try:
+            # OPTIONS (CORS preflight) handling
+        if event.get('httpMethod') == 'OPTIONS':
+            return {
+                'statusCode': 200,
+                'headers': {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*',
+                    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+                    'Access-Control-Allow-Headers': 'Content-Type'
+                },
+                'body': ''
+            }
+
+        try:
         # データとモデルを読み込む
         load_data_and_models()
         
