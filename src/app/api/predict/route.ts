@@ -8,7 +8,11 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { predictAxis, predictCombination } from '@/lib/predictor/node-models';
+import { 
+  predictAxis, 
+  predictCombination,
+  type CombinationPredictionResult 
+} from '@/lib/predictor/node-models';
 
 /**
  * リクエストスキーマ
@@ -163,8 +167,8 @@ export async function POST(request: NextRequest) {
         .slice(0, 10)
         .map((item: any) => item.digit);
 
-      let boxCombinations = null;
-      let straightCombinations = null;
+      let boxCombinations: CombinationPredictionResult['combinations'] | null = null;
+      let straightCombinations: CombinationPredictionResult['combinations'] | null = null;
 
       try {
         const boxResponse = await predictCombination(
