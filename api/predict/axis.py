@@ -18,8 +18,9 @@ import ctypes
 lib_path = PROJECT_ROOT / 'api' / 'lib' / 'libgomp.so.1'
 if lib_path.exists():
     try:
-        ctypes.CDLL(str(lib_path))
-        print(f"Successfully loaded {lib_path}")
+        # RTLD_GLOBALモードでロードして、LightGBMからも見えるようにする
+        ctypes.CDLL(str(lib_path), mode=ctypes.RTLD_GLOBAL)
+        print(f"Successfully loaded {lib_path} with RTLD_GLOBAL")
     except Exception as e:
         print(f"Failed to load {lib_path}: {e}")
 
