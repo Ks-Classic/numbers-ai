@@ -147,6 +147,10 @@ def predict_axis_logic(data):
                 elif target == 'n4' and len(previous_previous_winning) < 4:
                     previous_previous_winning = previous_previous_winning.zfill(4)
             
+            # 特徴量キーを取得（モデルが期待する順序）
+            model_name = f"{target}_axis"
+            feature_keys = model_loader.feature_keys.get(model_name, [])
+            
             digit_scores = []
             for digit in range(10):
                 features = extract_digit_features(grid, rows, cols, digit, rehearsal_positions)
@@ -157,7 +161,11 @@ def predict_axis_logic(data):
                         features, previous_winning, previous_previous_winning, target
                     )
                 
-                feature_vector = features_to_vector(features)
+                # 特徴量キーに基づいてベクトル化（モデルが期待する順序で）
+                if feature_keys:
+                    feature_vector = features_to_vector(features, feature_keys)
+                else:
+                    feature_vector = features_to_vector(features)
                 raw_score = model_loader.predict_axis(target, feature_vector.reshape(1, -1))[0]
                 # raw scoreをsigmoidで確率に変換
                 import math

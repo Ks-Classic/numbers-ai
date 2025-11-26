@@ -194,6 +194,13 @@ def predict_combination_logic(data):
         elif target == 'n4' and len(previous_previous_winning) < 4:
             previous_previous_winning = previous_previous_winning.zfill(4)
     
+    # 特徴量キーを取得（モデルが期待する順序）
+    model_name = f"{target}_{combo_type}_comb"
+    feature_keys = model_loader.feature_keys.get(model_name, [])
+    
+    if feature_keys:
+        print(f"[INFO] モデル {model_name} の特徴量キー数: {len(feature_keys)}")
+    
     # 特徴量を抽出して予測
     combo_scores = []
     for combo in combinations[:max_combinations]:
@@ -205,7 +212,11 @@ def predict_combination_logic(data):
                 features, previous_winning, previous_previous_winning, target
             )
         
-        feature_vector = features_to_vector(features)
+        # 特徴量キーに基づいてベクトル化（モデルが期待する順序で）
+        if feature_keys:
+            feature_vector = features_to_vector(features, feature_keys)
+        else:
+            feature_vector = features_to_vector(features)
         
         try:
             raw_score = model_loader.predict_combination(target, combo_type, feature_vector.reshape(1, -1))[0]
@@ -226,7 +237,7 @@ def predict_combination_logic(data):
             })
         except ValueError as e:
             if "モデルが見つかりません" in str(e):
-                print(f"[WARN] モデルが見つかりません: {target}_{combo_type}_comb")
+                print(f"[WARN] モデルが見つかりません: {model_name}")
                 break
             raise
     
