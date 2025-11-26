@@ -192,7 +192,16 @@ export default function AxisPage() {
     // 既存の候補に該当するものがある場合は、それを使用
     if (filtered.length > 0) {
       console.log('既存の候補からフィルタリング:', filtered.length, '件');
-      const sorted = filtered.sort((a, b) => (b.score || 0) - (a.score || 0)).slice(0, 10); // 10位まで
+      // 重複排除（同じ番号は最初の1つだけを残す）
+      const seen = new Set<string>();
+      const unique = filtered.filter(item => {
+        if (item.number && !seen.has(item.number)) {
+          seen.add(item.number);
+          return true;
+        }
+        return false;
+      });
+      const sorted = unique.sort((a, b) => (b.score || 0) - (a.score || 0)).slice(0, 10); // 10位まで
       setCustomCandidates(sorted);
       setIsCustomExpanded(true);
       return;
