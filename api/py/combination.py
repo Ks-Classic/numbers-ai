@@ -125,7 +125,11 @@ def predict_combination_logic(data):
     if rehearsal_digits:
         rehearsal_positions = get_rehearsal_positions(grid, rows, cols, rehearsal_digits)
     
-    # 組み合わせを生成（重複なし）
+    # 組み合わせを生成
+    # ボックス: ソートされた組み合わせ（順序無視）
+    # ストレート: 順列（全ての並び順）
+    from itertools import permutations
+    
     combinations_set = set()
     for axis_digit in top_axis_digits[:5]:
         other_digits = [d for d in range(10) if d != axis_digit]
@@ -133,15 +137,30 @@ def predict_combination_logic(data):
         if target == 'n3':
             for i, d1 in enumerate(other_digits):
                 for d2 in other_digits[i+1:]:
-                    # ソートして正規化（重複防止）
-                    combo = ''.join(map(str, sorted([axis_digit, d1, d2])))
-                    combinations_set.add(combo)
-        else:
+                    digits = [axis_digit, d1, d2]
+                    if combo_type == 'box':
+                        # ボックス: ソートして重複防止
+                        combo = ''.join(map(str, sorted(digits)))
+                        combinations_set.add(combo)
+                    else:
+                        # ストレート: 全ての順列を追加
+                        for perm in permutations(digits):
+                            combo = ''.join(map(str, perm))
+                            combinations_set.add(combo)
+        else:  # n4
             for i, d1 in enumerate(other_digits):
                 for j, d2 in enumerate(other_digits[i+1:]):
                     for d3 in other_digits[i+j+2:]:
-                        combo = ''.join(map(str, sorted([axis_digit, d1, d2, d3])))
-                        combinations_set.add(combo)
+                        digits = [axis_digit, d1, d2, d3]
+                        if combo_type == 'box':
+                            # ボックス: ソートして重複防止
+                            combo = ''.join(map(str, sorted(digits)))
+                            combinations_set.add(combo)
+                        else:
+                            # ストレート: 全ての順列を追加
+                            for perm in permutations(digits):
+                                combo = ''.join(map(str, perm))
+                                combinations_set.add(combo)
         
         if len(combinations_set) >= max_combinations:
             break
