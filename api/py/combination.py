@@ -225,21 +225,37 @@ def predict_combination_logic(data):
             if len(combo_scores) < 3:
                 print(f"[DEBUG] combo={combo}, raw_score={raw_score}, feature_dim={len(feature_vector)}")
             
-            # raw scoreをsigmoidで確率に変換
-            import math
-            probability = 1 / (1 + math.exp(-raw_score))
-            # スコアを3桁の整数に変換（1-999）
-            score = int(round(probability * 1000))
-            score = max(1, min(999, score))
+            # raw_scoreをそのまま保存（後で正規化）
             combo_scores.append({
                 'combination': combo,
-                'score': score
+                'raw_score': raw_score
             })
         except ValueError as e:
             if "モデルが見つかりません" in str(e):
                 print(f"[WARN] モデルが見つかりません: {model_name}")
                 break
             raise
+    
+    # raw_scoreを正規化してスコア化（相対的な差を反映）
+    if combo_scores:
+        raw_scores = [c['raw_score'] for c in combo_scores]
+        min_raw = min(raw_scores)
+        max_raw = max(raw_scores)
+        score_range = max_raw - min_raw
+        
+        if score_range > 0:
+            # 正規化: 最小を100、最大を999にマッピング
+            for c in combo_scores:
+                normalized = (c['raw_score'] - min_raw) / score_range
+                c['score'] = int(100 + normalized * 899)  # 100-999の範囲
+        else:
+            # 全て同じスコアの場合
+            for c in combo_scores:
+                c['score'] = 500
+        
+        # raw_scoreを削除（レスポンスに含めない）
+        for c in combo_scores:
+            del c['raw_score']
     
     combo_scores.sort(key=lambda x: x['score'], reverse=True)
     

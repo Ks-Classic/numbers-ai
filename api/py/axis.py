@@ -167,18 +167,34 @@ def predict_axis_logic(data):
                 else:
                     feature_vector = features_to_vector(features)
                 raw_score = model_loader.predict_axis(target, feature_vector.reshape(1, -1))[0]
-                # raw scoreをsigmoidで確率に変換
-                import math
-                probability = 1 / (1 + math.exp(-raw_score))
-                # スコアを3桁の整数に変換（1-999）
-                # 確率を1000倍して整数化
-                score = int(round(probability * 1000))
-                score = max(1, min(999, score))
+                
+                # raw_scoreをそのまま保存（後で正規化）
                 digit_scores.append({
                     'digit': digit,
-                    'score': score,
+                    'raw_score': raw_score,
                     'pattern': pattern
                 })
+            
+            # raw_scoreを正規化してスコア化（相対的な差を反映）
+            if digit_scores:
+                raw_scores = [d['raw_score'] for d in digit_scores]
+                min_raw = min(raw_scores)
+                max_raw = max(raw_scores)
+                score_range = max_raw - min_raw
+                
+                if score_range > 0:
+                    # 正規化: 最小を100、最大を999にマッピング
+                    for d in digit_scores:
+                        normalized = (d['raw_score'] - min_raw) / score_range
+                        d['score'] = int(100 + normalized * 899)  # 100-999の範囲
+                else:
+                    # 全て同じスコアの場合
+                    for d in digit_scores:
+                        d['score'] = 500
+                
+                # raw_scoreを削除
+                for d in digit_scores:
+                    del d['raw_score']
             
             digit_scores.sort(key=lambda x: x['score'], reverse=True)
             pattern_results[pattern] = digit_scores
