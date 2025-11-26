@@ -128,7 +128,7 @@ def predict_combination_logic(data):
     # 組み合わせを生成
     # ボックス: ソートされた組み合わせ（順序無視）
     # ストレート: ボックス候補の順列（全ての並び順）
-    from itertools import permutations
+    from itertools import permutations, combinations as itertools_combinations
     
     # まずボックス候補を生成（ストレートでも同じベース候補を使う）
     box_combinations_set = set()
@@ -136,18 +136,17 @@ def predict_combination_logic(data):
         other_digits = [d for d in range(10) if d != axis_digit]
         
         if target == 'n3':
-            for i, d1 in enumerate(other_digits):
-                for d2 in other_digits[i+1:]:
-                    digits = [axis_digit, d1, d2]
-                    combo = ''.join(map(str, sorted(digits)))
-                    box_combinations_set.add(combo)
+            # N3: 軸数字 + 他の2桁の組み合わせ
+            for combo_pair in itertools_combinations(other_digits, 2):
+                digits = [axis_digit] + list(combo_pair)
+                combo = ''.join(map(str, sorted(digits)))
+                box_combinations_set.add(combo)
         else:  # n4
-            for i, d1 in enumerate(other_digits):
-                for j, d2 in enumerate(other_digits[i+1:]):
-                    for d3 in other_digits[i+j+2:]:
-                        digits = [axis_digit, d1, d2, d3]
-                        combo = ''.join(map(str, sorted(digits)))
-                        box_combinations_set.add(combo)
+            # N4: 軸数字 + 他の3桁の組み合わせ
+            for combo_triple in itertools_combinations(other_digits, 3):
+                digits = [axis_digit] + list(combo_triple)
+                combo = ''.join(map(str, sorted(digits)))
+                box_combinations_set.add(combo)
         
         if len(box_combinations_set) >= max_combinations:
             break
@@ -257,11 +256,20 @@ def predict_combination_logic(data):
         for c in combo_scores:
             del c['raw_score']
     
+    # スコア順にソート
     combo_scores.sort(key=lambda x: x['score'], reverse=True)
+    
+    # 重複排除（同じ番号は最初の1つだけを残す）
+    seen_combinations = set()
+    unique_combo_scores = []
+    for c in combo_scores:
+        if c['combination'] not in seen_combinations:
+            seen_combinations.add(c['combination'])
+            unique_combo_scores.append(c)
     
     return {
         'success': True,
-        'combinations': combo_scores
+        'combinations': unique_combo_scores
     }
 
 
