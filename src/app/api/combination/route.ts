@@ -8,7 +8,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { predictCombination } from '@/lib/predictor/fastapi-bridge';
+import { predictCombination } from '@/lib/predictor/vercel-python';
 
 /**
  * リクエストスキーマ
