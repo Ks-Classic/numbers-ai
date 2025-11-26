@@ -127,10 +127,11 @@ def predict_combination_logic(data):
     
     # 組み合わせを生成
     # ボックス: ソートされた組み合わせ（順序無視）
-    # ストレート: 順列（全ての並び順）
+    # ストレート: ボックス候補の順列（全ての並び順）
     from itertools import permutations
     
-    combinations_set = set()
+    # まずボックス候補を生成（ストレートでも同じベース候補を使う）
+    box_combinations_set = set()
     for axis_digit in top_axis_digits[:5]:
         other_digits = [d for d in range(10) if d != axis_digit]
         
@@ -138,34 +139,35 @@ def predict_combination_logic(data):
             for i, d1 in enumerate(other_digits):
                 for d2 in other_digits[i+1:]:
                     digits = [axis_digit, d1, d2]
-                    if combo_type == 'box':
-                        # ボックス: ソートして重複防止
-                        combo = ''.join(map(str, sorted(digits)))
-                        combinations_set.add(combo)
-                    else:
-                        # ストレート: 全ての順列を追加
-                        for perm in permutations(digits):
-                            combo = ''.join(map(str, perm))
-                            combinations_set.add(combo)
+                    combo = ''.join(map(str, sorted(digits)))
+                    box_combinations_set.add(combo)
         else:  # n4
             for i, d1 in enumerate(other_digits):
                 for j, d2 in enumerate(other_digits[i+1:]):
                     for d3 in other_digits[i+j+2:]:
                         digits = [axis_digit, d1, d2, d3]
-                        if combo_type == 'box':
-                            # ボックス: ソートして重複防止
-                            combo = ''.join(map(str, sorted(digits)))
-                            combinations_set.add(combo)
-                        else:
-                            # ストレート: 全ての順列を追加
-                            for perm in permutations(digits):
-                                combo = ''.join(map(str, perm))
-                                combinations_set.add(combo)
+                        combo = ''.join(map(str, sorted(digits)))
+                        box_combinations_set.add(combo)
         
-        if len(combinations_set) >= max_combinations:
+        if len(box_combinations_set) >= max_combinations:
             break
     
-    combinations = list(combinations_set)
+    # ボックスならそのまま、ストレートなら順列を展開
+    if combo_type == 'box':
+        combinations = list(box_combinations_set)[:max_combinations]
+    else:
+        # ストレート: ボックス候補の順列を生成
+        straight_combinations_set = set()
+        for box_combo in box_combinations_set:
+            digits = [int(d) for d in box_combo]
+            for perm in permutations(digits):
+                straight_combo = ''.join(map(str, perm))
+                straight_combinations_set.add(straight_combo)
+                if len(straight_combinations_set) >= max_combinations * 6:  # 順列は多いので上限を増やす
+                    break
+            if len(straight_combinations_set) >= max_combinations * 6:
+                break
+        combinations = list(straight_combinations_set)[:max_combinations]
     
     # モデル確認
     model_name = f"{target}_{combo_type}_comb"
@@ -207,6 +209,11 @@ def predict_combination_logic(data):
         
         try:
             raw_score = model_loader.predict_combination(target, combo_type, feature_vector.reshape(1, -1))[0]
+            
+            # デバッグ: 最初の数件のraw_scoreを出力
+            if len(combo_scores) < 3:
+                print(f"[DEBUG] combo={combo}, raw_score={raw_score}, feature_dim={len(feature_vector)}")
+            
             # raw scoreをsigmoidで確率に変換
             import math
             probability = 1 / (1 + math.exp(-raw_score))
@@ -219,6 +226,7 @@ def predict_combination_logic(data):
             })
         except ValueError as e:
             if "モデルが見つかりません" in str(e):
+                print(f"[WARN] モデルが見つかりません: {target}_{combo_type}_comb")
                 break
             raise
     
