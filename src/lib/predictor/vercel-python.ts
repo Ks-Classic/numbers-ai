@@ -25,6 +25,17 @@ export type CombinationPredictionResult = {
   }>;
 };
 
+// データ取得結果の型
+export type FetchDataResult = {
+  success: boolean;
+  updated: boolean;
+  updated_count?: number;
+  message: string;
+  csv_content?: string;
+  commit_url?: string;
+  error?: string;
+};
+
 /**
  * ベースURLを取得
  * Vercel環境では相対パス、ローカルでは絶対パスを使用
@@ -126,6 +137,42 @@ export async function predictCombination(
 
   if (!result.success) {
     throw new Error(`Combination prediction failed: ${JSON.stringify(result)}`);
+  }
+
+  return result;
+}
+
+/**
+ * データ取得・更新API呼び出し
+ * 予測に必要なデータが不足している場合、Webから取得してGitHubを更新する
+ */
+export async function fetchAndUpdateData(
+  roundNumber: number
+): Promise<FetchDataResult> {
+  const baseUrl = getBaseUrl();
+  const url = `${baseUrl}/api/py/fetch_data`;
+
+  console.log(`[fetchAndUpdateData] Calling ${url} for round ${roundNumber}`);
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      target_round: roundNumber,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Data fetch failed: ${response.status} - ${errorText}`);
+  }
+
+  const result = await response.json() as FetchDataResult;
+
+  if (!result.success) {
+    throw new Error(`Data fetch failed: ${result.error || 'Unknown error'}`);
   }
 
   return result;

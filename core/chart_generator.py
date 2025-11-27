@@ -106,14 +106,33 @@ def extract_predicted_digits(
     # 対象に応じた桁名と当選番号を取得
     if target == 'n3':
         column_names: List[ColumnName] = ['百の位', '十の位', '一の位']
-        previous_winning = str(previous_row['n3_winning'].iloc[0])
-        previous_previous_winning = str(previous_previous_row['n3_winning'].iloc[0])
+        winning_col = 'n3_winning'
+        target_name = 'ナンバーズ3'
         expected_length = 3
     else:
         column_names: List[ColumnName] = ['千の位', '百の位', '十の位', '一の位']
-        previous_winning = str(previous_row['n4_winning'].iloc[0])
-        previous_previous_winning = str(previous_previous_row['n4_winning'].iloc[0])
+        winning_col = 'n4_winning'
+        target_name = 'ナンバーズ4'
         expected_length = 4
+    
+    # 前回・前々回の当選番号を取得
+    previous_winning_raw = previous_row[winning_col].iloc[0]
+    previous_previous_winning_raw = previous_previous_row[winning_col].iloc[0]
+    
+    # NULL/NaN チェック - 当選番号が未登録の場合
+    if pd.isna(previous_winning_raw) or str(previous_winning_raw).upper() in ('NULL', 'NAN', 'NONE', ''):
+        raise ChartGenerationError(
+            f"前回（回号: {round_number - 1}）の{target_name}当選番号が未登録です。"
+            f"当選番号が発表されてからお試しください。"
+        )
+    if pd.isna(previous_previous_winning_raw) or str(previous_previous_winning_raw).upper() in ('NULL', 'NAN', 'NONE', ''):
+        raise ChartGenerationError(
+            f"前々回（回号: {round_number - 2}）の{target_name}当選番号が未登録です。"
+            f"当選番号が発表されてからお試しください。"
+        )
+    
+    previous_winning = str(previous_winning_raw)
+    previous_previous_winning = str(previous_previous_winning_raw)
     
     # 数値型の場合に備えて、'.0'を除去
     previous_winning = previous_winning.replace('.0', '')
