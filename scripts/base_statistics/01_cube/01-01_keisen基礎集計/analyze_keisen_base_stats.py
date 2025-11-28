@@ -21,8 +21,8 @@ from tqdm import tqdm
 # scripts/base_statistics/01_keisen_base_stats/ から見て、プロジェクトルートは4階層上
 PROJECT_ROOT = Path(__file__).parent.parent.parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
-# 出力先は data/base_statistics/01_keisen_base_stats/ に統一
-OUTPUT_DIR = DATA_DIR / "base_statistics" / "01_keisen_base_stats"
+# 出力先は data/analysis_results/01_cube/01-01_keisen基礎集計/ に統一
+OUTPUT_DIR = DATA_DIR / "analysis_results" / "01_cube" / "01-01_keisen基礎集計"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # チェックポイントと中間ファイルのディレクトリ

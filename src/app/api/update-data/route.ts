@@ -228,7 +228,10 @@ export async function POST(request: NextRequest) {
             throw new Error(`hpfree.com取得失敗: ${webResponse.status}`);
         }
 
-        const html = await webResponse.text();
+        // Shift_JISでデコード（hpfree.comはShift_JISを使用）
+        const buffer = await webResponse.arrayBuffer();
+        const decoder = new TextDecoder('shift-jis');
+        const html = decoder.decode(buffer);
         const webData = parsePage(html);
 
         console.log(`[API] Webから ${webData.size} 件の回号データを取得`);

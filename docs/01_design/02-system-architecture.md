@@ -251,22 +251,19 @@
 **なぜMVPではNext.js API Routesを使うのか:**
 詳細は [06-implementation-plan.md](./06-implementation-plan.md) の「MVP実装計画」を参照
 
-### 3.2.1 予測APIルーティング選定
+### 3.2.1 予測APIルーティング（現状の決定事項）
 
-**現状（MVP）**
-- `src/app/api/predict/route.ts` が `POST /api/predict` を唯一のエンドポイントで、Next.js API Routes 内で特徴量計算・モデル呼び出しを完結させる。
-- `src/lib/predictor/predictor.ts` は `fetch('/api/predict/axis')` を連携先として持っているが、Next.js API 側では `/axis` を受け付けていないため、リクエスト先は `POST /api/predict` に統一する必要がある。
-- デプロイサイズ・ライブラリ制限を考えると、Vercel上で Python + `libgomp.so.1` を組みこむ FastAPI よりも、Next.js API Routes 単体での完結が安定する。
+**現状（Production / Vercel）**
+- **エントリポイント**: `POST /api/predict` (Next.js API Route)
+- **内部処理**: `src/lib/predictor/vercel-python.ts` を経由して、Vercel Python Serverless Functions を呼び出す。
+- **Python関数**:
+  - `/api/py/axis` (`api/py/axis.py`): 軸数字予測
+  - `/api/py/combination` (`api/py/combination.py`): 組み合わせ予測
+- **特徴**: FastAPIは使用せず、標準の `http.server.BaseHTTPRequestHandler` を使用して軽量化を実現。
 
-**FastAPIの位置付け**
-- `api/main.py` には FastAPI による `/api/predict/axis` や `/api/predict/combination` の実装が存在するが、Vercel で Python 関数にモデルファイルとネイティブライブラリを含めると関数サイズ制限で失敗する恐れがあるため、本番環境での運用は控えている。
-- FastAPI を活用するためには `USE_VERCEL_PYTHON` を `true` に切り替え、Next.js API ルートからプロキシして FastAPI を呼び出すパターンが必要になるが、現在は `/api/predict` を直接 Next.js で処理する方針。
-- FastAPI を維持しつつ Vercel にデプロイするには `api/lib/libgomp.so.1` を手動配置する実績があるため、モデル検証や資料用としては残す価値がある。
-
-**推奨方針**
-- デプロイ済みの要求は `POST /api/predict` を正規ルートとし、Next.js API Routes で処理すること。
-- FastAPI は文書化・実験用途、あるいは将来専用サービスとして分離する。ローカル開発では `uvicorn api.main:app` で容易にテストできるので、実験資産として維持。
-- フロントエンドから FastAPI を使う場合は、ドキュメント上で `/api/predict/axis` への呼び出しが 405 になる点と、Next.js ルートへの統一が必要であることを明示する。
+**開発用・レガシー資産（非推奨）**
+- `api/main.py` (FastAPI): 開発初期のサーバー実装。現在は本番環境では使用されていない。
+- `src/lib/predictor/fastapi-bridge.ts`: FastAPIサーバーと通信するためのクライアント。現在は `vercel-python.ts` に移行済み。
 
 ### 3.2.2 予測エンドポイントの実装構成
 
@@ -274,50 +271,39 @@
 [フロントエンド predictor.ts]
          │
          ▼
-   POST /api/predict       ←─ フロントは `/api/predict/axis` を直接呼ばず、Next.js ルートに集約
+   POST /api/predict       (Next.js API Route)
+         │                 ・バリデーション
+         │                 ・GitHubデータ取得
          │
          ▼
-[Next.js API Route]       ← バリデーション / レスポンス整形 / ログ制御
+[vercel-python.ts]         (Internal Client)
+         │                 ・/api/py/axis 呼び出し
+         │                 ・/api/py/combination 呼び出し
          │
          ▼
-[fastapi-bridge.ts]      ← 軽量な内部 fetch で `/api/predict/axis` と `/api/predict/combination` を呼ぶ
-         │
+[Vercel Python Functions]  (api/py/*.py)
+         │                 ・LightGBMモデル読み込み
+         │                 ・推論実行
          ▼
-[FastAPI Predict API]    ← Python/LightGBM モデルで推論 → JSON を返却
+    [LightGBM Native Model]
 ```
 
-- Next.js 側でバリデーション・エラー処理を行うため、FastAPI の失敗（モデル読み込みタイムアウトなど）も Next.js で 500 へ統一できる。
-- `/api/predict/axis` へのアクセスは `src/lib/predictor/fastapi-bridge.ts` のみで、他に直接叩いている箇所は存在しない（`rg /api/predict/axis` で確認）。
-- ローカルでは `pnpm dev` + `uvicorn api.main:app` でも同じフローを再現でき、以降のログがプロダクションと同じ順序になる。
+### 3.2.3 FastAPI vs Vercel Python Functions
 
-### 3.2.3 FastAPI vs Next.js API 完結の比較
+初期設計ではFastAPIサーバーを検討しましたが、Vercelへのデプロイ容易性とコールドスタート対策のため、**Vercel Python Serverless Functions** を採用しました。
 
-| 評価軸 | Next.js API Route（現行：`/api/predict`） | FastAPI（`/api/predict/axis` 等） |
-|--------|---------------------------------------------|----------------------------------|
-| デプロイサイズ / 依存 | Node.js + TypeScript の軽量構成。Vercel の関数サイズ制限に収まりやすい | LightGBM + `libgomp.so.1` + Pickle を含むため、Vercel の ZIP 圧縮でサイズ超過リスクが高い |
-| モデル検証・改修 | `fastapi-bridge.ts` で Python 資産へアクセスしつつ、必要部分を Next.js だけで置き換え可能 | 既存 Python 実装をそのまま使えるため、実験サイクルが速い |
-| ローカル開発・デバッグ | `pnpm dev` の Next.js だけで UI→API→FastAPI の流れを追え、ログも統一できる | `uvicorn api.main:app` + Next.js の併走が必要でログが分散しやすい |
-| 特徴量処理と再利用 | `predictor.ts` を通じて UI/Next.js のロジックを共有できる | 再利用想定なら Node 側で再実装が必要 |
-| 本番の安定性 | Next.js ルートだけで完結するため運用負荷が低い | FastAPI を Vercel Python 関数としてデプロイすると 405 や依存サイズの問題が出やすい |
+| 項目 | FastAPI (Legacy) | Vercel Python Functions (Current) |
+|------|------------------|-----------------------------------|
+| 実装ファイル | `api/main.py` | `api/py/axis.py`, `api/py/combination.py` |
+| フレームワーク | FastAPI | 標準 `http.server` |
+| クライアント | `fastapi-bridge.ts` | `vercel-python.ts` |
+| デプロイ | 別途サーバーが必要 | Vercelに同梱可能 |
+| 現状 | **非推奨 (参考用)** | **稼働中** |
 
-→ 現状は Next.js API Route を正規ルートとし、FastAPI へは `fastapi-bridge.ts` 経由で必要な処理だけを委譲するハイブリッド構成が最適。
+### 3.2.4 今後のロードマップ
 
-### 3.2.4 Next.js API 完全移行ロードマップ
-
-1. **依存の切り出し** – `fastapi-bridge.ts` の `predictAxis` / `predictCombination` を、Node 版モジュール（例: `src/lib/predictor/node-models.ts`）と同じインターフェースで置き換える実験をローカルで行い、`fastapi-bridge.ts` が FastAPI 呼び出しに依存しないことを確認する。
-2. **モデルの軽量化** – Pickle/LightGBM/`libgomp.so.1` を代替できる ONNX・JSON スコア・簡易統計を検討し、Next.js 環境で読み込める軽量モデルを用意する。プロトタイプを API ルートに組み込んで `pnpm dev`・`npm run build` 通過を確認する。
-3. **Next.js API への統合** – `src/app/api/predict/route.ts` が直接 Node 版ロード・スコア計算を呼び出すように変更し、`FASTAPI_URL` 環境変数や `fastapi-bridge.ts` を本番コードから除外する。ログ/エラーは既存通り Next.js で出力できるため、FastAPI の 405/ECONNREFUSED 問題が消失。
-4. **CI/本番での検証** – Vercel 上で `npm run build` / `next build` を回して `ECONNREFUSED` などのログが出ないこと、`fastapi-bridge.ts` へのアクセスログがなくなることを確認し、デプロイ済みの `predictor.ts` に `/api/predict` のみが含まれることを記録。
-5. **ドキュメント同期** – 本ロードマップと「Next.js API 完全構成で Vercel が唯一の依存」としてこの節を 01_design/02-system-architecture.md に載せ、`docs/01_design/03-data-api-design.md` でも FastAPI direct を補足資料に位置づけることで運用判断を明文化する。
-
-### 3.2.5 Node ベースの予測モジュール設計
-
-- **目標**: 現在の LightGBM モデル（`data/models/*.pkl`）と `libgomp.so.1` を捨てずに、Next.js 側から直接利用できる Node モジュール（`src/lib/predictor/node-models.ts`）を用意する。
-- **アプローチ**:
-  1. Python スクリプト（例: `scripts/node_model_server.py`）を用意し、LightGBM モデルと `libgomp` を `joblib`/`pickle` からロードした上で gRPC または stdin/stdout で特徴量ベクトルを受け取り確率を返す。Next.js とは軽量な IPC（`child_process.spawn` + JSON）で通信する。
-  2. Node モデルロード層では、特徴量キーを `core/feature_extractor.py` 相当の計算結果に変換し、Python 側リクエストを自動化。`fastapi-bridge.ts` と同じ `predictAxis`/`predictCombination` シグネチャを維持することで、API Route の差し替えは容易。
-  3. 必要であれば ONNX や JSON キャッシュに変換し、Python スクリプトの依存を減らす方向に進める。それまでは既存のモデル資産を Python 側で使いつつ、Next.js からは Node モジュール経由で呼び出す。
-- **メリット**: LightGBM そのままを継承しながら、Vercel には Node.js 側のみデプロイ。FastAPI や別サーバーを立てず本番で `localhost:8000` へ接続しない構成を確立でき、ロードマップ Step2~3 に合致。
+1.  **レガシーコードの削除**: 混乱を避けるため、`api/main.py` および `fastapi-bridge.ts` を削除または `legacy/` ディレクトリへ移動する。
+2.  **ONNX移行**: Python依存を完全に排除するため、将来的にONNX Runtime (Node.js) への移行を検討（v2.0構想）。
 
 ### 3.3 AI/ML
 
@@ -665,11 +651,14 @@ numbers-ai/
 
 ---
 
-## 3.6 ONNXベース推論アーキテクチャ（v2.0）
+### 3.6 ONNXベース推論アーキテクチャ（v2.0 - Future Plan）
 
-### 3.6.1 アーキテクチャ概要
+**⚠️ 現状ステータス**: 設計段階 / 実験中
+現在（2025-11-28時点）は `src/lib/predictor/fastapi-bridge.ts` を使用した **FastAPI/Python連携** が稼働しています。以下のONNX構成は、将来的な「Vercel単体完結」を目指すための設計案であり、まだ本番コードには統合されていません。
 
-**v2.0で採用したアーキテクチャ:**
+### 3.6.1 アーキテクチャ概要（計画）
+
+**v2.0で採用予定のアーキテクチャ:**
 - **ONNX Runtime (Node.js)** によるAI推論
 - FastAPI/Python別サーバー不要
 - Vercel単体で完結

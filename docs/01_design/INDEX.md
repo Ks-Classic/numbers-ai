@@ -148,14 +148,19 @@
 
 ### 09. データ分析・基礎集計設計書（Data Analysis Design）
 
-**ファイル**: `09-data-analysis-design.md`  
+**ファイル**: 
+- `09-data-pipeline-design.md` (全体フロー)
+- `09-01_cube-analysis-design.md` (通常CUBE)
+- `09-02_extreme-cube-analysis-design.md` (極CUBE)
+- `09-03_common-analysis-design.md` (共通分析)
+
 **対象読者**: データサイエンティスト、データ分析担当者、アルゴリズム実装者
 
 **主な内容**:
-- CUBE基礎集計設計（Phase 1-7）
-- 極CUBE基礎集計設計
-- 集計項目詳細仕様
-- 実装優先順位
+- 予測モデル構築の5ステップ
+- 通常CUBE分析（keisen基礎集計、新旧比較）
+- 極CUBE分析（並び型分析、全期間集計）
+- 共通分析（数字出現パターン、時系列分析）
 
 **いつ読むか**: 予測モデル作成前、基礎集計実施時、データ分析設計時
 

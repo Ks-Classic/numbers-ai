@@ -1,116 +1,138 @@
-# 基礎集計スクリプト（base_statistics）
+# 基礎集計スクリプト (Base Statistics Scripts)
 
-**基礎集計（base_statistics）**に関するスクリプトをカテゴリごとに整理したディレクトリです。
+## 概要
 
-**用語の定義**:
-- **データ分析**: データを分析する全体的な活動（上位概念）
-- **基礎集計（base_statistics）**: データ分析の中の一つのフェーズ。予測モデル作成前の基礎的な統計集計を実施する段階
+このディレクトリには、ナンバーズAI予測システムのステップ2（EDA/基礎集計）で使用するスクリプトが格納されています。分析対象に応じて3つのカテゴリに分類されています。
 
 ## ディレクトリ構造
 
 ```
 scripts/base_statistics/
-├── 01_keisen_base_stats/          # Phase 1: keisen基礎集計
-│   ├── analyze_keisen_base_stats.py
-│   └── run_keisen_base_stats_all_ranges.py
-├── 02_keisen_comparison/          # Phase 2: 旧keisen vs 新keisen比較
-├── 03_temporal_analysis/          # Phase 3: 時系列・周期性分析
-├── 04_digit_patterns/             # Phase 4: 数値パターン分析（将来実装）
-├── 05_cube_characteristics/       # Phase 5: CUBE特性分析
-├── 06_correlation/                 # Phase 6: 相関分析
-├── 07_anomaly_detection/           # Phase 7: 異常値・外れ値分析
-└── 08_extreme_cube/                # 極CUBE基礎集計
+├── 00_common/              # 共通分析（通常CUBE・極CUBE両方に適用可能）
+│   ├── 00-01_数字出現パターン分析/
+│   ├── 00-02_時系列周期性分析/
+│   └── 00-04_異常値外れ値分析/
+│
+├── 01_cube/                # 通常CUBE分析（リハーサル数字使用、4パターン対応）
+│   ├── 01-01_keisen基礎集計/
+│   ├── 01-02_旧keisen_vs_新keisen比較分析/
+│   ├── 01-03_CUBE特性分析/
+│   └── 01-04_相関分析/
+│
+└── 02_extreme_cube/        # 極CUBE分析（N3専用、1パターンのみ）
+    └── 02-01_全期間基礎集計/
 ```
 
-## 各カテゴリの説明
+## 分析カテゴリ
 
-### 01_keisen_base_stats: keisen基礎集計
+### 00_common: 共通分析
 
-**目的**: keisen作成のための基礎統計を実施する。
+通常CUBE・極CUBEの両方に適用可能な、数字そのものの統計的性質の分析。
 
-**スクリプト**:
-- `analyze_keisen_base_stats.py`: 指定範囲のデータから、前々回・前回パターンごとの当選数字の出現頻度とランキングを集計
-- `run_keisen_base_stats_all_ranges.py`: 3パターンの集計範囲（全範囲、週5以降、4801以降）で一括実行
+- **対象**: N3/N4の当選番号データ
+- **特徴**: リハーサル数字やCUBEパターンに依存しない
+- **用途**: 基本的な数字の傾向把握、異常値検出
 
-**出力ファイル**:
-- `data/base_statistics/01_keisen_base_stats/パターン出現頻度_{範囲名}.json`: パターン出現頻度
-- `data/base_statistics/01_keisen_base_stats/当選数字ランキング_{範囲名}.json`: 当選数字のランキング
-- `data/base_statistics/01_keisen_base_stats/統計的信頼性指標_{範囲名}.json`: 統計的信頼性指標
+**主な分析項目**:
+- 数字出現パターン分析（各桁の出現頻度、連続性など）
+- 時系列・周期性分析（曜日別、月別、年別の傾向）
+- 数値パターン分析（ストレート、ボックス、セットなど）
+- 異常値・外れ値分析
 
-**範囲名**:
-- `全範囲`: 1-6850回（suffix: all）
-- `週5実施開始以降`: 1340-6850回（suffix: 1340）
-- `リハーサル導入以降`: 4801-6850回（suffix: 4801）
+**関連ドキュメント**: [09-03_common-analysis-design.md](../../docs/01_design/09-03_common-analysis-design.md)
 
-**使用方法**:
-```bash
-# 単一範囲の集計
-python scripts/base_statistics/01_keisen_base_stats/analyze_keisen_base_stats.py \
-  --start-round 4801 --end-round 6850 --output-suffix 4801
+### 01_cube: 通常CUBE分析
 
-# 全範囲パターンの一括実行
-python scripts/base_statistics/01_keisen_base_stats/run_keisen_base_stats_all_ranges.py
+リハーサル数字を使用し、4パターン(A1/A2/B1/B2)に対応した従来のCUBE分析。
 
-# チェックポイントから処理を再開（処理が中断された場合）
-python scripts/base_statistics/01_keisen_base_stats/analyze_keisen_base_stats.py \
-  --start-round 4801 --end-round 6850 --output-suffix 4801 --resume
+- **対象**: N3/N4、4パターン
+- **データ範囲**: 4801回以降（リハーサル数字が有効な範囲）
+- **特徴**: keisenマスターデータに基づくCUBE生成
 
-# バッチサイズを調整（メモリ不足の場合）
-python scripts/base_statistics/01_keisen_base_stats/analyze_keisen_base_stats.py \
-  --start-round 4801 --end-round 6850 --output-suffix 4801 --batch-size 250
+**主な分析項目**:
+- keisen基礎集計（4801-6850回）
+- 新旧keisen比較分析（1340-6391回 vs 4801-6850回）
+- CUBE特性分析（パターン別の傾向）
+- 相関分析（特徴量間の関係性）
+
+**関連ドキュメント**: [09-01_cube-analysis-design.md](../../docs/01_design/09-01_cube-analysis-design.md)
+
+### 02_extreme_cube: 極CUBE分析
+
+リハーサル数字に依存しない、N3専用・1パターンのみの新しいCUBE分析。
+
+- **対象**: N3のみ、1パターン（B1相当）
+- **データ範囲**: 全期間（1-6850回）
+- **特徴**: リハーサル数字非依存、5行目の余りマスを0で埋める
+
+**主な分析項目**:
+- 全期間基礎集計（1-6850回）
+- 並び型分析（V字型、逆V字型、横一列型など）
+- 区切り別比較分析（150回、1000回、2000回、全期間）
+
+**関連ドキュメント**: [09-02_extreme-cube-analysis-design.md](../../docs/01_design/09-02_extreme-cube-analysis-design.md)
+
+## 出力先ディレクトリ
+
+基礎集計の結果は、分析カテゴリに応じて以下のディレクトリに出力されます。
+
+### 生データ・集計結果 (`data/analysis_results/`)
+
+スクリプトが自動出力する機械可読データ（JSON、CSV）。
+
+```
+data/analysis_results/
+├── 00_common/              # 共通分析の結果
+│   ├── 00-01_数字出現パターン分析/
+│   ├── 00-02_時系列周期性分析/
+│   └── 00-04_異常値外れ値分析/
+├── 01_cube/                # 通常CUBE分析の結果
+│   ├── 01-01_keisen基礎集計/
+│   ├── 01-02_旧keisen_vs_新keisen比較分析/
+│   ├── 01-03_CUBE特性分析/
+│   └── 01-04_相関分析/
+└── 02_extreme_cube/        # 極CUBE分析の結果
+    └── 02-01_全期間基礎集計/
 ```
 
-**メモリ対策機能**:
-- **チェックポイント機能**: 処理済み回号を保存し、中断後も再開可能
-- **バッチ処理**: 500回号ごとにバッチ処理（`--batch-size`で調整可能）
-- **進捗表示**: `tqdm`による進捗バー表示
-- **メモリ管理**: バッチ処理後にメモリを解放（`gc.collect()`）
+### 分析レポート (`data/reports/`)
 
-### 02_keisen_comparison: 旧keisen vs 新keisen比較
+人間向けのストーリー性を持ったレポート（Markdown、画像）。
 
-**目的**: keisen更新による予測精度への影響評価。
+```
+data/reports/
+├── 00_common_analysis_report.md      # 共通分析まとめレポート
+├── 01_cube_analysis_report.md        # 通常CUBE分析まとめレポート
+├── 02_extreme_cube_analysis_report.md # 極CUBE分析まとめレポート
+├── model_improvement/                 # モデル改善関連レポート
+└── assets/                            # レポート用の画像・グラフ
+```
 
-**実装予定**: 旧keisen（1340-6391回）と新keisen（4801-6850回）で生成したCUBEを比較分析するスクリプト。
+**使い分け**:
+- `analysis_results/`: 機械可読、再利用可能、自動処理向け
+- `reports/`: 人間可読、ストーリー性、意思決定向け
 
-### 03_temporal_analysis: 時系列・周期性分析
+## 実行順序の推奨
 
-**目的**: 時間軸に基づく周期性とトレンドの検出。
+1. **共通分析** (`00_common/`): データの基本的な性質を理解
+2. **極CUBE分析** (`02_extreme_cube/`): 全期間での傾向を把握
+3. **通常CUBE分析** (`01_cube/`): リハーサル数字を考慮した詳細分析
 
-**実装予定**: 曜日、月相（月齢）、季節、月、年・四半期などの時間軸で当選番号の出現パターンを分析するスクリプト。
+## 日本語ファイル名について
 
-### 04_digit_patterns: 数値パターン分析
+このプロジェクトでは、可読性と保守性を重視して日本語ファイル名を採用しています。
 
-**目的**: 数字の出現パターンと組み合わせ特性の分析。
+**メリット**:
+- ToDoドキュメントとの完全一致
+- 直感的な理解が容易
+- 日本語プロジェクトとして自然
 
-**実装予定**: 各数字（0-9）の出現頻度、よく出現する数字の組み合わせ、連続性・周期性を分析するスクリプト。
-
-### 05_cube_characteristics: CUBE特性分析
-
-**目的**: CUBEの構造特性と当選番号との関係性の分析。
-
-**実装予定**: CUBEのサイズ、密度、メイン行の特性を分析するスクリプト。
-
-### 06_correlation: 相関分析
-
-**目的**: 変数間の相関関係と相互依存性の分析。
-
-**実装予定**: リハーサル数字と当選番号、N3とN4、前回・前々回との相関を分析するスクリプト。
-
-### 07_anomaly_detection: 異常値・外れ値分析
-
-**目的**: 統計的に異常なパターンと外れ値の検出。
-
-**実装予定**: CUBE内に出現しなかった回、リハーサル数字と当選番号が全く重ならなかった回などの異常パターンを検出するスクリプト。
-
-### 08_extreme_cube: 極CUBE基礎集計
-
-**目的**: リハーサル数字非依存の全期間統計分析。
-
-**実装予定**: 極CUBE内での当選番号出現分析、数字の出現パターン、時系列・周期性分析を実施するスクリプト。
+**注意点**:
+- ターミナルではタブ補完を活用
+- これらはスクリプトディレクトリであり、Pythonモジュールとして直接インポートしない想定
 
 ## 関連ドキュメント
 
-- [基礎集計設計書](../../docs/01_design/09-data-analysis-design.md)
-- [基礎集計メモリ最適化設計](../../docs/01_design/09-data-analysis-design-memory-optimization.md)
-- [ToDo: データ分析（基礎集計）](../../docs/02_todo/05_data_analysis/)
-
+- [09-data-pipeline-design.md](../../docs/01_design/09-data-pipeline-design.md): データパイプライン全体設計
+- [09-00_data-analysis-handover.md](../../docs/01_design/09-00_data-analysis-handover.md): データ分析引き継ぎドキュメント
+- [docs/02_todo/05_data_analysis/](../../docs/02_todo/05_data_analysis/): 分析タスク一覧

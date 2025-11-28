@@ -179,39 +179,41 @@ CREATE INDEX idx_draw_date ON past_results(draw_date);
 CREATE INDEX idx_weekday ON past_results(weekday);
 ```
 
-### 3.5.1 FastAPI と Next.js API の連携
+### 3.5.1 Vercel Python Functions との連携（現状）
 
 ```
 [フロント predictor.ts]
         │
         ▼
-  POST /api/predict ←─ UI 側は `/api/predict/axis` を直接呼ばず統一
+  POST /api/predict ←─ UI 側は `/api/predict` に統一
         │
         ▼
 [Next.js API Route] ← バリデーション・ログ・エラーを集中
         │
         ▼
-[fastapi-bridge.ts] ← `/api/predict/axis` と `/api/predict/combination` を FastAPI へ転送
+[vercel-python.ts] ← `/api/py/axis` と `/api/py/combination` を呼び出し
         │
         ▼
-[FastAPI Predict API] ← LightGBM モデル＋`libgomp.so.1` を使って推論 → JSON を返す
+[Vercel Python Functions] ← `api/py/*.py` (標準 http.server)
+        │                 ・LightGBM モデル読み込み
+        │                 ・推論実行
+        ▼
+    [LightGBM Native Model]
 ```
 
-- `rg /api/predict/axis` の結果どおり、 `/api/predict/axis` を直接叩いているのは `fastapi-bridge.ts` のみで、フロント/Next.js はすべて `/api/predict` に統一されている。
-- Next.js 側が FastAPI のエラーを 500 でラップするため、405 やタイムアウトが発生しづらい。
-- `pnpm dev` + 必要に応じて `uvicorn api.main:app` を併用すれば、本番と同じログ/レスポンスの順序を追跡できる。
+- フロントエンドは Next.js の API Route (`/api/predict`) のみを知っている。
+- Next.js サーバーサイドで `vercel-python.ts` が Vercel Python Functions (`/api/py/*`) を呼び出す内部連携を行う。
+- これにより、Python 環境（LightGBM）と Node.js 環境（Next.js）を Vercel 上で共存させている。
 
-### 3.5.2 Next.js API vs FastAPI direct の比較
+### 3.5.2 アーキテクチャの決定理由
 
-| 観点 | Next.js API Route（`/api/predict`） | FastAPI direct（`/api/predict/axis` 等） |
-|------|--------------------------------------|-------------------------------------------|
-| デプロイサイズ | Node.js のみなのでVercel 関数サイズ制限に収まりやすい | LightGBM + `libgomp.so.1` + Pickle でサイズが膨張、Vercel で拒否の可能性あり |
-| モデル改修 | `fastapi-bridge.ts` で Python 資産を併用しつつ Node 実装へ段階的移行可能 | Python 実装をそのまま使えるが Vercel デプロイの安定性が下がる |
-| ローカルデバッグ | `pnpm dev` だけで UI→API→FastAPI の流れを追え、ログも統合できる | `uvicorn api.main:app` と Next.js を併走させる必要がありログ分散しやすい |
-| フロント連携 | `predictor.ts` が `/api/predict` のみを呼び、405 を回避 | `/axis` を直接叩くためメソッド不一致の監視が必要 |
-| 運用安定性 | Next.js ルートだけ完結で運用負荷が低い | Python 関数にデプロイすると依存・Cold Start・ログ管理が増える |
+| 構成案 | 判定 | 理由 |
+|--------|------|------|
+| **FastAPI 独立サーバー** | ❌ 却下 | Vercel へのデプロイが複雑化し、コールドスタートや 405 エラーの問題が発生したため。 |
+| **Next.js (Node.js) のみ** | ❌ 不可 | LightGBM モデルの推論を Node.js で行うには ONNX 変換が必要だが、現時点では精度維持のため Python 版を使用する必要がある。 |
+| **Vercel Python Functions** | ✅ **採用** | Next.js と同じリポジトリで管理でき、デプロイも容易。`http.server` ベースで軽量化し、サイズ制限もクリア。 |
 
-→ 現行は、Next.js API Route を正規ルートとして FastAPI に必要な部分だけ委譲するハイブリッド構成が最適。
+→ 現行は、Next.js API Route をエントリポイントとし、バックエンドで Vercel Python Functions を呼び出す構成で安定稼働している。
 
 ---
 
