@@ -10,11 +10,9 @@ const nextConfig: NextConfig = {
     // ビルド時のESLintチェックをスキップ（メモリ不足回避・デプロイ高速化）
     ignoreDuringBuilds: true,
   },
-  // 実験的な機能でビルドを最適化
-  experimental: {
-    // インクリメンタルビルドを有効化
-    optimizePackageImports: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-select'],
-  },
+  // スタンドアローンビルド（Docker/Vercel最適化・高速化）
+  output: "standalone",
+  // 実験的な機能は安定性のため削除
   // CORS設定
   async headers() {
     return [
