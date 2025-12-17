@@ -65,16 +65,46 @@ data/analysis/
 # Training data files (too large for Git, ~6GB total)
 data/training_data/
 
-# Model data files (large files, should not be in Git)
+# ==============================================================================
+# 巨大ファイル防止ルール（デプロイ時間短縮のため必須）
+# ==============================================================================
+
+# すべての.pklファイルを禁止（巨大になりがち）
+*.pkl
+
+# Python仮想環境（すべての場所）
+**/venv/
+**/.venv/
+**/env/
+api_venv/
+scripts/venv_onnx/
+
+# 学習・分析データ
 data/models/*_data.pkl
 data/models/backup/
 data/models/combination_batches/
 data/models/combination_checkpoint.pkl
-data/models/evaluation_results*.pkl__pycache__/
-*.pyc
+data/models/evaluation_results*.pkl
+data/training_data/
 data/base_statistics/
+
+# Python キャッシュ
+__pycache__/
+*.pyc
+
+# その他
 .playwright-mcp/
 *.backup
 
 # Git debug logs
 git_push_debug*.log
+
+# ==============================================================================
+# 本番環境に必要なファイル（これらは除外しない）
+# ==============================================================================
+# ✅ data/models/*.onnx - ONNXモデル（軽量）
+# ✅ data/models/*_lgb.txt - LightGBMモデル（テキスト形式）
+# ✅ data/models/*_keys.json - 特徴量キー
+# ✅ data/past_results.csv - 過去データ
+# ✅ data/keisen_master.json - 罫線マスタ
+# ==============================================================================
