@@ -76,7 +76,7 @@ def generate_extreme_cube(
         nums = apply_pattern_expansion(source_list, 'B1')
         
         # ステップ3: メイン行の組み立て
-        main_rows = build_main_rows(nums)
+        main_rows, _ = build_main_rows(nums)
         
         # 極CUBEは最大3本のメイン行まで（1,3,5行目）
         # N3の当選番号から取得した数字は5行目で使い切る
@@ -148,17 +148,23 @@ def load_past_results(data_dir: Path) -> pd.DataFrame:
     if not csv_path.exists():
         raise FileNotFoundError(f"過去当選番号データが見つかりません: {csv_path}")
     
-    df = pd.read_csv(csv_path, encoding='utf-8')
-    
+    # dtype指定で当選番号を文字列として読み込む（先頭0の欠落を防ぐ）
+    df = pd.read_csv(csv_path, encoding='utf-8', dtype={
+        'n3_winning': str,
+        'n4_winning': str,
+        'n3_rehearsal': str,
+        'n4_rehearsal': str
+    })
+
     # データクリーニング
     # round_numberが数値型であることを確認
     if 'round_number' not in df.columns:
         raise ValueError("past_results.csvに'round_number'列がありません")
-    
+
     df['round_number'] = pd.to_numeric(df['round_number'], errors='coerce')
     df = df.dropna(subset=['round_number'])
     df['round_number'] = df['round_number'].astype(int)
-    
+
     return df
 
 

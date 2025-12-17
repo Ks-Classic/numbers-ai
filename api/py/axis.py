@@ -38,7 +38,12 @@ try:
         features_to_vector,
         get_rehearsal_positions
     )
-    import pandas as pd
+    # モジュールのインポート
+    import os
+    import csv  # pandasの代わりにcsvを使用
+    
+    # 共通モジュールのインポート
+    import lightgbm as lgb
     import numpy as np
     IMPORTS_OK = True
 except Exception as e:
@@ -63,11 +68,30 @@ def load_data_and_models():
     if df is None:
         csv_path = DATA_DIR / 'past_results.csv'
         if csv_path.exists():
-            df = pd.read_csv(csv_path)
-            df['n3_winning'] = df['n3_winning'].astype(str).str.replace('.0', '', regex=False)
-            df['n4_winning'] = df['n4_winning'].astype(str).str.replace('.0', '', regex=False)
-            df['n3_winning'] = df['n3_winning'].apply(lambda x: str(x).zfill(3) if pd.notna(x) and str(x) != 'NULL' else x)
-            df['n4_winning'] = df['n4_winning'].apply(lambda x: str(x).zfill(4) if pd.notna(x) and str(x) != 'NULL' else x)
+            data_list = []
+            try:
+                with open(csv_path, 'r', encoding='utf-8') as f:
+                    reader = csv.DictReader(f)
+                    for row in reader:
+                        # 前処理
+                        n3 = str(row.get('n3_winning', '')).replace('.0', '')
+                        n4 = str(row.get('n4_winning', '')).replace('.0', '')
+                        
+                        if n3 and n3.upper() not in ('NULL', 'NAN', 'NONE'):
+                            row['n3_winning'] = n3.zfill(3)
+                        else:
+                             row['n3_winning'] = None
+                        
+                        if n4 and n4.upper() not in ('NULL', 'NAN', 'NONE'):
+                            row['n4_winning'] = n4.zfill(4)
+                        else:
+                            row['n4_winning'] = None
+                            
+                        data_list.append(row)
+                df = data_list
+            except Exception as e:
+                print(f"[ERROR] CSV読み込み失敗: {e}")
+                df = []
     
     if keisen_master is None:
         keisen_master = load_keisen_master(DATA_DIR)
@@ -87,12 +111,25 @@ def predict_axis_logic(data):
     
     if csv_content:
         try:
-            current_df = pd.read_csv(io.StringIO(csv_content))
-            # 前処理
-            current_df['n3_winning'] = current_df['n3_winning'].astype(str).str.replace('.0', '', regex=False)
-            current_df['n4_winning'] = current_df['n4_winning'].astype(str).str.replace('.0', '', regex=False)
-            current_df['n3_winning'] = current_df['n3_winning'].apply(lambda x: str(x).zfill(3) if pd.notna(x) and str(x) != 'NULL' else x)
-            current_df['n4_winning'] = current_df['n4_winning'].apply(lambda x: str(x).zfill(4) if pd.notna(x) and str(x) != 'NULL' else x)
+            current_df = []
+            # CSV文字列をパース
+            reader = csv.DictReader(csv_content.splitlines())
+            for row in reader:
+                # 前処理
+                n3 = str(row.get('n3_winning', '')).replace('.0', '')
+                n4 = str(row.get('n4_winning', '')).replace('.0', '')
+                
+                if n3 and n3.upper() not in ('NULL', 'NAN', 'NONE'):
+                    row['n3_winning'] = n3.zfill(3)
+                else:
+                    row['n3_winning'] = None
+                
+                if n4 and n4.upper() not in ('NULL', 'NAN', 'NONE'):
+                    row['n4_winning'] = n4.zfill(4)
+                else:
+                    row['n4_winning'] = None
+                    
+                current_df.append(row)
         except Exception as e:
             return {'success': False, 'error': f'CSVデータの解析に失敗: {e}'}
     else:
@@ -129,19 +166,27 @@ def predict_axis_logic(data):
                 rehearsal_positions = get_rehearsal_positions(grid, rows, cols, rehearsal_digits)
             
             previous_winning = None
-            previous_previous_winning = None
-            previous_row = current_df[current_df['round_number'] == round_number - 1]
-            previous_previous_row = current_df[current_df['round_number'] == round_number - 2]
+            # リストから検索するヘルパー
+            def to_int(val):
+                try: return int(float(str(val)))
+                except: return -1
+
+            target_prev = round_number - 1
+            target_prev_prev = round_number - 2
             
-            if len(previous_row) > 0:
-                previous_winning = str(previous_row[f'{target}_winning'].iloc[0]).replace('.0', '')
+            # リストフィルタリング
+            previous_row = next((r for r in current_df if to_int(r.get('round_number')) == target_prev), None)
+            previous_previous_row = next((r for r in current_df if to_int(r.get('round_number')) == target_prev_prev), None)
+            
+            if previous_row:
+                previous_winning = str(previous_row.get(f'{target}_winning') or '').replace('.0', '')
                 if target == 'n3' and len(previous_winning) < 3:
                     previous_winning = previous_winning.zfill(3)
                 elif target == 'n4' and len(previous_winning) < 4:
                     previous_winning = previous_winning.zfill(4)
             
-            if len(previous_previous_row) > 0:
-                previous_previous_winning = str(previous_previous_row[f'{target}_winning'].iloc[0]).replace('.0', '')
+            if previous_previous_row:
+                previous_previous_winning = str(previous_previous_row.get(f'{target}_winning') or '').replace('.0', '')
                 if target == 'n3' and len(previous_previous_winning) < 3:
                     previous_previous_winning = previous_previous_winning.zfill(3)
                 elif target == 'n4' and len(previous_previous_winning) < 4:

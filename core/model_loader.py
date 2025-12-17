@@ -4,7 +4,6 @@
 学習済みモデルを読み込み、推論を行うためのユーティリティ関数を提供します。
 """
 
-import pickle
 from pathlib import Path
 from typing import Optional, Dict, Literal, List, Union
 import numpy as np
@@ -106,24 +105,10 @@ class ModelLoader:
                     print(f"モデル読み込み完了: {model_name} (LightGBM Native)")
                 except Exception as e:
                     print(f"警告: モデル読み込みエラー ({model_name}): {e}")
-            elif pkl_path.exists():
-                # 従来のpickle形式（フォールバック）
-                try:
-                    with open(pkl_path, 'rb') as f:
-                        model_data = pickle.load(f)
-                        
-                    if isinstance(model_data, dict):
-                        self.models[model_name] = model_data.get('model', model_data)
-                        self.feature_keys[model_name] = model_data.get('feature_keys', [])
-                    else:
-                        self.models[model_name] = model_data
-                        self.feature_keys[model_name] = []
-                    
-                    print(f"モデル読み込み完了: {model_name} (LightGBM Pickle)")
                 except Exception as e:
                     print(f"警告: モデル読み込みエラー ({model_name}): {e}")
             else:
-                print(f"警告: モデルファイルが見つかりません: {txt_path} or {pkl_path}")
+                print(f"警告: モデルファイルが見つかりません: {txt_path}")
     
     def load_model(self, model_name: str) -> Optional[lgb.LGBMClassifier]:
         """指定されたモデルを読み込む

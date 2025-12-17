@@ -7,7 +7,7 @@
         "api/py/**/*.py": {
             "memory": 1024,
             "maxDuration": 60,
-            "includeFiles": "core/**,data/models/*.onnx,data/models/*_keys.json,data/models/*_lgb.txt,data/keisen_master.json,data/past_results.csv,api/py/**/libgomp.so.1"
+            "includeFiles": "core/**,data/models/*_keys.json,data/models/*_lgb.txt,data/keisen_master.json,data/past_results.csv,api/py/**/libgomp.so.1"
         }
     },
     "env": {

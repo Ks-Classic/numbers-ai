@@ -9,7 +9,6 @@ from typing import List, Optional, Tuple, Literal, Callable, Dict, Any
 import json
 from pathlib import Path
 import numpy as np
-import pandas as pd
 
 Pattern = Literal['A1', 'A2', 'B1', 'B2']
 Target = Literal['n3', 'n4']
@@ -83,7 +82,7 @@ def get_predicted_digits(
 
 
 def extract_predicted_digits(
-    df: pd.DataFrame,
+    df: List[Dict],
     keisen_master: dict,
     round_number: int,
     target: Target
@@ -94,14 +93,26 @@ def extract_predicted_digits(
     keisen_master.jsonを参照して各桁の予測出目を取得し、結合する。
     """
     # 前回と前々回のデータを取得
-    previous_row = df[df['round_number'] == round_number - 1]
-    previous_previous_row = df[df['round_number'] == round_number - 2]
+    # List[Dict]形式を想定: [{'round_number': '123', 'n3_winning': '123'}, ...]
     
-    if len(previous_row) == 0:
-        raise ChartGenerationError(f"前回の当選番号が見つかりません（回号: {round_number - 1}）")
+    # 型変換ヘルパー
+    def to_int(val):
+        try:
+            return int(float(str(val)))
+        except (ValueError, TypeError):
+            return -1
+
+    target_prev = to_int(round_number) - 1
+    target_prev_prev = to_int(round_number) - 2
     
-    if len(previous_previous_row) == 0:
-        raise ChartGenerationError(f"前々回の当選番号が見つかりません（回号: {round_number - 2}）")
+    previous_row = next((row for row in df if to_int(row.get('round_number')) == target_prev), None)
+    previous_previous_row = next((row for row in df if to_int(row.get('round_number')) == target_prev_prev), None)
+    
+    if previous_row is None:
+        raise ChartGenerationError(f"前回の当選番号が見つかりません（回号: {target_prev}）")
+    
+    if previous_previous_row is None:
+        raise ChartGenerationError(f"前々回の当選番号が見つかりません（回号: {target_prev_prev}）")
     
     # 対象に応じた桁名と当選番号を取得
     if target == 'n3':
@@ -116,30 +127,34 @@ def extract_predicted_digits(
         expected_length = 4
     
     # 前回・前々回の当選番号を取得
-    previous_winning_raw = previous_row[winning_col].iloc[0]
-    previous_previous_winning_raw = previous_previous_row[winning_col].iloc[0]
+    previous_winning_raw = previous_row.get(winning_col)
+    previous_previous_winning_raw = previous_previous_row.get(winning_col)
     
-    # NULL/NaN チェック - 当選番号が未登録の場合
-    if pd.isna(previous_winning_raw) or str(previous_winning_raw).upper() in ('NULL', 'NAN', 'NONE', ''):
+    # NULL/None チェック - 当選番号が未登録の場合
+    def is_invalid(val):
+        return val is None or str(val).upper() in ('NULL', 'NAN', 'NONE', '')
+
+    if is_invalid(previous_winning_raw):
         raise ChartGenerationError(
-            f"前回（回号: {round_number - 1}）の{target_name}当選番号が未登録です。"
+            f"前回（回号: {target_prev}）の{target_name}当選番号が未登録です。"
             f"当選番号が発表されてからお試しください。"
         )
-    if pd.isna(previous_previous_winning_raw) or str(previous_previous_winning_raw).upper() in ('NULL', 'NAN', 'NONE', ''):
+    if is_invalid(previous_previous_winning_raw):
         raise ChartGenerationError(
-            f"前々回（回号: {round_number - 2}）の{target_name}当選番号が未登録です。"
+            f"前々回（回号: {target_prev_prev}）の{target_name}当選番号が未登録です。"
             f"当選番号が発表されてからお試しください。"
         )
     
     previous_winning = str(previous_winning_raw)
     previous_previous_winning = str(previous_previous_winning_raw)
     
-    # 数値型の場合に備えて、'.0'を除去
-    previous_winning = previous_winning.replace('.0', '')
-    previous_previous_winning = previous_previous_winning.replace('.0', '')
+    # 数値型の場合に備えて、小数点以下を除去（'.0'や'.'を含む場合）
+    if '.' in previous_winning:
+        previous_winning = previous_winning.split('.')[0]
+    if '.' in previous_previous_winning:
+        previous_previous_winning = previous_previous_winning.split('.')[0]
     
     # 先頭の0が欠落している場合（例: 013 → 13）を補正
-    # 数値として読み込まれた場合、先頭の0が失われる可能性がある
     if len(previous_winning) < expected_length:
         previous_winning = previous_winning.zfill(expected_length)
     if len(previous_previous_winning) < expected_length:
