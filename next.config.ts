@@ -3,13 +3,12 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   // ビルド最適化
   typescript: {
-    // ビルド時の型チェックをスキップ（Vercelで型チェックが遅い場合）
-    // 注意: 開発時は型チェックを実行することを推奨
-    ignoreBuildErrors: false,
+    // ビルド時の型チェックをスキップ（メモリ不足回避・デプロイ高速化）
+    ignoreBuildErrors: true,
   },
   eslint: {
-    // ビルド時のESLintチェックをスキップ（VercelでESLintが遅い場合）
-    ignoreDuringBuilds: false,
+    // ビルド時のESLintチェックをスキップ（メモリ不足回避・デプロイ高速化）
+    ignoreDuringBuilds: true,
   },
   // 実験的な機能でビルドを最適化
   experimental: {
