@@ -131,22 +131,84 @@ def predict_combination_logic(data):
     from itertools import permutations, combinations as itertools_combinations
     
     # まずボックス候補を生成（ストレートでも同じベース候補を使う）
+    # ダブル（同じ数字が2つ以上被る）ケースも含める
+    from itertools import combinations_with_replacement
+    
     box_combinations_set = set()
+    all_digits = list(range(10))
+    
     for axis_digit in top_axis_digits[:5]:
-        other_digits = [d for d in range(10) if d != axis_digit]
-        
         if target == 'n3':
-            # N3: 軸数字 + 他の2桁の組み合わせ
-            for combo_pair in itertools_combinations(other_digits, 2):
-                digits = [axis_digit] + list(combo_pair)
-                combo = ''.join(map(str, sorted(digits)))
-                box_combinations_set.add(combo)
+            # N3: 軸数字 + 他の2桁（ダブル含む）
+            # パターン1: 軸数字が1つ + 異なる2つの数字（従来通り）
+            for combo_pair in itertools_combinations(all_digits, 2):
+                if axis_digit not in combo_pair:
+                    digits = [axis_digit] + list(combo_pair)
+                    combo = ''.join(map(str, sorted(digits)))
+                    box_combinations_set.add(combo)
+            
+            # パターン2: 軸数字が2つ（ダブル）+ 異なる1つの数字
+            for other in all_digits:
+                if other != axis_digit:
+                    digits = [axis_digit, axis_digit, other]
+                    combo = ''.join(map(str, sorted(digits)))
+                    box_combinations_set.add(combo)
+            
+            # パターン3: 軸数字 + 同じ数字2つ（他のダブル）
+            for other in all_digits:
+                if other != axis_digit:
+                    digits = [axis_digit, other, other]
+                    combo = ''.join(map(str, sorted(digits)))
+                    box_combinations_set.add(combo)
+            
+            # パターン4: ゾロ目（軸数字が3つ）
+            combo = ''.join([str(axis_digit)] * 3)
+            box_combinations_set.add(combo)
+            
         else:  # n4
-            # N4: 軸数字 + 他の3桁の組み合わせ
-            for combo_triple in itertools_combinations(other_digits, 3):
-                digits = [axis_digit] + list(combo_triple)
-                combo = ''.join(map(str, sorted(digits)))
-                box_combinations_set.add(combo)
+            # N4: 軸数字 + 他の3桁（ダブル含む）
+            # パターン1: 軸数字が1つ + 異なる3つの数字（従来通り）
+            for combo_triple in itertools_combinations(all_digits, 3):
+                if axis_digit not in combo_triple:
+                    digits = [axis_digit] + list(combo_triple)
+                    combo = ''.join(map(str, sorted(digits)))
+                    box_combinations_set.add(combo)
+            
+            # パターン2: 軸数字が2つ（ダブル）+ 異なる2つの数字
+            for combo_pair in itertools_combinations(all_digits, 2):
+                if axis_digit not in combo_pair:
+                    digits = [axis_digit, axis_digit] + list(combo_pair)
+                    combo = ''.join(map(str, sorted(digits)))
+                    box_combinations_set.add(combo)
+            
+            # パターン3: 軸数字 + 別の数字が2つ（ダブル）+ さらに別の数字1つ
+            for d1 in all_digits:
+                if d1 == axis_digit:
+                    continue
+                for d2 in all_digits:
+                    if d2 == axis_digit or d2 == d1:
+                        continue
+                    digits = [axis_digit, d1, d1, d2]
+                    combo = ''.join(map(str, sorted(digits)))
+                    box_combinations_set.add(combo)
+            
+            # パターン4: 軸数字が3つ（トリプル）+ 異なる1つの数字
+            for other in all_digits:
+                if other != axis_digit:
+                    digits = [axis_digit, axis_digit, axis_digit, other]
+                    combo = ''.join(map(str, sorted(digits)))
+                    box_combinations_set.add(combo)
+            
+            # パターン5: 軸数字が2つ + 別の数字が2つ（ダブルダブル）
+            for other in all_digits:
+                if other != axis_digit:
+                    digits = [axis_digit, axis_digit, other, other]
+                    combo = ''.join(map(str, sorted(digits)))
+                    box_combinations_set.add(combo)
+            
+            # パターン6: ゾロ目（軸数字が4つ）
+            combo = ''.join([str(axis_digit)] * 4)
+            box_combinations_set.add(combo)
         
         if len(box_combinations_set) >= max_combinations:
             break
