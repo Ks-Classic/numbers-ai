@@ -89,12 +89,19 @@ build/
 
 # 分析結果
 /data/analysis/
+/data/analysis_results/
+
+# レポートファイル
+/data/reports/
 
 # アーカイブファイル
 /data/archive/
 
 # バックアップファイル
 /data/*.csv.backup
+/data/*_backup*.csv
+/data/*copy*.csv
+/data/*.bak
 
 # ドキュメントファイル
 /data/*.md
