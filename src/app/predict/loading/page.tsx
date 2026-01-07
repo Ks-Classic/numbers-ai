@@ -368,8 +368,8 @@ export default function LoadingPage() {
 
         // 少し待ってから次の画面へ
         setTimeout(() => {
-          console.log('画面遷移実行:', '/predict/axis');
-          router.push('/predict/axis');
+          console.log('画面遷移実行:', '/predict/result');
+          router.push('/predict/result');
         }, 1000);
       } catch (fetchError: any) {
         clearTimeout(timeoutId);
