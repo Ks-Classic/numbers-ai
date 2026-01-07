@@ -58,7 +58,7 @@ api_venv/
 notebooks/venv/
 
 # Legacy directories (migrated to Next.js API Routes)
-api/
+# api/ は予測に必要なため除外しない
 core/
 
 # Test data (too large)

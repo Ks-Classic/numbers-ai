@@ -1,0 +1,14 @@
+# Vercel Serverless Function & Local Common Requirements
+# 軽量化のため、必要最小限の依存関係のみ
+
+# データ処理
+pandas>=2.0.0
+numpy>=1.24.0
+
+# 機械学習（予測モデル）
+# LightGBM 4.5.0: OpenMP依存軽減版（libgomp.so.1問題対策）
+lightgbm==4.5.0
+
+# その他
+requests>=2.31.0
+
