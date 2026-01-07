@@ -3,21 +3,5 @@
         "ignoreCommand": "if [ \"$VERCEL_GIT_COMMIT_REF\" == \"main\" ]; then exit 1; else exit 0; fi"
     },
     "framework": "nextjs",
-    "outputDirectory": ".next",
-    "functions": {
-        "api/py/**/*.py": {
-            "memory": 1024,
-            "maxDuration": 60,
-            "includeFiles": "core/**,data/models/*_keys.json,data/models/*_lgb.txt,data/keisen_master.json,data/past_results.csv,api/py/**/libgomp.so.1"
-        }
-    },
-    "env": {
-        "LD_LIBRARY_PATH": "/var/task/api/py"
-    },
-    "rewrites": [
-        {
-            "source": "/api/py/:path*",
-            "destination": "/api/py/:path*"
-        }
-    ]
+    "outputDirectory": ".next"
 }
