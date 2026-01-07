@@ -106,8 +106,8 @@ export default function ResultPage() {
               </div>
             )}
           </div>
-          <span className="text-sm font-medium">
-            {(prediction.probability * 100).toFixed(1)}%
+          <span className="text-sm font-medium text-muted-foreground">
+            {Math.round(prediction.probability * 1000)}
           </span>
         </div>
         <div className="text-xs text-muted-foreground">
