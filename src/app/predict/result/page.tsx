@@ -29,12 +29,18 @@ export default function ResultPage() {
     return currentSession.numbersType.toLowerCase() as 'n3' | 'n4';
   });
   const [activeSubTab, setActiveSubTab] = useState<'box' | 'straight'>('box');
+  const [showFilterResetNotice, setShowFilterResetNotice] = useState(false);
 
-  // タブ切り替え時にフィルターをリセット
-  useEffect(() => {
-    clearFilters();
-  }, [activeTab, clearFilters]);
-
+  // タブ切り替え時にフィルターをリセットし、通知を表示
+  const handleTabChange = (newTab: string) => {
+    const hasActiveFilters = filterState.selectedAxes.length > 0 || filterState.excludedNumbers.length > 0;
+    if (hasActiveFilters && newTab !== activeTab) {
+      clearFilters();
+      setShowFilterResetNotice(true);
+      setTimeout(() => setShowFilterResetNotice(false), 3000);
+    }
+    setActiveTab(newTab as 'n3' | 'n4');
+  };
   // 現在のタブに応じた予測結果を取得
   const currentPredictions = useMemo(() => {
     if (activeTab === 'n3') {
@@ -141,8 +147,15 @@ export default function ResultPage() {
           <Badge variant="outline">第{currentSession.roundNumber}回</Badge>
         </div>
 
+        {/* フィルターリセット通知 */}
+        {showFilterResetNotice && (
+          <div className="bg-amber-100 border border-amber-300 text-amber-800 px-4 py-2 rounded-lg text-sm animate-in fade-in slide-in-from-top-2 duration-300">
+            タブ切り替えのため、フィルター設定をリセットしました
+          </div>
+        )}
+
         {/* メインタブ（N3/N4） */}
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'n3' | 'n4')} className="w-full">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-4">
             <TabsTrigger value="n3">ナンバーズ3</TabsTrigger>
             <TabsTrigger value="n4">ナンバーズ4</TabsTrigger>
