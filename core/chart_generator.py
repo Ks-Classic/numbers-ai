@@ -578,7 +578,7 @@ def apply_remaining_copy(
 
 
 def generate_chart(
-    df: pd.DataFrame,
+    df: Any,  # List[Dict] or pd.DataFrame
     keisen_master: dict,
     round_number: int,
     pattern: Pattern,

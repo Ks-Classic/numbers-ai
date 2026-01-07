@@ -22,22 +22,8 @@ else:
     PROJECT_ROOT = Path.cwd()
     print(f"[model_loader] Using cwd: {PROJECT_ROOT}")
 
-lib_path = PROJECT_ROOT / 'api' / 'lib' / 'libgomp.so.1'
-print(f"[model_loader] Checking for libgomp.so.1 at: {lib_path}")
-print(f"[model_loader] File exists: {lib_path.exists()}")
-
-# ディレクトリ構造を確認
-api_dir = PROJECT_ROOT / 'api'
-if api_dir.exists():
-    print(f"[model_loader] api/ directory exists")
-    lib_dir = api_dir / 'lib'
-    if lib_dir.exists():
-        print(f"[model_loader] api/lib/ directory exists")
-        print(f"[model_loader] Contents: {list(lib_dir.iterdir())}")
-    else:
-        print(f"[model_loader] api/lib/ directory NOT found")
-else:
-    print(f"[model_loader] api/ directory NOT found")
+# libgomp.so.1はapi/py/に配置（Vercel Python Functions用）
+lib_path = PROJECT_ROOT / 'api' / 'py' / 'libgomp.so.1'
 
 if lib_path.exists():
     try:
@@ -45,8 +31,6 @@ if lib_path.exists():
         print(f"[model_loader] Successfully loaded {lib_path}")
     except Exception as e:
         print(f"[model_loader] Failed to load {lib_path}: {e}")
-else:
-    print(f"[model_loader] libgomp.so.1 not found at {lib_path}")
 
 # libgomp.so.1をロード後にlightgbmをインポート
 import lightgbm as lgb
