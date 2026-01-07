@@ -34,6 +34,10 @@ build/
 /setup.py
 /setup.cfg
 
+# ルートのrequirements.txt（xgboost, scipy等の重い依存関係を含む、約300MB）
+# Vercelデプロイには api/py/requirements.txt（軽量版）を使用
+/requirements.txt
+
 # Pythonファイル（プロジェクトルート直下のみ、src/内は除外しない）
 /*.py
 # Pythonキャッシュファイル（すべて除外）
