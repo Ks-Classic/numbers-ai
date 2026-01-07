@@ -6,33 +6,25 @@
 
 from pathlib import Path
 from typing import Optional, Dict, Literal, List, Union
-import numpy as np
-
-# 【重要】Vercel環境(x86_64)用の共有ライブラリを強制ロード
-# lightgbmをインポートする前に実行する必要がある
 import ctypes
 import sys
 
-# プロジェクトルートを特定
+# 【重要】libgomp.so.1をnumpy/lightgbmより先にロード
+# Vercel環境(x86_64)ではOpenMPライブラリが必要
 if '__file__' in globals():
     PROJECT_ROOT = Path(__file__).parent.parent
-    print(f"[model_loader] __file__ = {__file__}")
-    print(f"[model_loader] PROJECT_ROOT = {PROJECT_ROOT}")
 else:
     PROJECT_ROOT = Path.cwd()
-    print(f"[model_loader] Using cwd: {PROJECT_ROOT}")
 
-# libgomp.so.1はapi/py/に配置（Vercel Python Functions用）
 lib_path = PROJECT_ROOT / 'api' / 'py' / 'libgomp.so.1'
-
 if lib_path.exists():
     try:
-        ctypes.CDLL(str(lib_path))
-        print(f"[model_loader] Successfully loaded {lib_path}")
+        ctypes.CDLL(str(lib_path), mode=ctypes.RTLD_GLOBAL)
     except Exception as e:
         print(f"[model_loader] Failed to load {lib_path}: {e}")
 
-# libgomp.so.1をロード後にlightgbmをインポート
+# libgomp.so.1ロード後にnumpyとlightgbmをインポート
+import numpy as np
 import lightgbm as lgb
 
 Pattern = Literal['A1', 'A2', 'B1', 'B2']
