@@ -1,0 +1,43 @@
+{
+  "analysis_period": {
+    "start_round": 6369,
+    "end_round": 6868,
+    "total_rounds": 500
+  },
+  "cube_appearance_stats": {
+    "total_rounds": 0,
+    "all_digits_found_count": 0,
+    "all_digits_found_rate": 0.0,
+    "connection_stats": {
+      "horizontal": 0,
+      "vertical": 0,
+      "diagonal": 0,
+      "mixed": 0,
+      "none": 0
+    },
+    "position_stats": {},
+    "round_details": []
+  },
+  "digit_patterns": {
+    "digit_position_counts": {},
+    "position_digit_counts": {
+      "百の位": {},
+      "十の位": {},
+      "一の位": {}
+    },
+    "digit_combinations": {},
+    "total_rounds": 500
+  },
+  "time_series": {
+    "weekday_counts": {},
+    "weekday_digit_counts": {},
+    "month_counts": {},
+    "month_digit_counts": {},
+    "season_counts": {},
+    "season_digit_counts": {},
+    "year_counts": {},
+    "year_digit_counts": {},
+    "total_rounds": 500
+  },
+  "generated_at": "2025-11-30T11:07:49.393559"
+}

@@ -1,0 +1,19 @@
+{
+  "analysis_period": {
+    "start_round": 6811,
+    "end_round": 6860,
+    "total_rounds": 50
+  },
+  "cube_appearance_stats": {
+    "total_rounds": 47,
+    "all_digits_found_count": 42,
+    "all_digits_found_rate": 89.36170212765957,
+    "connection_stats": {
+      "horizontal": 18,
+      "vertical": 0,
+      "diagonal": 0,
+      "mixed": 0,
+      "none": 24
+    },
+    "position_stats": {
+      

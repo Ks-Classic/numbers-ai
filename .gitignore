@@ -54,9 +54,15 @@ scripts/ocr_results/
 venv/
 env/
 .venv/
-api/venv/
 api_venv/
 notebooks/venv/
+
+# Legacy directories (migrated to Next.js API Routes)
+api/
+core/
+
+# Test data (too large)
+test_extreme_cube.json/
 
 # CUBE data (analysis purposes only, too many files for Git)
 data/extreme_cubes/

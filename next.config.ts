@@ -3,21 +3,17 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   // ビルド最適化
   typescript: {
-    // ビルド時の型チェックをスキップ（メモリ不足回避・デプロイ高速化）
     ignoreBuildErrors: true,
   },
   eslint: {
-    // ビルド時のESLintチェックをスキップ（メモリ不足回避・デプロイ高速化）
     ignoreDuringBuilds: true,
   },
-  // スタンドアローンビルド（Docker/Vercel最適化・高速化）
+  // スタンドアローンビルド（Vercelで最適化）
   output: "standalone",
-  // 実験的な機能は安定性のため削除
   // CORS設定
   async headers() {
     return [
       {
-        // 全APIルートに適用
         source: "/api/:path*",
         headers: [
           { key: "Access-Control-Allow-Credentials", value: "true" },
@@ -27,7 +23,7 @@ const nextConfig: NextConfig = {
         ]
       }
     ]
-  }
+  },
 };
 
 export default nextConfig;

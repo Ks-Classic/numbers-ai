@@ -17,28 +17,19 @@ out/
 build/
 
 # ============================================
-# Python関連（Vercel Python関数は含める）
+# Python関連（完全に除外 - Next.js API Routesに移行済み）
 # ============================================
-# FastAPIサーバー関連ファイル（Vercel Python関数には不要）
-# 注意: api/predict/axis.py と api/predict/combination.py はVercel Python関数として含める
-/api/main.py
-/api/run.py
-/api/Dockerfile
-/api/Procfile
-/api/start.sh
-/api/README.md
-/api/requirements.md
-/api/venv/
-/api/__pycache__/
+# レガシーPython API（Next.js API Routesに完全移行済み）
+/api/
+/core/
 
-# 開発・分析用ディレクトリ（Vercel Python関数にcore/は必要）
-# 注意: core/はVercel Python関数に必要なので除外しない
+# 開発・分析用ディレクトリ
 /notebooks/
 /scripts/
-!/scripts/production/fetch_past_results.py
+!/scripts/production/
+!/scripts/sync-github-data.sh
 
-# Python設定ファイル（api/requirements.txtはVercel Python関数に必要なので含める）
-# 注意: api/requirements.txtはVercel Python関数に必要
+# Python設定ファイル（不要）
 /pyproject.toml
 /Pipfile
 /Pipfile.lock

@@ -7,9 +7,18 @@ on:
         description: '目標回号（前回・前々回のデータを取得）'
         required: false
         type: number
+  schedule:
+    # 毎日 JST 19:00 (UTC 10:00) に実行 - 抽選は18:45頃
+    - cron: '0 10 * * *'
 
 permissions:
   contents: write # コミット・プッシュに必要
+
+env:
+  # Discord Webhook URL (Secrets に設定)
+  DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+  # メール通知設定 (Secrets に設定)
+  ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
 
 jobs:
   update-data:
@@ -31,30 +40,125 @@ jobs:
           pip install requests beautifulsoup4
 
       - name: 最新データを取得
+        id: fetch_data
         run: |
           cd scripts/production
+          
+          # 更新前の行数を記録
+          BEFORE_LINES=$(wc -l < ../../data/past_results.csv || echo "0")
+          echo "before_lines=$BEFORE_LINES" >> $GITHUB_OUTPUT
+          
+          # 更新前の最新回号を記録
+          BEFORE_ROUND=$(head -2 ../../data/past_results.csv 2>/dev/null | tail -1 | cut -d',' -f1 || echo "0")
+          echo "before_round=$BEFORE_ROUND" >> $GITHUB_OUTPUT
+          
           if [ -n "${{ github.event.inputs.round_number }}" ]; then
             echo "目標回号: ${{ github.event.inputs.round_number }}"
             python3 fetch_latest_simple.py ${{ github.event.inputs.round_number }}
           else
             python3 fetch_latest_simple.py
           fi
+          
+          # 更新後の行数を記録
+          AFTER_LINES=$(wc -l < ../../data/past_results.csv)
+          echo "after_lines=$AFTER_LINES" >> $GITHUB_OUTPUT
+          
+          # 更新後の最新回号を記録
+          AFTER_ROUND=$(head -2 ../../data/past_results.csv | tail -1 | cut -d',' -f1)
+          echo "after_round=$AFTER_ROUND" >> $GITHUB_OUTPUT
 
       - name: 変更をコミット・プッシュ
+        id: commit
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           
           if [ -n "$(git status --porcelain data/past_results.csv)" ]; then
             git add data/past_results.csv
-            git commit -m "chore: データ自動更新 [skip ci]"
+            git commit -m "chore: データ自動更新 第${{ steps.fetch_data.outputs.after_round }}回 [skip ci]"
             git push
+            echo "updated=true" >> $GITHUB_OUTPUT
             echo "✅ データを更新してコミットしました"
           else
+            echo "updated=false" >> $GITHUB_OUTPUT
             echo "ℹ️ 更新するデータがありませんでした"
           fi
 
-      - name: 更新結果を通知
-        if: failure()
+      # ========================================
+      # 成功時の通知（Discord）
+      # ========================================
+      - name: 成功通知 (Discord)
+        if: success() && steps.commit.outputs.updated == 'true' && env.DISCORD_WEBHOOK_URL != ''
         run: |
-          echo "❌ データ更新に失敗しました"
+          curl -X POST "$DISCORD_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "embeds": [{
+                "title": "✅ Numbers AI データ更新成功",
+                "color": 5763719,
+                "fields": [
+                  {"name": "最新回号", "value": "第${{ steps.fetch_data.outputs.after_round }}回", "inline": true},
+                  {"name": "データ行数", "value": "${{ steps.fetch_data.outputs.before_lines }} → ${{ steps.fetch_data.outputs.after_lines }}", "inline": true}
+                ],
+                "timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"
+              }]
+            }'
+
+      # ========================================
+      # 失敗時の通知（Discord）
+      # ========================================
+      - name: 失敗通知 (Discord)
+        if: failure() && env.DISCORD_WEBHOOK_URL != ''
+        run: |
+          curl -X POST "$DISCORD_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "content": "<@&ROLE_ID_HERE>",
+              "embeds": [{
+                "title": "🚨 Numbers AI データ更新失敗",
+                "color": 15548997,
+                "description": "データの自動更新に失敗しました。手動確認が必要です。",
+                "fields": [
+                  {"name": "ワークフロー", "value": "[実行ログを確認](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})", "inline": false},
+                  {"name": "最終成功時の回号", "value": "第${{ steps.fetch_data.outputs.before_round }}回", "inline": true}
+                ],
+                "timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"
+              }]
+            }'
+
+      # ========================================
+      # 失敗時の通知（メール）- GitHub Actions の通知機能を使用
+      # ========================================
+      - name: 失敗通知 (メール)
+        if: failure() && env.ALERT_EMAIL != ''
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: "🚨 [Numbers AI] データ更新失敗 - 要確認"
+          to: ${{ secrets.ALERT_EMAIL }}
+          from: Numbers AI Bot <${{ secrets.SMTP_USERNAME }}>
+          body: |
+            Numbers AI のデータ自動更新に失敗しました。
+            
+            ────────────────────────────────
+            ■ エラー情報
+            ────────────────────────────────
+            - 実行日時: $(date '+%Y-%m-%d %H:%M:%S JST')
+            - ワークフロー: ${{ github.workflow }}
+            - 実行ID: ${{ github.run_id }}
+            
+            ────────────────────────────────
+            ■ 確認手順
+            ────────────────────────────────
+            1. GitHub Actions のログを確認:
+               ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            
+            2. データソース (hpfree.com) が正常かどうか確認
+            
+            3. 必要に応じて手動でワークフローを再実行
+            
+            ────────────────────────────────
+            このメールは自動送信されています。

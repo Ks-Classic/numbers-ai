@@ -1,0 +1,9 @@
+{
+    "cursor.model": "claude-opus-4-5-20251101",
+    "cursor.chat.defaultParams": {
+      "output_config": {
+        "effort": "low"
+      }
+    },
+    "cursor.models.autoEnabled": true
+  }
