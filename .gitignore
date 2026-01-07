@@ -57,9 +57,9 @@ env/
 api_venv/
 notebooks/venv/
 
-# Legacy directories (migrated to Next.js API Routes)
-# api/ は予測に必要なため除外しない
-core/
+# Legacy directories - 予測に必要なため除外しない
+# api/
+# core/
 
 # Test data (too large)
 test_extreme_cube.json/
