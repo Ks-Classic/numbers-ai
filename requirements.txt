@@ -1,16 +1,10 @@
-# ローカル開発用のrequirements.txt
-# 注意: Vercelデプロイには api/py/requirements.txt を使用
-
-# Webフレームワーク（ローカルFastAPIサーバー用）
-fastapi>=0.104.0
-uvicorn[standard]>=0.24.0
+# Vercel Python Serverless Function用のrequirements.txt
+# 必要最小限の依存関係のみ（サイズ制限対策）
 
 # データ処理
-pandas>=2.0.0
 numpy>=1.24.0
 
-# 機械学習（LightGBMのみ使用、xgboostは廃止済み）
-lightgbm>=4.0.0
-
-# その他
-pydantic>=2.0.0
+# 機械学習（予測モデル）
+# LightGBM 4.5.0: OpenMP依存軽減版（libgomp.so.1問題対策）
+# ネイティブ形式（.txt）でモデルをロードするため、scikit-learn不要
+lightgbm==4.5.0

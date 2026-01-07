@@ -1,0 +1,17 @@
+# ローカル開発/FastAPIサーバー用のrequirements.txt
+# 注意: Vercelデプロイには /requirements.txt（軽量版）を使用
+
+# Webフレームワーク（ローカルFastAPIサーバー用）
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+
+# データ処理
+pandas>=2.0.0
+numpy>=1.24.0
+
+# 機械学習（LightGBMのみ使用）
+lightgbm>=4.0.0
+
+# その他
+pydantic>=2.0.0
+requests>=2.31.0
