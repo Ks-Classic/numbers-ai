@@ -74,7 +74,18 @@ App
 │       └── ManualAxisInput (手動指定軸数字での予測)
 │
 └── ResultPage (/predict/result)
-    └── ResultView
+    ├── Tabs (N3/N4)
+    ├── AxisPredictionSection          ← AI軸数字予測表示
+    │   ├── AxisCandidateChips[]       ← タップで選択
+    │   └── AddAxisButton              ← 軸を手動追加
+    ├── FilterPanel                    ← フィルター設定パネル
+    │   ├── SelectedAxesDisplay        ← 選択中の軸表示
+    │   ├── AxisConditionToggle        ← AND/OR切替
+    │   ├── ExcludedNumbersDisplay     ← 削除数字表示
+    │   └── AddExclusionButton         ← 削除数字追加
+    ├── SubTabs (Box/Straight)
+    ├── FilteredResultList             ← フィルター適用済み結果
+    └── NumberInputModal               ← 数字入力モーダル
 ```
 
 ---
@@ -117,6 +128,13 @@ interface PredictionState {
     box: PredictionItem[];
   } | null;
   
+  // フィルター状態
+  filterState: {
+    selectedAxes: number[];          // 選択した軸数字（AI予測から or 手動追加）
+    axisCondition: 'AND' | 'OR';     // 軸条件
+    excludedNumbers: number[];       // 削除数字
+  };
+  
   // アクション
   setSessionData: (data: Partial<PredictionState['currentSession']>) => void;
   setAxisCandidates: (candidates: AxisCandidate[]) => void;
@@ -124,6 +142,13 @@ interface PredictionState {
   setN3Data: (candidates: AxisCandidate[], predictions: ...) => void;
   setN4Data: (candidates: AxisCandidate[], predictions: ...) => void;
   toggleAxis: (axis: number) => void;
+  
+  // フィルターアクション
+  toggleFilterAxis: (axis: number) => void;           // 軸を選択/解除
+  setAxisCondition: (condition: 'AND' | 'OR') => void; // AND/OR切替
+  addExcludedNumber: (num: number) => void;           // 削除数字追加
+  removeExcludedNumber: (num: number) => void;        // 削除数字解除
+  clearFilters: () => void;                           // フィルターリセット
   resetSession: () => void;
 }
 ```
@@ -221,6 +246,86 @@ const slideIn = {
 };
 ```
 
+### 4.9 軸数字フィルター機能
+
+**概要**: AI予測された軸数字を選択し、当選番号候補をフィルタリングする機能
+
+**フロー**:
+1. AI予測結果から軸数字候補を表示（スコア順）
+2. ユーザーが軸数字をタップして選択（複数選択可）
+3. 選択した軸数字で当選番号候補をフィルタリング
+4. AND/OR条件を選択可能
+
+**条件ロジック**:
+- **AND**: 選択した全ての軸数字を含む番号のみ表示
+- **OR**: 選択した軸数字のいずれかを含む番号を表示
+
+```typescript
+// フィルタリング例
+const filterByAxes = (predictions: string[], axes: number[], condition: 'AND' | 'OR') => {
+  return predictions.filter(num => {
+    const digits = num.split('').map(Number);
+    if (condition === 'AND') {
+      return axes.every(axis => digits.includes(axis));
+    } else {
+      return axes.some(axis => digits.includes(axis));
+    }
+  });
+};
+```
+
+### 4.10 削除数字フィルター機能
+
+**概要**: 指定した数字を含む予測候補を除外する機能
+
+**フロー**:
+1. ユーザーが削除したい数字を追加（複数追加可）
+2. その数字を含む全ての候補を結果から除外
+3. 軸数字フィルターとANDで同時適用
+
+```typescript
+// フィルタリング例
+const filterByExclusion = (predictions: string[], excluded: number[]) => {
+  return predictions.filter(num => {
+    const digits = num.split('').map(Number);
+    return !excluded.some(ex => digits.includes(ex));
+  });
+};
+```
+
+### 4.11 フィルター適用順序
+
+フィルターは以下の順序で適用される（AND条件）:
+
+```
+元の予測結果
+    │
+    ▼
+┌─────────────────────┐
+│ 1. 軸数字フィルター  │  ← AND/OR条件で適用
+└─────────────────────┘
+    │
+    ▼
+┌─────────────────────┐
+│ 2. 削除数字フィルター│  ← 軸フィルター結果から除外
+└─────────────────────┘
+    │
+    ▼
+フィルター適用後の結果
+```
+
+### 4.12 数字入力モーダル
+
+**UI仕様**:
+- 0-9の数字グリッド表示
+- タップで選択/解除
+- 選択済みの数字はハイライト表示
+- 「完了」ボタンで閉じる
+
+**用途**:
+- 軸数字の追加（AI予測外の軸を手動追加）
+- 削除数字の追加
+
 ---
 
 ## 5. 実装状況
@@ -244,6 +349,19 @@ const slideIn = {
 
 ### 5.2 未実装の機能
 
+- [ ] **軸数字フィルター機能**
+  - [ ] AI予測軸数字の選択UI（AxisCandidateChips）
+  - [ ] 軸追加ボタン・モーダル
+  - [ ] AND/OR条件トグル
+  - [ ] 選択状態の管理（Zustand filterState）
+- [ ] **削除数字フィルター機能**
+  - [ ] 削除数字追加UI
+  - [ ] 数字入力モーダル（NumberInputModal）
+  - [ ] 削除数字の管理（Zustand filterState）
+- [ ] **フィルター適用ロジック**
+  - [ ] 軸数字フィルター（AND/OR）
+  - [ ] 削除数字フィルター
+  - [ ] フィルター結果のリアルタイム更新
 - [ ] ナビゲーションの実装
 - [ ] 404ページの実装
 - [ ] エラーページの実装
@@ -256,6 +374,7 @@ const slideIn = {
 
 | バージョン | 日付 | 変更者 | 変更内容 |
 |-----------|------|--------|----------|
+| 1.2 | 2026-01-07 | 技術リード | 軸数字フィルター・削除数字フィルター機能仕様を追加 |
 | 1.1 | 2025-01-XX | 技術リード | 実装状況セクションを追加、状態管理構造を更新 |
 | 1.0 | 2025-11-02 | 技術リード | 初版作成（元specifications.mdから分割） |
 

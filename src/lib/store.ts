@@ -22,6 +22,13 @@ export const usePredictionStore = create<PredictionState>((set) => ({
   n4AxisCandidates: [],
   n4FinalPredictions: null,
 
+  // フィルター状態の初期値
+  filterState: {
+    selectedAxes: [],
+    axisCondition: 'OR',     // デフォルトはOR（いずれかを含む）
+    excludedNumbers: [],
+  },
+
   setSessionData: (data) => set((state) => ({
     currentSession: { ...state.currentSession, ...data },
     // numbersTypeが変更された場合、対応するデータをaxisCandidatesとfinalPredictionsに設定
@@ -64,6 +71,47 @@ export const usePredictionStore = create<PredictionState>((set) => ({
 
   setFinalPredictions: (predictions) => set({ finalPredictions: predictions }),
 
+  // フィルターアクション
+  toggleFilterAxis: (axis) => set((state) => ({
+    filterState: {
+      ...state.filterState,
+      selectedAxes: state.filterState.selectedAxes.includes(axis)
+        ? state.filterState.selectedAxes.filter(a => a !== axis)
+        : [...state.filterState.selectedAxes, axis]
+    }
+  })),
+
+  setAxisCondition: (condition) => set((state) => ({
+    filterState: {
+      ...state.filterState,
+      axisCondition: condition
+    }
+  })),
+
+  addExcludedNumber: (num) => set((state) => ({
+    filterState: {
+      ...state.filterState,
+      excludedNumbers: state.filterState.excludedNumbers.includes(num)
+        ? state.filterState.excludedNumbers
+        : [...state.filterState.excludedNumbers, num]
+    }
+  })),
+
+  removeExcludedNumber: (num) => set((state) => ({
+    filterState: {
+      ...state.filterState,
+      excludedNumbers: state.filterState.excludedNumbers.filter(n => n !== num)
+    }
+  })),
+
+  clearFilters: () => set((state) => ({
+    filterState: {
+      selectedAxes: [],
+      axisCondition: 'OR',
+      excludedNumbers: [],
+    }
+  })),
+
   resetSession: () => set({
     currentSession: {
       sessionId: null,
@@ -81,6 +129,11 @@ export const usePredictionStore = create<PredictionState>((set) => ({
     n3FinalPredictions: null,
     n4AxisCandidates: [],
     n4FinalPredictions: null,
+    filterState: {
+      selectedAxes: [],
+      axisCondition: 'OR',
+      excludedNumbers: [],
+    },
   })
 }));
 

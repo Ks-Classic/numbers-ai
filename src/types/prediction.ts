@@ -75,6 +75,13 @@ export interface PredictionState {
     box: PredictionItem[];
   } | null;
 
+  // フィルター状態
+  filterState: {
+    selectedAxes: number[];          // 選択した軸数字（AI予測から or 手動追加）
+    axisCondition: 'AND' | 'OR';     // 軸条件
+    excludedNumbers: number[];       // 削除数字
+  };
+
   // アクション
   setSessionData: (data: Partial<PredictionState['currentSession']>) => void;
   setAxisCandidates: (candidates: AxisCandidate[]) => void;
@@ -92,6 +99,13 @@ export interface PredictionState {
     box: PredictionItem[];
   } | null) => void;
   resetSession: () => void;
+
+  // フィルターアクション
+  toggleFilterAxis: (axis: number) => void;
+  setAxisCondition: (condition: 'AND' | 'OR') => void;
+  addExcludedNumber: (num: number) => void;
+  removeExcludedNumber: (num: number) => void;
+  clearFilters: () => void;
 }
 
 export interface HistoryItem {
