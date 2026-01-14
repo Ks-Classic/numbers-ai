@@ -162,6 +162,13 @@ def predict_combination_logic(data):
             
             # fetch_data.pyのfetch_and_update関数を呼び出し
             try:
+                # Vercel環境でもインポートできるようにパスを明示的に追加
+                import sys
+                from pathlib import Path
+                current_file_dir = Path(__file__).resolve().parent
+                if str(current_file_dir) not in sys.path:
+                    sys.path.insert(0, str(current_file_dir))
+                
                 # 同じディレクトリのfetch_data.pyをインポート
                 from fetch_data import fetch_and_update
                 
