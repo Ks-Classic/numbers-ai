@@ -151,8 +151,76 @@ def predict_combination_logic(data):
     if keisen_master is None:
         return {'success': False, 'error': '罫線マスターが読み込まれていません'}
     
-    # 予測表を生成
-    grid, rows, cols = generate_chart(current_df, keisen_master, round_number, best_pattern, target)
+    # 予測表を生成（NULL補完機能付き）
+    try:
+        grid, rows, cols = generate_chart(current_df, keisen_master, round_number, best_pattern, target)
+    except Exception as chart_error:
+        # ChartGenerationErrorで、当選番号が未登録の場合 - 自動的にWebから取得して再試行
+        error_msg = str(chart_error)
+        if '当選番号が未登録です' in error_msg or 'NULL' in error_msg:
+            print(f"[INFO] 当選番号が未登録のため、Webから最新データを取得します: {error_msg}")
+            
+            # fetch_data.pyのfetch_and_update関数を呼び出し
+            try:
+                # 同じディレクトリのfetch_data.pyをインポート
+                from fetch_data import fetch_and_update
+                
+                fetch_result = fetch_and_update(round_number)
+                
+                if fetch_result.get('success') and fetch_result.get('updated'):
+                    print(f"[INFO] データ更新成功: {fetch_result.get('message')}")
+                    
+                    # 更新されたCSVで再度データを読み込み
+                    if fetch_result.get('csv_content'):
+                        try:
+                            current_df = []
+                            reader = csv.DictReader(fetch_result['csv_content'].splitlines())
+                            for row in reader:
+                                # 前処理
+                                n3 = str(row.get('n3_winning', '')).replace('.0', '')
+                                n4 = str(row.get('n4_winning', '')).replace('.0', '')
+                                
+                                if n3 and n3.upper() not in ('NULL', 'NAN', 'NONE'):
+                                    row['n3_winning'] = n3.zfill(3)
+                                else:
+                                    row['n3_winning'] = None
+                                
+                                if n4 and n4.upper() not in ('NULL', 'NAN', 'NONE'):
+                                    row['n4_winning'] = n4.zfill(4)
+                                else:
+                                    row['n4_winning'] = None
+                                    
+                                current_df.append(row)
+                            
+                            # 再試行
+                            print("[INFO] 更新されたデータで予測表を再生成します")
+                            grid, rows, cols = generate_chart(current_df, keisen_master, round_number, best_pattern, target)
+                            print("[INFO] 予測表の再生成に成功しました")
+                        except Exception as retry_error:
+                            return {
+                                'success': False, 
+                                'error': f'データ更新後の予測表生成に失敗: {retry_error}'
+                            }
+                    else:
+                        return {
+                            'success': False,
+                            'error': f'データ更新に成功しましたが、CSVコンテンツが取得できませんでした'
+                        }
+                else:
+                    # Webにもデータがない場合
+                    return {
+                        'success': False,
+                        'error': f'予測エラー: {error_msg}\n\n公式サイトにも当選番号が未発表です。当選番号が発表されてからお試しください。'
+                    }
+            except Exception as fetch_error:
+                print(f"[ERROR] データ自動取得エラー: {fetch_error}")
+                return {
+                    'success': False,
+                    'error': f'予測エラー: {error_msg}\n\n自動データ取得にも失敗しました: {fetch_error}'
+                }
+        else:
+            # その他のエラーはそのまま再送出
+            raise
     
     rehearsal_positions = None
     if rehearsal_digits:

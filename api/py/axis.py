@@ -157,6 +157,9 @@ def predict_axis_logic(data):
     pattern_results = {}
     pattern_max_scores = {}
     
+    # NULL補完フラグ（一度だけ実行）
+    data_fetch_attempted = False
+    
     for pattern in patterns:
         try:
             grid, rows, cols = generate_chart(current_df, keisen_master, round_number, pattern, target)
@@ -248,8 +251,155 @@ def predict_axis_logic(data):
                 pattern_max_scores[pattern] = max(s['score'] for s in digit_scores)
         
         except Exception as e:
-            print(f"[ERROR] パターン{pattern}の予測に失敗: {e}")
-            pattern_results[pattern] = []
+            error_msg = str(e)
+            # NULL当選番号エラーの場合、一度だけデータ取得を試みる
+            if ('当選番号が未登録です' in error_msg or 'NULL' in error_msg) and not data_fetch_attempted:
+                data_fetch_attempted = True
+                print(f"[INFO] 当選番号が未登録のため、Webから最新データを取得します: {error_msg}")
+                
+                try:
+                    from fetch_data import fetch_and_update
+                    
+                    fetch_result = fetch_and_update(round_number)
+                    
+                    if fetch_result.get('success') and fetch_result.get('updated'):
+                        print(f"[INFO] データ更新成功: {fetch_result.get('message')}")
+                        
+                        # 更新されたCSVで再度データを読み込み
+                        if fetch_result.get('csv_content'):
+                            current_df = []
+                            reader = csv.DictReader(fetch_result['csv_content'].splitlines())
+                            for row in reader:
+                                # 前処理
+                                n3 = str(row.get('n3_winning', '')).replace('.0', '')
+                                n4 = str(row.get('n4_winning', '')).replace('.0', '')
+                                
+                                if n3 and n3.upper() not in ('NULL', 'NAN', 'NONE'):
+                                    row['n3_winning'] = n3.zfill(3)
+                                else:
+                                    row['n3_winning'] = None
+                                
+                                if n4 and n4.upper() not in ('NULL', 'NAN', 'NONE'):
+                                    row['n4_winning'] = n4.zfill(4)
+                                else:
+                                    row['n4_winning'] = None
+                                    
+                                current_df.append(row)
+                            
+                            # 全パターンをリセットして最初から再実行
+                            print("[INFO] 更新されたデータで予測を再実行します")
+                            pattern_results = {}
+                            pattern_max_scores = {}
+                            # パターンループを最初からやり直す（再帰的に呼び出さず、ここでリトライ）
+                            # 現在のpatternから再試行
+                            retry_patterns = patterns  # 全パターンを再試行
+                            for retry_pattern in retry_patterns:
+                                try:
+                                    grid, rows, cols = generate_chart(current_df, keisen_master, round_number, retry_pattern, target)
+                                    # 以下、同じ処理を繰り返し
+                                    rehearsal_positions = None
+                                    if rehearsal_digits:
+                                        rehearsal_positions = get_rehearsal_positions(grid, rows, cols, rehearsal_digits)
+                                    
+                                    previous_winning = None
+                                    def to_int(val):
+                                        try: return int(float(str(val)))
+                                        except: return -1
+
+                                    target_prev = round_number - 1
+                                    target_prev_prev = round_number - 2
+                                    
+                                    previous_row = next((r for r in current_df if to_int(r.get('round_number')) == target_prev), None)
+                                    previous_previous_row = next((r for r in current_df if to_int(r.get('round_number')) == target_prev_prev), None)
+                                    
+                                    if previous_row:
+                                        previous_winning = str(previous_row.get(f'{target}_winning') or '').replace('.0', '')
+                                        if target == 'n3' and len(previous_winning) < 3:
+                                            previous_winning = previous_winning.zfill(3)
+                                        elif target == 'n4' and len(previous_winning) < 4:
+                                            previous_winning = previous_winning.zfill(4)
+                                    
+                                    if previous_previous_row:
+                                        previous_previous_winning = str(previous_previous_row.get(f'{target}_winning') or '').replace('.0', '')
+                                        if target == 'n3' and len(previous_previous_winning) < 3:
+                                            previous_previous_winning = previous_previous_winning.zfill(3)
+                                        elif target == 'n4' and len(previous_previous_winning) < 4:
+                                            previous_previous_winning = previous_previous_winning.zfill(4)
+                                    
+                                    model_name = f"{target}_axis"
+                                    feature_keys = model_loader.feature_keys.get(model_name, [])
+                                    
+                                    digit_scores = []
+                                    for digit in range(10):
+                                        features = extract_digit_features(grid, rows, cols, digit, rehearsal_positions)
+                                        features = add_pattern_id_features(features, retry_pattern)
+                                        
+                                        if previous_winning and previous_previous_winning:
+                                            features = add_keisen_pattern_features(
+                                                features, previous_winning, previous_previous_winning, target
+                                            )
+                                        
+                                        if feature_keys:
+                                            feature_vector = features_to_vector(features, feature_keys)
+                                        else:
+                                            feature_vector = features_to_vector(features)
+                                        raw_score = model_loader.predict_axis(target, feature_vector.reshape(1, -1))[0]
+                                        
+                                        digit_scores.append({
+                                            'digit': digit,
+                                            'raw_score': raw_score,
+                                            'pattern': retry_pattern
+                                        })
+                                    
+                                    if digit_scores:
+                                        raw_scores = [d['raw_score'] for d in digit_scores]
+                                        min_raw = min(raw_scores)
+                                        max_raw = max(raw_scores)
+                                        score_range = max_raw - min_raw
+                                        
+                                        if score_range > 0:
+                                            for d in digit_scores:
+                                                normalized = (d['raw_score'] - min_raw) / score_range
+                                                d['score'] = int(100 + normalized * 899)
+                                        else:
+                                            for d in digit_scores:
+                                                d['score'] = 500
+                                        
+                                        for d in digit_scores:
+                                            del d['raw_score']
+                                    
+                                    digit_scores.sort(key=lambda x: x['score'], reverse=True)
+                                    pattern_results[retry_pattern] = digit_scores
+                                    
+                                    if digit_scores:
+                                        pattern_max_scores[retry_pattern] = max(s['score'] for s in digit_scores)
+                                except Exception as retry_error:
+                                    print(f"[ERROR] 再試行中にパターン{retry_pattern}の予測に失敗: {retry_error}")
+                                    pattern_results[retry_pattern] = []
+                            
+                            # 再試行成功したのでループを抜ける
+                            break
+                        else:
+                            return {
+                                'success': False,
+                                'error': 'データ更新に成功しましたが、CSVコンテンツが取得できませんでした'
+                            }
+                    else:
+                        # Webにもデータがない場合
+                        return {
+                            'success': False,
+                            'error': f'予測エラー: {error_msg}\n\n公式サイトにも当選番号が未発表です。当選番号が発表されてからお試しください。'
+                        }
+                except Exception as fetch_error:
+                    print(f"[ERROR] データ自動取得エラー: {fetch_error}")
+                    return {
+                        'success': False,
+                        'error': f'予測エラー: {error_msg}\n\n自動データ取得にも失敗しました: {fetch_error}'
+                    }
+            else:
+                # その他のエラーまたは既にfetch試行済み
+                print(f"[ERROR] パターン{pattern}の予測に失敗: {e}")
+                pattern_results[pattern] = []
     
     if pattern_max_scores:
         best_pattern = max(pattern_max_scores.items(), key=lambda x: x[1])[0]
