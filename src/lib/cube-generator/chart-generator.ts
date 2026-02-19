@@ -8,8 +8,8 @@
 import type { Target, Pattern } from '@/types/prediction';
 import type { ChartData, ChartGrid, MainRow } from '@/types/chart';
 import { ChartGenerationError } from '@/types/chart';
-import { 
-  getPreviousResult, 
+import {
+  getPreviousResult,
   getPreviousPreviousResult,
   type ColumnName,
   DataLoadError,
@@ -40,13 +40,13 @@ export async function generateChart(
   try {
     // ステップ1: 予測出目の抽出
     const sourceList = await extractPredictedDigits(roundNumber, target, keisenMasterType);
-    
+
     // ステップ2: パターン別の元数字リスト作成
     const nums = applyPatternExpansion(sourceList, pattern);
-    
+
     // ステップ3: メイン行の組み立て
     const { mainRows, tempList } = buildMainRows(nums);
-    
+
     // ステップ4: グリッド初期配置
     // メイン行数に応じて、必要な行数を計算
     // メイン行は奇数行（1, 3, 5, 7行目）に配置し、
@@ -60,12 +60,12 @@ export async function generateChart(
     let rows = mainRows.length * 2; // メイン行N本の場合、2*N行必要
     const cols = 8;
     let grid = initializeGrid(rows, cols, mainRows);
-    
+
     // ステップ5: メイン行配置後の余りマスルール（裏数字適用前）
     // 奇数行の奇数列・偶数列の空マスに対して、
     // その上のメイン行（奇数行）の同じ列の数字をコピー
     applyMainRowRemainingCopy(grid, rows, cols);
-    
+
     // ステップ5.5: パターンA2/B2中心0配置
     // メイン行配置後の余りマスルールの後に実行することで、
     // 余りマスルールで補完された数字が中心0配置で上書きされないようにする
@@ -76,7 +76,7 @@ export async function generateChart(
       centerZeroPos = placeCenterZero(grid, rows, cols);
       centerZeroPlaced = centerZeroPos !== null;
     }
-    
+
     // ステップ6-7: 裏数字ルール
     // ステップ6: 縦パス（上から下へ裏数字を配置）
     applyVerticalInverse(grid, rows, cols, centerZeroPos);
@@ -89,7 +89,7 @@ export async function generateChart(
       grid = grid.slice(0, 9); // grid[0]からgrid[8]まで（1-8行目）
       rows = 8;
     }
-    
+
     // ステップ9: 8列×8行の場合の最終調整（0配置パターンのみ）
     if (rows === 8 && cols === 8 && (pattern === 'A2' || pattern === 'B2')) {
       // 5列5行目を0に強制置き換え
@@ -97,7 +97,7 @@ export async function generateChart(
       // 5列4行目を5に強制置き換え
       grid[4][5] = 5;
     }
-    
+
     // ステップ10: 8列×6行の場合の最終調整（0配置パターンのみ）
     if (rows === 6 && cols === 8 && (pattern === 'A2' || pattern === 'B2')) {
       // 5列4行目を0に強制置き換え
@@ -105,7 +105,7 @@ export async function generateChart(
       // 5列3行目を5に強制置き換え
       grid[3][5] = 5;
     }
-    
+
     return {
       grid,
       rows,
@@ -121,14 +121,14 @@ export async function generateChart(
     if (error instanceof ChartGenerationError) {
       throw error;
     }
-    
+
     if (error instanceof DataLoadError) {
       throw new ChartGenerationError(
         `データ読み込みエラー: ${error.message}`,
         error
       );
     }
-    
+
     throw new ChartGenerationError(
       `予測表生成エラー: ${(error as Error).message}`,
       error
@@ -155,41 +155,41 @@ async function extractPredictedDigits(
   // 前回と前々回のデータを取得
   const previousResult = await getPreviousResult(roundNumber);
   const previousPreviousResult = await getPreviousPreviousResult(roundNumber);
-  
+
   if (!previousResult) {
     throw new ChartGenerationError(
       `前回の当選番号が見つかりません（回号: ${roundNumber - 1}）`
     );
   }
-  
+
   if (!previousPreviousResult) {
     throw new ChartGenerationError(
       `前々回の当選番号が見つかりません（回号: ${roundNumber - 2}）`
     );
   }
-  
+
   // 対象に応じた桁名と当選番号を取得
-  const columnNames: ColumnName[] = target === 'n3' 
+  const columnNames: ColumnName[] = target === 'n3'
     ? ['百の位', '十の位', '一の位']
     : ['千の位', '百の位', '十の位', '一の位'];
-  
-  const previousWinning = target === 'n3' 
-    ? previousResult.n3Winning 
+
+  const previousWinning = target === 'n3'
+    ? previousResult.n3Winning
     : previousResult.n4Winning;
-  
+
   const previousPreviousWinning = target === 'n3'
     ? previousPreviousResult.n3Winning
     : previousPreviousResult.n4Winning;
-  
+
   // 各桁の予測出目を取得して結合
   const sourceList: number[] = [];
-  
+
   for (const columnName of columnNames) {
     // 前回・前々回の該当桁の数字を取得
     const digitIndex = columnNames.indexOf(columnName);
     const previousDigit = parseInt(previousWinning[digitIndex], 10);
     const previousPreviousDigit = parseInt(previousPreviousWinning[digitIndex], 10);
-    
+
     // 予測出目を取得（罫線マスターの種類を指定）
     const predictedDigits = await getPredictedDigitsFromKeisenMaster(
       target,
@@ -198,13 +198,13 @@ async function extractPredictedDigits(
       previousPreviousDigit,
       keisenMasterType
     );
-    
+
     // source_listに追加
     sourceList.push(...predictedDigits);
   }
-  
+
   // ソートしない（桁順を保持：百の位→十の位→一の位の順）
-  
+
   return sourceList;
 }
 
@@ -230,19 +230,19 @@ async function getPredictedDigitsFromKeisenMaster(
   if (!Number.isInteger(previousDigit) || previousDigit < 0 || previousDigit > 9) {
     throw new ChartGenerationError(`前回の数字が不正です: ${previousDigit}`);
   }
-  
+
   if (!Number.isInteger(previousPreviousDigit) || previousPreviousDigit < 0 || previousPreviousDigit > 9) {
     throw new ChartGenerationError(`前々回の数字が不正です: ${previousPreviousDigit}`);
   }
-  
+
   const master = await loadKeisenMasterByType(keisenMasterType);
-  
+
   const targetData = master[target];
-  
+
   if (!targetData || typeof targetData !== 'object') {
     throw new ChartGenerationError(`${target}データが見つかりません`);
   }
-  
+
   // targetに応じて適切な型をアサート
   let columnData: ColumnRules | undefined;
   if (target === 'n3') {
@@ -260,29 +260,29 @@ async function getPredictedDigitsFromKeisenMaster(
       throw new ChartGenerationError(`N4では${columnName}は使用できません`);
     }
   }
-  
+
   if (!columnData || typeof columnData !== 'object') {
     throw new ChartGenerationError(`${target}の${columnName}データが見つかりません`);
   }
-  
+
   // JSONの構造: 外側のキーが前々回、内側のキーが前回
   // 例: "4": { "0": [...], "1": [...], ... } → 前々回=4、前回=0の場合
   const previousPreviousMap = columnData[String(previousPreviousDigit)];
-  
+
   if (!previousPreviousMap || typeof previousPreviousMap !== 'object') {
     throw new ChartGenerationError(
       `${target}の${columnName}で前々回"${previousPreviousDigit}"のデータが見つかりません`
     );
   }
-  
+
   const predictedDigits = previousPreviousMap[String(previousDigit)];
-  
+
   if (!Array.isArray(predictedDigits)) {
     throw new ChartGenerationError(
       `${target}の${columnName}で前々回"${previousPreviousDigit}"、前回"${previousDigit}"の予測出目が見つかりません`
     );
   }
-  
+
   return predictedDigits;
 }
 
@@ -298,7 +298,7 @@ function applyPatternExpansion(
   pattern: Pattern
 ): number[] {
   const nums = [...sourceList];
-  
+
   // A1/A2: 欠番補足あり（0〜9全追加）
   // B1/B2: 欠番補足なし（0も含めて、すべて欠番補足しない）
   if (pattern === ('A1' as Pattern) || pattern === ('A2' as Pattern)) {
@@ -310,10 +310,10 @@ function applyPatternExpansion(
     }
   }
   // B1/B2の場合は何も追加しない（sourceListをそのまま使用）
-  
+
   // 昇順ソート（重複は許容）
   nums.sort((a, b) => a - b);
-  
+
   return nums;
 }
 
@@ -339,7 +339,7 @@ function buildMainRows(nums: number[]): { mainRows: MainRow[]; tempList: number[
   // tempListを「4桁単位で最小値から順に重複せずに選択」のルールで並べ替え
   let tempList: number[] = [];
   let remaining = [...nums];
-  
+
   // 4桁単位で処理
   while (remaining.length > 0) {
     const chunk: number[] = [];
@@ -354,7 +354,7 @@ function buildMainRows(nums: number[]): { mainRows: MainRow[]; tempList: number[
         }
       }
     }
-    
+
     // 4桁に満たない場合、残りから最小値から順に埋める（重複してもOK）
     // 「最小値から順に」は0～9まで重複せずに順番に埋めていく（連続していなくてもOK）
     if (chunk.length < 4 && remaining.length > 0) {
@@ -377,15 +377,15 @@ function buildMainRows(nums: number[]): { mainRows: MainRow[]; tempList: number[
         remaining.splice(index, 1);
       }
     }
-    
+
     tempList.push(...chunk);
   }
-  
+
   // tempListのコピーを保存（メイン行組み立てで消費されるため）
   const originalTempList = [...tempList];
-  
+
   let rowIndex = 0;
-  
+
   // デバッグ出力（開発時のみ）
   // @ts-ignore - process is available in Node.js environment
   const DEBUG = typeof process !== 'undefined' && process.env?.DEBUG_CHART === 'true';
@@ -394,44 +394,44 @@ function buildMainRows(nums: number[]): { mainRows: MainRow[]; tempList: number[
     console.log('[buildMainRows] 開始: nums =', nums);
     console.log('[buildMainRows] 初期 tempList =', [...tempList]);
   }
-  
+
   while (tempList.length > 0) {
     let newRow: number[] = [];
-    
+
     // 最後のメイン行かどうかを判定（残りの数字が4つ以下なら最後の行）
     const isLastRow = tempList.length <= 4;
     const targetCount = isLastRow ? tempList.length : 4;
-    
+
     // tempListは最小値順にソート済み
     // 4桁単位で最小値から順に重複せずに選択（連続していなくても良い、例：0,1,2,5）
     // 4桁埋めたら次の最小値から繰り返し
     // 4桁埋まらなかったら、次の未消費の最小値から埋めていく
     // tempListは事前に並べ替え済みなので、先頭から順に取るだけ
-    
+
     if (DEBUG) {
       console.log(`[buildMainRows] ----------------------------------------`);
       console.log(`[buildMainRows] 【行${rowIndex}の処理開始】`);
       console.log(`[buildMainRows] tempList =`, [...tempList]);
       console.log(`[buildMainRows] isLastRow = ${isLastRow}, targetCount = ${targetCount}`);
     }
-    
+
     // tempListの先頭から順に取るだけ（既にソート済み）
     newRow = tempList.splice(0, targetCount);
-    
+
     if (DEBUG) {
       console.log(`[buildMainRows]   ✓ 数字[${newRow.join(', ')}]を選択（先頭から${targetCount}個）`);
       console.log(`[buildMainRows]   残りのtempList = [${tempList.join(', ')}]`);
     }
-    
+
     if (DEBUG) {
       console.log(`[buildMainRows] 【行${rowIndex}の処理完了】`);
       console.log(`[buildMainRows] 完成したnewRow = [${newRow.join(', ')}]`);
       console.log(`[buildMainRows] 残りのtempList = [${tempList.join(', ')}]`);
     }
-    
+
     mainRows.push({ elements: newRow, rowIndex: rowIndex++ });
   }
-  
+
   if (DEBUG) {
     console.log('[buildMainRows] ========================================');
     console.log('[buildMainRows] 最終結果:');
@@ -439,11 +439,11 @@ function buildMainRows(nums: number[]): { mainRows: MainRow[]; tempList: number[
       console.log(`[buildMainRows]   行${idx}: [${row.elements.join(', ')}]`);
     });
   }
-  
+
   if (mainRows.length === 0) {
     throw new ChartGenerationError('メイン行が1本も生成されませんでした');
   }
-  
+
   return { mainRows, tempList: originalTempList };
 }
 
@@ -473,11 +473,11 @@ function initializeGrid(
   const grid: ChartGrid = Array(rows + 1)
     .fill(null)
     .map(() => Array(cols + 1).fill(null)); // 列も1-indexedに統一（col[0]は未使用）
-  
+
   // メイン行を配置（奇数行の奇数列に配置: 1, 3, 5, 7行目の1, 3, 5, 7列目）
   // @ts-ignore - process is available in Node.js environment
   const DEBUG = typeof process !== 'undefined' && process.env?.DEBUG_CHART === 'true';
-  
+
   if (DEBUG) {
     console.log('\n[initializeGrid] メイン行配置開始');
     console.log(`メイン行数: ${mainRows.length}`);
@@ -485,11 +485,11 @@ function initializeGrid(
       console.log(`  メイン行${i}: elements = [${mainRows[i].elements.join(', ')}]`);
     }
   }
-  
+
   for (let i = 0; i < mainRows.length; i++) {
     const rowNum = i * 2 + 1; // 奇数行（1, 3, 5, 7行目）
     const mainRow = mainRows[i];
-    
+
     // 最後のメイン行の下に必ず裏数字を配置する行が存在することを確認
     // メイン行が行(2*i+1)に配置される場合、その下の行(2*i+2)が必要
     // rows = 2*Nなので、最後のメイン行は行(2*N-1)に配置され、その下の行(2*N)が存在する
@@ -498,11 +498,11 @@ function initializeGrid(
         `メイン行配置エラー: 行${rowNum}にメイン行を配置するためには、行${rowNum + 1}が必要です（現在の行数: ${rows}行）`
       );
     }
-    
+
     if (DEBUG) {
       console.log(`  行${rowNum}に配置: elements = [${mainRow.elements.join(', ')}]（要素数: ${mainRow.elements.length}）`);
     }
-    
+
     // メイン行の要素数分だけ配置（最大4要素）
     for (let j = 0; j < mainRow.elements.length && j < 4; j++) {
       const colNum = j * 2 + 1; // 奇数列（1, 3, 5, 7列目）
@@ -512,7 +512,7 @@ function initializeGrid(
       }
     }
   }
-  
+
   return grid;
 }
 
@@ -537,35 +537,27 @@ function placeCenterZero(grid: ChartGrid, rows: number, cols: number): [number, 
   // 行数に応じて対角線上の位置を決定
   let centerRow: number;
   let centerCol: number;
-  
+
   if (rows === 6) {
     centerRow = 4;
     centerCol = 5;
-  } else if (rows === 8) {
+  } else if (rows >= 8) {
     centerRow = 5;
     centerCol = 5;
-  } else if (rows === 10) {
-    centerRow = 6;
-    centerCol = 6;
-  } else if (rows === 12) {
-    centerRow = 7;
-    centerCol = 7;
   } else {
     // その他の行数の場合は従来のロジック（後方互換性のため）
-    if (rows >= 10) {
-      centerRow = 6;
-    } else if (rows >= 4) {
+    if (rows >= 4) {
       centerRow = 4;
     } else {
       centerRow = rows;
     }
-    
+
     // 中心列を計算（1-indexed）
     const centerCols = [
       Math.floor((cols + 1) / 2),  // 4列目
       Math.ceil((cols + 1) / 2)    // 5列目
     ];
-    
+
     // 中心行の中心列を走査（列昇順）
     for (const c of centerCols) {
       if (grid[centerRow][c] === null) {
@@ -573,16 +565,16 @@ function placeCenterZero(grid: ChartGrid, rows: number, cols: number): [number, 
         return [centerRow, c]; // 配置した位置を返す
       }
     }
-    
+
     return null; // 配置できなかった（すでにすべて埋まっていた）
   }
-  
+
   // 対角線上の位置に0を配置
   if (grid[centerRow][centerCol] === null) {
     grid[centerRow][centerCol] = 0;
     return [centerRow, centerCol]; // 配置した位置を返す
   }
-  
+
   return null; // 配置できなかった（すでに埋まっていた）
 }
 
@@ -608,16 +600,16 @@ function inverse(n: number): number {
  * @param centerZeroPos 中心0配置の位置 [row, col]、nullの場合は通常通り処理
  */
 function applyVerticalInverse(
-  grid: ChartGrid, 
-  rows: number, 
+  grid: ChartGrid,
+  rows: number,
   cols: number,
   centerZeroPos: [number, number] | null = null
 ): void {
   let updated = true;
-  
+
   while (updated) {
     updated = false;
-    
+
     // 行1から開始（1-indexed）。配列のインデックス1から使用
     for (let row = 1; row <= rows; row++) {
       for (let col = 1; col <= cols; col++) {
@@ -628,7 +620,7 @@ function applyVerticalInverse(
             continue;
           }
         }
-        
+
         if (grid[row][col] === null && row > 1 && grid[row - 1][col] !== null) {
           grid[row][col] = inverse(grid[row - 1][col]!);
           updated = true;
@@ -650,10 +642,10 @@ function applyVerticalInverse(
  */
 function applyHorizontalInverse(grid: ChartGrid, rows: number, cols: number): void {
   let updated = true;
-  
+
   while (updated) {
     updated = false;
-    
+
     // 行1から開始（1-indexed）。配列のインデックス1から使用
     for (let row = 1; row <= rows; row++) {
       for (let col = 1; col <= cols; col++) {
@@ -688,7 +680,7 @@ function applyHorizontalInverse(grid: ChartGrid, rows: number, cols: number): vo
 function applyMainRowRemainingCopy(grid: ChartGrid, rows: number, cols: number): void {
   // @ts-ignore - process is available in Node.js environment
   const DEBUG = typeof process !== 'undefined' && process.env?.DEBUG_CHART === 'true';
-  
+
   if (DEBUG) {
     console.log('\n[applyMainRowRemainingCopy] 開始');
     console.log('メイン行配置後のグリッド状態（奇数行のみ）:');
@@ -700,7 +692,7 @@ function applyMainRowRemainingCopy(grid: ChartGrid, rows: number, cols: number):
       console.log(`  行${row}: [${rowData.join(', ')}]`);
     }
   }
-  
+
   // 各メイン行（奇数行）について、その行に数字が入っているかチェック
   const hasMainRow = (row: number): boolean => {
     // 奇数行の奇数列（1, 3, 5, 7列目）に数字が入っているかチェック
@@ -711,7 +703,7 @@ function applyMainRowRemainingCopy(grid: ChartGrid, rows: number, cols: number):
     }
     return false;
   };
-  
+
   // 奇数行の奇数列（1, 3, 5, 7列目）を処理
   // メイン行が配置されているが、要素が4つ未満の場合の空のマスを補完
   for (let row = 1; row <= rows; row += 2) {
@@ -720,9 +712,9 @@ function applyMainRowRemainingCopy(grid: ChartGrid, rows: number, cols: number):
       if (DEBUG) console.log(`  行${row}: メイン行なし、スキップ`);
       continue; // メイン行がなければスキップ
     }
-    
+
     if (DEBUG) console.log(`  行${row}: メイン行あり、処理開始`);
-    
+
     // 奇数列（1, 3, 5, 7列目）が空の場合、その上のメイン行の数字をコピー
     // メイン行配置後の余りマスルール: 空の奇数列に上のメイン行の同じ列の数字を反映
     for (let col = 1; col <= cols; col += 2) {
@@ -732,7 +724,7 @@ function applyMainRowRemainingCopy(grid: ChartGrid, rows: number, cols: number):
         while (prevMainRow >= 1 && !hasMainRow(prevMainRow)) {
           prevMainRow -= 2;
         }
-        
+
         // 上のメイン行が見つかり、その列に数字がある場合、コピー
         if (prevMainRow >= 1 && grid[prevMainRow][col] !== null) {
           if (DEBUG) {
@@ -747,14 +739,14 @@ function applyMainRowRemainingCopy(grid: ChartGrid, rows: number, cols: number):
       }
     }
   }
-  
+
   // 奇数行の偶数列（2, 4, 6, 8列目）を処理
   for (let row = 1; row <= rows; row += 2) {
     // その行にメイン行が配置されているかチェック
     if (!hasMainRow(row)) {
       continue; // メイン行がなければスキップ
     }
-    
+
     // 偶数列（2, 4, 6, 8列目）が空の場合、その上のメイン行の数字をコピー
     for (let col = 2; col <= cols; col += 2) {
       if (grid[row][col] === null && row > 1) {
@@ -763,7 +755,7 @@ function applyMainRowRemainingCopy(grid: ChartGrid, rows: number, cols: number):
         while (prevMainRow >= 1 && !hasMainRow(prevMainRow)) {
           prevMainRow -= 2;
         }
-        
+
         if (prevMainRow >= 1 && grid[prevMainRow][col] !== null) {
           if (DEBUG) {
             console.log(`    行${row}列${col}: 空 → 行${prevMainRow}列${col}の${grid[prevMainRow][col]}をコピー`);
@@ -773,7 +765,7 @@ function applyMainRowRemainingCopy(grid: ChartGrid, rows: number, cols: number):
       }
     }
   }
-  
+
   if (DEBUG) {
     console.log('\n処理後のグリッド状態（奇数行のみ）:');
     for (let row = 1; row <= rows; row += 2) {
@@ -785,7 +777,7 @@ function applyMainRowRemainingCopy(grid: ChartGrid, rows: number, cols: number):
     }
     console.log('[applyMainRowRemainingCopy] 終了\n');
   }
-  
+
   // 注意: 偶数行（2, 4, 6, 8行目）は裏数字ルール適用前は空のままにするため、
   // ここでは処理しない
 }
@@ -802,10 +794,10 @@ function applyMainRowRemainingCopy(grid: ChartGrid, rows: number, cols: number):
  */
 function applyRemainingCopy(grid: ChartGrid, rows: number, cols: number): void {
   let updated = true;
-  
+
   while (updated) {
     updated = false;
-    
+
     // 行1から開始（1-indexed）。配列のインデックス1から使用
     for (let row = 1; row <= rows; row++) {
       for (let col = 1; col <= cols; col++) {
