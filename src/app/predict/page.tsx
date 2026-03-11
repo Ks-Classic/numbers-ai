@@ -66,15 +66,15 @@ export default function PredictPage() {
           const updateResult = await updateRes.json();
 
           if (updateResult.success) {
-             // 更新成功後、再度データを整形してstateにセット
-             // APIレスポンスには更新後のデータが含まれていると想定
-             const updatedData = {
-                 targetRoundData: updateResult.data ? {
-                    round: updateResult.data.round_number,
-                    n3Rehearsal: updateResult.data.n3_rehearsal === 'NULL' ? null : updateResult.data.n3_rehearsal,
-                    n4Rehearsal: updateResult.data.n4_rehearsal === 'NULL' ? null : updateResult.data.n4_rehearsal,
-                 } : null
-             };
+            // 更新成功後、再度データを整形してstateにセット
+            // APIレスポンスには更新後のデータが含まれていると想定
+            const updatedData = {
+              targetRoundData: updateResult.data ? {
+                round: updateResult.data.round_number,
+                n3Rehearsal: updateResult.data.n3_rehearsal === 'NULL' ? null : updateResult.data.n3_rehearsal,
+                n4Rehearsal: updateResult.data.n4_rehearsal === 'NULL' ? null : updateResult.data.n4_rehearsal,
+              } : null
+            };
 
             setDataStatus({
               status: 'update_success',
@@ -112,6 +112,8 @@ export default function PredictPage() {
 
   // 回号が変更されたらチェック（デバウンス）
   useEffect(() => {
+    // 回号変更時に即座にステータスをリセット（古いデータの混入を防止）
+    setDataStatus({ status: 'checking', message: '最新データを確認中...' });
     const timer = setTimeout(() => {
       const roundNum = parseInt(formData.roundNumber);
       if (!isNaN(roundNum) && formData.roundNumber.length === 4) {
@@ -137,8 +139,11 @@ export default function PredictPage() {
     let rehearsalN4 = '';
 
     if (useGitHub && dataStatus.githubData?.targetRoundData) {
-      rehearsalN3 = dataStatus.githubData.targetRoundData.n3Rehearsal || '';
-      rehearsalN4 = dataStatus.githubData.targetRoundData.n4Rehearsal || '';
+      // 回号が一致する場合のみリハーサル数字を使用（前回の回号データが残っている場合を防止）
+      if (dataStatus.githubData.targetRoundData.round === roundNum) {
+        rehearsalN3 = dataStatus.githubData.targetRoundData.n3Rehearsal || '';
+        rehearsalN4 = dataStatus.githubData.targetRoundData.n4Rehearsal || '';
+      }
     }
 
     setSessionData({
