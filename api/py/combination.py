@@ -52,6 +52,62 @@ model_loader = None
 df = None
 keisen_master = None
 
+# ── 連結パス派生ユーティリティ ─────────────────────────
+from collections import deque as _deque
+
+def _find_digit_cells(grid, rows, cols, digits_set):
+    """CUBE上で指定数字が配置されているセルを取得"""
+    cells = set()
+    for r in range(1, rows + 1):
+        for c in range(1, cols + 1):
+            if grid[r][c] is not None and grid[r][c] in digits_set:
+                cells.add((r, c))
+    return cells
+
+def _find_connected_components(cells):
+    """8方向隣接の連結成分を検出"""
+    cell_set = set(cells)
+    visited = set()
+    components = []
+    for cell in cell_set:
+        if cell in visited:
+            continue
+        comp = set()
+        queue = _deque([cell])
+        visited.add(cell)
+        while queue:
+            r, c = queue.popleft()
+            comp.add((r, c))
+            for dr in [-1, 0, 1]:
+                for dc in [-1, 0, 1]:
+                    if dr == 0 and dc == 0:
+                        continue
+                    nr, nc = r + dr, c + dc
+                    if (nr, nc) in cell_set and (nr, nc) not in visited:
+                        visited.add((nr, nc))
+                        queue.append((nr, nc))
+        components.append(comp)
+    return components
+
+def _get_reh_path_digits(grid, rows, cols, rehearsal_digits_str):
+    """リハーサルの最大連結パス上にある全ユニーク数字を取得
+    
+    リハ数字がCUBE上で形成する最大の連結成分を見つけ、
+    そのセル上にある数字の集合を返す。
+    これが「橋渡し候補数字」となる。
+    """
+    if not rehearsal_digits_str:
+        return set()
+    reh_digits = set(int(c) for c in rehearsal_digits_str)
+    cells = _find_digit_cells(grid, rows, cols, reh_digits)
+    if not cells:
+        return set()
+    comps = _find_connected_components(cells)
+    if not comps:
+        return set()
+    max_comp = max(comps, key=len)
+    return set(grid[r][c] for r, c in max_comp if grid[r][c] is not None)
+
 
 def load_data_and_models():
     """モデルとデータを読み込む"""
@@ -230,8 +286,13 @@ def predict_combination_logic(data):
             raise
     
     rehearsal_positions = None
+    reh_path_digits = set()
     if rehearsal_digits:
         rehearsal_positions = get_rehearsal_positions(grid, rows, cols, rehearsal_digits)
+        # リハーサル連結パス上の数字を取得（派生ボーナス用）
+        reh_path_digits = _get_reh_path_digits(grid, rows, cols, rehearsal_digits)
+        if reh_path_digits:
+            print(f"[INFO] リハ連結パス上の数字: {sorted(reh_path_digits)}  (リハ: {rehearsal_digits})")
     
     # 組み合わせを生成
     # ボックス: ソートされた組み合わせ（順序無視）
@@ -404,6 +465,19 @@ def predict_combination_logic(data):
             # デバッグ: 最初の数件のraw_scoreを出力
             if len(combo_scores) < 3:
                 print(f"[DEBUG] combo={combo}, raw_score={raw_score}, feature_dim={len(feature_vector)}")
+            
+            # 連結パス派生ボーナス: リハの連結パス上の数字を含む候補をスコアアップ
+            # N4: 派生率79% → 最大+50%ボーナス / N3: 派生率56% → 最大+25%ボーナス
+            if reh_path_digits:
+                combo_unique_digits = set(int(d) for d in combo)
+                bridge_count = len(combo_unique_digits & reh_path_digits)
+                if bridge_count > 0:
+                    bridge_ratio = bridge_count / len(combo_unique_digits)
+                    if target == 'n4':
+                        bonus = 1.0 + bridge_ratio * 0.5  # N4: 最大+50%
+                    else:
+                        bonus = 1.0 + bridge_ratio * 0.25  # N3: 最大+25%
+                    raw_score *= bonus
             
             # raw_scoreをそのまま保存（後で正規化）
             combo_scores.append({
