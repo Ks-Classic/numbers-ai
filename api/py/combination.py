@@ -341,9 +341,9 @@ def predict_combination_logic(data):
                     combo = ''.join(map(str, sorted(digits)))
                     box_combinations_set.add(combo)
             
-            # パターン4: ゾロ目（軸数字が3つ）
-            combo = ''.join([str(axis_digit)] * 3)
-            box_combinations_set.add(combo)
+            # パターン4: ゾロ目（軸数字が3つ）→ 除外（トリプルは対象外）
+            # combo = ''.join([str(axis_digit)] * 3)
+            # box_combinations_set.add(combo)
             
         else:  # n4
             # N4: 軸数字 + 他の3桁（ダブル含む）
@@ -372,12 +372,12 @@ def predict_combination_logic(data):
                     combo = ''.join(map(str, sorted(digits)))
                     box_combinations_set.add(combo)
             
-            # パターン4: 軸数字が3つ（トリプル）+ 異なる1つの数字
-            for other in all_digits:
-                if other != axis_digit:
-                    digits = [axis_digit, axis_digit, axis_digit, other]
-                    combo = ''.join(map(str, sorted(digits)))
-                    box_combinations_set.add(combo)
+            # パターン4: 軸数字が3つ（トリプル）→ 除外（3ケタ以上の被りは対象外）
+            # for other in all_digits:
+            #     if other != axis_digit:
+            #         digits = [axis_digit, axis_digit, axis_digit, other]
+            #         combo = ''.join(map(str, sorted(digits)))
+            #         box_combinations_set.add(combo)
             
             # パターン5: 軸数字が2つ + 別の数字が2つ（ダブルダブル）
             for other in all_digits:
@@ -386,12 +386,21 @@ def predict_combination_logic(data):
                     combo = ''.join(map(str, sorted(digits)))
                     box_combinations_set.add(combo)
             
-            # パターン6: ゾロ目（軸数字が4つ）
-            combo = ''.join([str(axis_digit)] * 4)
-            box_combinations_set.add(combo)
+            # パターン6: ゾロ目（軸数字が4つ）→ 除外（4ケタ被りは対象外）
+            # combo = ''.join([str(axis_digit)] * 4)
+            # box_combinations_set.add(combo)
         
         if len(box_combinations_set) >= max_combinations:
             break
+    # トリプル/フォース（同じ数字が3回以上）を除外
+    # ダブル（2回まで）は許容
+    from collections import Counter
+    filtered_set = set()
+    for combo in box_combinations_set:
+        digit_counts = Counter(combo)
+        if max(digit_counts.values()) <= 2:
+            filtered_set.add(combo)
+    box_combinations_set = filtered_set
     
     # ボックスならそのまま、ストレートなら順列を展開
     if combo_type == 'box':
