@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
         console.log('GitHubから最新データを取得中...');
         csvContent = await fetchPastResultsFromGitHub();
         console.log('GitHubデータ取得成功');
-        
+
         // データ不足チェック: 前回・前々回の当選番号があるか確認
         const lines = csvContent.split('\n');
         const roundNumbers = new Map<number, string>();
@@ -92,26 +92,26 @@ export async function POST(request: NextRequest) {
           const n4Winning = cols[6];
           roundNumbers.set(rnd, `${n3Winning},${n4Winning}`);
         }
-        
+
         // 前回(n-1)と前々回(n-2)の当選番号をチェック
         const prevData = roundNumbers.get(data.roundNumber - 1);
         const prevPrevData = roundNumbers.get(data.roundNumber - 2);
-        
+
         const isDataMissing = (dataStr: string | undefined) => {
           if (!dataStr) return true;
           const [n3, n4] = dataStr.split(',');
           return n3 === 'NULL' || n4 === 'NULL' || !n3 || !n4;
         };
-        
+
         if (isDataMissing(prevData) || isDataMissing(prevPrevData)) {
           console.log('⚠ データ不足を検出。Webから最新データを取得します...');
           console.log(`  前回(${data.roundNumber - 1}): ${prevData || '未登録'}`);
           console.log(`  前々回(${data.roundNumber - 2}): ${prevPrevData || '未登録'}`);
-          
+
           try {
             const fetchResult = await fetchAndUpdateData(data.roundNumber);
             console.log('データ更新結果:', fetchResult);
-            
+
             if (fetchResult.success && fetchResult.csv_content) {
               csvContent = fetchResult.csv_content;
               console.log('✅ 最新データを取得しました');
@@ -251,7 +251,9 @@ export async function POST(request: NextRequest) {
           axisResult.best_pattern,
           topAxisDigits,
           rehearsalDigits,
-          csvContent
+          csvContent,
+          data.n3Rehearsal,
+          data.n4Rehearsal
         );
         boxCombinations = boxResponse.combinations || [];
       } catch (error: any) {
@@ -273,7 +275,9 @@ export async function POST(request: NextRequest) {
           axisResult.best_pattern,
           topAxisDigits,
           rehearsalDigits,
-          csvContent
+          csvContent,
+          data.n3Rehearsal,
+          data.n4Rehearsal
         );
         straightCombinations = straightResponse.combinations || [];
       } catch (error: any) {

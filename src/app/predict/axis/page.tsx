@@ -14,17 +14,17 @@ import type { PredictionItem } from '@/types/prediction';
 
 export default function AxisPage() {
   // データ取得（ストアから取得）
-  const { 
-    axisCandidates: storeAxisCandidates, 
-    finalPredictions, 
-    currentSession, 
+  const {
+    axisCandidates: storeAxisCandidates,
+    finalPredictions,
+    currentSession,
     setSessionData,
     n3AxisCandidates,
     n4AxisCandidates,
     n3FinalPredictions,
     n4FinalPredictions,
   } = usePredictionStore();
-  
+
   // メインタブ: N3/N4（ストアの値と同期）
   const [mainTab, setMainTab] = useState<'N3' | 'N4'>(currentSession.numbersType);
   // サブタブ: box/straight
@@ -50,7 +50,7 @@ export default function AxisPage() {
       n3AxisCandidatesLength: n3AxisCandidates.length,
       n4AxisCandidatesLength: n4AxisCandidates.length,
     });
-    
+
     // mainTabに応じて適切なデータを返す
     if (mainTab === 'N3') {
       if (n3AxisCandidates.length > 0) {
@@ -68,7 +68,7 @@ export default function AxisPage() {
       return sampleAxisCandidatesN4;
     }
   }, [mainTab, n3AxisCandidates, n4AxisCandidates]);
-  
+
   // タブ切り替え時に手動指定状態をリセット
   const handleMainTabChange = (v: string) => {
     const newTab = v as 'N3' | 'N4';
@@ -81,14 +81,14 @@ export default function AxisPage() {
       n3AxisCandidatesLength: n3AxisCandidates.length,
       n4AxisCandidatesLength: n4AxisCandidates.length,
     });
-    
+
     setMainTab(newTab);
     // ストアのnumbersTypeも更新（これによりaxisCandidatesが再計算される）
     setSessionData({ numbersType: newTab });
     setCustomAxis('');
     setIsCustomExpanded(false);
     setCustomCandidates([]);
-    
+
     console.log('タブ切り替え完了:', {
       newTab,
       storeAxisCandidatesLength: storeAxisCandidates.length,
@@ -122,7 +122,7 @@ export default function AxisPage() {
       subTab,
       axisCandidatesLength: axisCandidates.length,
     });
-    
+
     const all: PredictionItem[] = [];
     if (Array.isArray(axisCandidates)) {
       axisCandidates.forEach((axis, idx) => {
@@ -135,25 +135,25 @@ export default function AxisPage() {
         }
       });
     }
-    
+
     console.log('allCandidates収集結果:', {
       subTab,
       totalCount: all.length,
       sampleNumbers: all.slice(0, 5).map(item => item.number),
     });
-    
+
     // スコア順にソート（降順）、重複を除去（番号が同じものは1つだけ）
-    const unique = all.filter((item, index, self) => 
+    const unique = all.filter((item, index, self) =>
       item.number && index === self.findIndex(t => t.number === item.number)
     );
     const sorted = unique.sort((a, b) => (b.score || 0) - (a.score || 0)).slice(0, 20);
-    
+
     console.log('allCandidates最終結果:', {
       subTab,
       uniqueCount: sorted.length,
       sampleNumbers: sorted.slice(0, 5).map(item => item.number),
     });
-    
+
     return sorted;
   }, [axisCandidates, subTab]);
 
@@ -209,15 +209,15 @@ export default function AxisPage() {
 
     // 既存の候補にない場合、APIを呼び出して新しく予測を実行
     console.log('既存の候補にないため、APIを呼び出して新しく予測を実行します');
-    
+
     try {
       setIsCalculating(true);
       // ローディング状態を設定
       setIsCustomExpanded(false);
-      
+
       const target = mainTab.toLowerCase() as 'n3' | 'n4';
       const rehearsalDigits = target === 'n3' ? currentSession.rehearsalN3 : currentSession.rehearsalN4;
-      
+
       if (!rehearsalDigits) {
         alert('リハーサル数字が設定されていません');
         setIsCalculating(false);
@@ -241,6 +241,8 @@ export default function AxisPage() {
           best_pattern: bestPattern,
           top_axis_digits: [axisNum], // 指定された軸数字のみを使用
           rehearsal_digits: rehearsalDigits,
+          rehearsal_n3: currentSession.rehearsalN3,
+          rehearsal_n4: currentSession.rehearsalN4,
           max_combinations: 100,
         }),
       });
@@ -251,7 +253,7 @@ export default function AxisPage() {
       }
 
       const result = await response.json();
-      
+
       console.log('API予測結果:', {
         combinationsCount: result.combinations?.length || 0,
       });
@@ -267,10 +269,10 @@ export default function AxisPage() {
 
       // スコア順にソート
       const sorted = candidates.sort((a, b) => (b.score || 0) - (a.score || 0)).slice(0, 10); // 10位まで
-      
+
       setCustomCandidates(sorted);
       setIsCustomExpanded(true);
-      
+
       console.log('手動指定軸の候補を計算完了:', sorted.length, '件');
     } catch (error: any) {
       console.error('手動指定軸の予測エラー:', error);
@@ -303,14 +305,14 @@ export default function AxisPage() {
         {/* メインタブ：N3/N4 */}
         <Tabs value={mainTab} onValueChange={handleMainTabChange} className="mb-4">
           <TabsList className="grid w-full grid-cols-2 h-10 bg-muted/50 rounded-lg p-1 mb-4">
-            <TabsTrigger 
-              value="N3" 
+            <TabsTrigger
+              value="N3"
               className="text-sm md:text-base font-medium data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:font-semibold data-[state=active]:shadow-sm data-[state=inactive]:text-muted-foreground transition-all"
             >
               {mainTab === 'N3' && <span className="mr-1 text-xs">●</span>}N3
             </TabsTrigger>
-            <TabsTrigger 
-              value="N4" 
+            <TabsTrigger
+              value="N4"
               className="text-sm md:text-base font-medium data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:font-semibold data-[state=active]:shadow-sm data-[state=inactive]:text-muted-foreground transition-all"
             >
               {mainTab === 'N4' && <span className="mr-1 text-xs">●</span>}N4
@@ -321,14 +323,14 @@ export default function AxisPage() {
             {/* サブタブ：ボックス/ストレート */}
             <Tabs value={subTab} onValueChange={handleSubTabChange} className="mb-4">
               <TabsList className="grid w-full grid-cols-2 h-9 bg-muted/50 rounded-lg p-1 mb-4">
-                <TabsTrigger 
-                  value="box" 
+                <TabsTrigger
+                  value="box"
                   className="text-sm md:text-base font-medium data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:font-semibold data-[state=active]:shadow-sm data-[state=inactive]:text-muted-foreground transition-all"
                 >
                   {subTab === 'box' && <span className="mr-1 text-xs">●</span>}ボックス
                 </TabsTrigger>
-                <TabsTrigger 
-                  value="straight" 
+                <TabsTrigger
+                  value="straight"
                   className="text-sm md:text-base font-medium data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:font-semibold data-[state=active]:shadow-sm data-[state=inactive]:text-muted-foreground transition-all"
                 >
                   {subTab === 'straight' && <span className="mr-1 text-xs">●</span>}ストレート
@@ -341,22 +343,20 @@ export default function AxisPage() {
                   <div className="inline-flex rounded-lg bg-muted/50 p-1 border border-border">
                     <button
                       onClick={() => setViewMode('axis')}
-                      className={`px-4 py-2 rounded-md text-sm md:text-base font-medium transition-all ${
-                        viewMode === 'axis'
+                      className={`px-4 py-2 rounded-md text-sm md:text-base font-medium transition-all ${viewMode === 'axis'
                           ? 'text-primary-foreground bg-primary font-semibold shadow-sm'
                           : 'text-muted-foreground hover:text-foreground hover:bg-muted/80'
-                      }`}
+                        }`}
                     >
                       {viewMode === 'axis' && <span className="mr-1 text-xs">●</span>}
                       軸数字
                     </button>
                     <button
                       onClick={() => setViewMode('overall')}
-                      className={`px-4 py-2 rounded-md text-sm md:text-base font-medium transition-all ${
-                        viewMode === 'overall'
+                      className={`px-4 py-2 rounded-md text-sm md:text-base font-medium transition-all ${viewMode === 'overall'
                           ? 'text-primary-foreground bg-primary font-semibold shadow-sm'
                           : 'text-muted-foreground hover:text-foreground hover:bg-muted/80'
-                      }`}
+                        }`}
                     >
                       {viewMode === 'overall' && <span className="mr-1 text-xs">●</span>}
                       総合
@@ -373,7 +373,7 @@ export default function AxisPage() {
                           <tr className="border-b-2 border-border">
                             <th className="text-left p-2.5 text-sm md:text-base font-semibold">#</th>
                             <th className="text-left p-2.5 text-sm md:text-base font-semibold">番号</th>
-                            <th 
+                            <th
                               className="text-left p-2.5 text-sm md:text-base font-semibold cursor-pointer hover:text-primary underline underline-offset-2 transition-colors"
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -388,17 +388,17 @@ export default function AxisPage() {
                           {allCandidates.length > 0 ? (
                             allCandidates.map((item, index) => (
                               <tr key={index} className="border-b border-border hover:bg-muted/50 transition-colors">
-                                    <td className="p-2.5 text-sm md:text-base">{index + 1}</td>
-                                    <td className="p-2.5 text-base md:text-lg font-bold">{item.number}</td>
-                                    <td 
-                                      className="p-2.5 text-sm md:text-base cursor-pointer hover:text-primary underline underline-offset-1 transition-colors"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setOpenDialog('score');
-                                      }}
-                                    >
-                                      {typeof item.score === 'number' ? item.score.toFixed(1) : (item.score || '-')}
-                                    </td>
+                                <td className="p-2.5 text-sm md:text-base">{index + 1}</td>
+                                <td className="p-2.5 text-base md:text-lg font-bold">{item.number}</td>
+                                <td
+                                  className="p-2.5 text-sm md:text-base cursor-pointer hover:text-primary underline underline-offset-1 transition-colors"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setOpenDialog('score');
+                                  }}
+                                >
+                                  {typeof item.score === 'number' ? item.score.toFixed(1) : (item.score || '-')}
+                                </td>
                               </tr>
                             ))
                           ) : (
@@ -421,7 +421,7 @@ export default function AxisPage() {
                       .map((axis, index) => {
                         const isExpanded = expandedAxes.has(axis.axis);
                         const candidates = subTab === 'box' ? (axis.candidates?.box || []) : (axis.candidates?.straight || []);
-                        
+
                         console.log(`軸数字${axis.axis}表示:`, {
                           subTab,
                           boxCount: axis.candidates?.box?.length || 0,
@@ -447,7 +447,7 @@ export default function AxisPage() {
                                       {index + 1}位
                                     </span>
                                     <span className="text-muted-foreground">|</span>
-                                    <span 
+                                    <span
                                       className="text-sm md:text-base font-bold whitespace-nowrap cursor-pointer hover:text-primary underline underline-offset-2 transition-colors"
                                       onClick={(e) => {
                                         e.stopPropagation();
@@ -477,7 +477,7 @@ export default function AxisPage() {
                                       <tr className="border-b-2 border-border">
                                         <th className="text-left p-2.5 text-sm md:text-base font-semibold">#</th>
                                         <th className="text-left p-2.5 text-sm md:text-base font-semibold">番号</th>
-                                        <th 
+                                        <th
                                           className="text-left p-2.5 text-sm md:text-base font-semibold cursor-pointer hover:text-primary underline underline-offset-2 transition-colors"
                                           onClick={(e) => {
                                             e.stopPropagation();
@@ -493,7 +493,7 @@ export default function AxisPage() {
                                         <tr key={idx} className="border-b border-border hover:bg-muted/50 transition-colors">
                                           <td className="p-2.5 text-sm md:text-base">{idx + 1}</td>
                                           <td className="p-2.5 text-base md:text-lg font-bold">{item.number}</td>
-                                          <td 
+                                          <td
                                             className="p-2.5 text-sm md:text-base cursor-pointer hover:text-primary underline underline-offset-1 transition-colors"
                                             onClick={(e) => {
                                               e.stopPropagation();
@@ -552,7 +552,7 @@ export default function AxisPage() {
                           </div>
                           <div className="ml-auto flex-shrink-0">
                             {isCustomExpanded ? (
-                              <ChevronUp 
+                              <ChevronUp
                                 className="w-5 h-5 text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -560,7 +560,7 @@ export default function AxisPage() {
                                 }}
                               />
                             ) : (
-                              <ChevronDown 
+                              <ChevronDown
                                 className="w-5 h-5 text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -582,7 +582,7 @@ export default function AxisPage() {
                                   <tr className="border-b-2 border-border">
                                     <th className="text-left p-2.5 text-sm md:text-base font-semibold">#</th>
                                     <th className="text-left p-2.5 text-sm md:text-base font-semibold">番号</th>
-                                    <th 
+                                    <th
                                       className="text-left p-2.5 text-sm md:text-base font-semibold cursor-pointer hover:text-primary underline underline-offset-2 transition-colors"
                                       onClick={(e) => {
                                         e.stopPropagation();
@@ -598,7 +598,7 @@ export default function AxisPage() {
                                     <tr key={idx} className="border-b border-border hover:bg-muted/50 transition-colors">
                                       <td className="p-2.5 text-sm md:text-base">{idx + 1}</td>
                                       <td className="p-2.5 text-base md:text-lg font-bold">{item.number}</td>
-                                      <td 
+                                      <td
                                         className="p-2.5 text-sm md:text-base cursor-pointer hover:text-primary underline underline-offset-1 transition-colors"
                                         onClick={(e) => {
                                           e.stopPropagation();

@@ -105,7 +105,9 @@ export async function predictCombination(
   bestPattern: 'A1' | 'A2' | 'B1' | 'B2',
   topAxisDigits: number[],
   rehearsalDigits?: string,
-  csvContent?: string
+  csvContent?: string,
+  rehearsalN3?: string,
+  rehearsalN4?: string
 ): Promise<CombinationPredictionResult> {
   const baseUrl = getBaseUrl();
   const url = `${baseUrl}/api/py/combination`;
@@ -124,6 +126,8 @@ export async function predictCombination(
       best_pattern: bestPattern,
       top_axis_digits: topAxisDigits,
       rehearsal_digits: rehearsalDigits,
+      rehearsal_n3: rehearsalN3,
+      rehearsal_n4: rehearsalN4,
       csv_content: csvContent,
     }),
   });

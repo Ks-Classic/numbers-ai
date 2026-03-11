@@ -158,6 +158,8 @@ def predict_combination_logic(data):
     best_pattern = data.get('best_pattern', 'A1')
     top_axis_digits = data.get('top_axis_digits', [])
     rehearsal_digits = data.get('rehearsal_digits')
+    rehearsal_n3 = data.get('rehearsal_n3')  # N3リハ数字（共通数字ボーナス用）
+    rehearsal_n4 = data.get('rehearsal_n4')  # N4リハ数字（共通数字ボーナス用）
     max_combinations = int(data.get('max_combinations', 100))
     csv_content = data.get('csv_content')
 
@@ -293,6 +295,15 @@ def predict_combination_logic(data):
         reh_path_digits = _get_reh_path_digits(grid, rows, cols, rehearsal_digits)
         if reh_path_digits:
             print(f"[INFO] リハ連結パス上の数字: {sorted(reh_path_digits)}  (リハ: {rehearsal_digits})")
+    
+    # N3/N4リハ共通数字を算出（最優先ボーナス用）
+    shared_reh_digits = set()
+    if rehearsal_n3 and rehearsal_n4:
+        n3_digits = set(int(d) for d in str(rehearsal_n3) if d.isdigit())
+        n4_digits = set(int(d) for d in str(rehearsal_n4) if d.isdigit())
+        shared_reh_digits = n3_digits & n4_digits
+        if shared_reh_digits:
+            print(f"[INFO] N3/N4リハ共通数字: {sorted(shared_reh_digits)}  (N3={rehearsal_n3}, N4={rehearsal_n4})")
     
     # 組み合わせを生成
     # ボックス: ソートされた組み合わせ（順序無視）
@@ -466,10 +477,23 @@ def predict_combination_logic(data):
             if len(combo_scores) < 3:
                 print(f"[DEBUG] combo={combo}, raw_score={raw_score}, feature_dim={len(feature_vector)}")
             
+            combo_unique_digits = set(int(d) for d in combo)
+            
+            # 最優先ボーナス: N3/N4リハ共通数字を含む候補
+            # 両方のリハに出現する数字は当選に直結する可能性が最も高い
+            if shared_reh_digits:
+                shared_count = len(combo_unique_digits & shared_reh_digits)
+                if shared_count > 0:
+                    shared_ratio = shared_count / len(combo_unique_digits)
+                    if target == 'n4':
+                        shared_bonus = 1.0 + shared_ratio * 0.75  # N4: 最大+75%
+                    else:
+                        shared_bonus = 1.0 + shared_ratio * 0.5  # N3: 最大+50%
+                    raw_score *= shared_bonus
+            
             # 連結パス派生ボーナス: リハの連結パス上の数字を含む候補をスコアアップ
             # N4: 派生率79% → 最大+50%ボーナス / N3: 派生率56% → 最大+25%ボーナス
             if reh_path_digits:
-                combo_unique_digits = set(int(d) for d in combo)
                 bridge_count = len(combo_unique_digits & reh_path_digits)
                 if bridge_count > 0:
                     bridge_ratio = bridge_count / len(combo_unique_digits)

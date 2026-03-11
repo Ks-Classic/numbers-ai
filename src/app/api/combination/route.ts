@@ -20,6 +20,8 @@ const CombinationRequestSchema = z.object({
   best_pattern: z.enum(['A1', 'A2', 'B1', 'B2']),
   top_axis_digits: z.array(z.number().int().min(0).max(9)).min(1).max(10),
   rehearsal_digits: z.string().optional(),
+  rehearsal_n3: z.string().optional(),
+  rehearsal_n4: z.string().optional(),
   max_combinations: z.number().int().min(1).max(1000).optional().default(100),
 });
 
@@ -74,7 +76,10 @@ export async function POST(request: NextRequest) {
       data.combo_type,
       data.best_pattern,
       data.top_axis_digits,
-      data.rehearsal_digits
+      data.rehearsal_digits,
+      undefined, // csvContent
+      data.rehearsal_n3,
+      data.rehearsal_n4
     );
 
     console.log('組み合わせ予測結果:', {

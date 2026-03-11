@@ -84,7 +84,9 @@ export async function predictCombination(
   comboType: 'box' | 'straight',
   bestPattern: 'A1' | 'A2' | 'B1' | 'B2',
   topAxisDigits: number[],
-  rehearsalDigits?: string
+  rehearsalDigits?: string,
+  rehearsalN3?: string,
+  rehearsalN4?: string
 ): Promise<CombinationPredictionResult> {
   const response = await callPythonProxy({
     endpoint: '/api/predict/combination',
@@ -95,6 +97,8 @@ export async function predictCombination(
       best_pattern: bestPattern,
       top_axis_digits: topAxisDigits,
       rehearsal_digits: rehearsalDigits,
+      rehearsal_n3: rehearsalN3,
+      rehearsal_n4: rehearsalN4,
     },
   });
 
