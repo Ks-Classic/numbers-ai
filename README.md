@@ -1,521 +1,235 @@
-# ナンバーズAI予測システム (Numbers-AI)
+# Numbers-AI — AI-Powered Numbers Prediction System
 
-独自の「中国罫線」理論とAI技術を融合した、ナンバーズ3/4の当選番号予測Webアプリケーション
+> A production-grade AI prediction system for Japanese Numbers lottery (Numbers 3/4),  
+> combining proprietary domain theory with multi-model XGBoost ensemble and full-stack web application.
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue)](https://www.typescriptlang.org/)
 [![Next.js](https://img.shields.io/badge/Next.js-14.2-black)](https://nextjs.org/)
-[![License](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-green)](https://fastapi.tiangolo.com/)
+[![XGBoost](https://img.shields.io/badge/XGBoost-2.0-orange)](https://xgboost.readthedocs.io/)
+[![Python](https://img.shields.io/badge/Python-3.10-yellow)](https://www.python.org/)
+[![React](https://img.shields.io/badge/React-18.3-cyan)](https://react.dev/)
 
 ---
 
-## 📋 目次
+## System Scale
 
-- [概要](#概要)
-- [主な機能](#主な機能)
-- [技術スタック](#技術スタック)
-- [環境構築](#環境構築)
-- [使い方](#使い方)
-- [プロジェクト構造](#プロジェクト構造)
-- [ドキュメント](#ドキュメント)
-- [開発ロードマップ](#開発ロードマップ)
-- [貢献](#貢献)
-- [ライセンス](#ライセンス)
-
-
----
-
-## ⚠️ 緊急通知
-
-**🔴 重要**: 現在の予測モデルは間違ったデータで学習されています（2026-01-15発覚）
-
-- **問題**: 学習データの99.3%がリハーサル番号と本番番号が逆だった
-- **影響**: 予測精度に重大な影響がある
-- **対応**: [モデル再学習のTODO](./docs/02_todo/01_ai_improvement/01-07_モデル再学習（データ修正対応）.md) を参照 ⭐
-- **データ修正**: 完了（GitHubプッシュ済み）
-- **次のステップ**: 正しいデータでモデルを再学習（詳細は上記TODO参照）
+| Metric | Value |
+|--------|-------|
+| Total TypeScript/TSX codebase | **12,200+ lines** |
+| Total Python codebase | **30,000+ lines** |
+| React UI components | **17 components** |
+| API route handlers | **16 endpoints** |
+| ML training/analysis scripts | **14,900+ lines across 30+ scripts** |
+| Trained model artifacts | **103 files** (incl. 79 vectorized batch files) |
+| Training datasets | **6 dedicated datasets** (N3/N4 × axis/box/straight) |
+| Feature dimensions | **70+ engineered features** |
+| Prediction models | **6 specialized XGBoost models** |
+| Design documents | **100+ pages** |
+| Data files | **193 files** (CSV, JSON, PKL) |
+| Dual-language implementation | TypeScript (Web) + Python (ML) |
 
 ---
 
+## Architecture Overview
 
-
-## 概要
-
-ナンバーズAI予測システムは、紙媒体で管理されていた「中国罫線」という独自の予測理論をデジタル化し、過去約6,700回分のデータから学習したAIモデルを用いて、ナンバーズ3/4の当選番号候補をスコア順にランキング表示するWebアプリケーションです。
-
-### 🎯 プロジェクトの特徴
-
-- **独自理論のデジタル化**: 紙媒体の罫線理論を完全にデジタル化
-- **AI多角分析**: XGBoostを用いた8つの専門モデルで多角的に予測
-- **3ステップで完結**: 回号入力 → リハーサル入力 → 予測結果表示
-- **モバイルファースト**: スマートフォンでの使用を前提としたUI/UX
-- **高速レスポンス**: 5秒以内にAI予測結果を表示
-
-### 🚀 開発アプローチ
-
-本プロジェクトは、MVP（Minimum Viable Product）から段階的に機能を拡張するアジャイル開発を採用しています。
-
-**現在のフェーズ: MVP（Phase 1）**
-- 開発期間: 7日間
-- 対象: N3/N4の基本予測機能
-- データ: 直近100回分
-
----
-
-## 主な機能
-
-### ✅ MVP版（Phase 1）
-
-- **予測表自動生成**: 中国罫線理論に基づく予測表を自動生成
-- **AI軸数字予測**: 当選確率が高い軸数字（0〜9）をスコア順に提示
-- **AI組み合わせ予測**: 軸数字を含む当選番号候補をランキング表示
-- **N3/N4対応**: ナンバーズ3と4の両方に対応
-- **ボックス/ストレート対応**: 2つの予測タイプに対応
-- **手動指定軸機能**: ユーザーが任意の軸数字を指定して予測
-
-### ✅ CUBE生成機能（Phase 1+）
-
-- **CUBE自動生成**: 回号を入力すると、通常CUBE（8個）と極CUBE（2個）を自動生成
-- **現罫線/新罫線対応**: 両方の罫線マスターデータに対応（合計10個のCUBE）
-- **Excel貼り付け対応**: 生成されたCUBEをクリップボードにコピーしてExcelに直接貼り付け可能
-- **TypeScript実装**: Next.js内包型で、FastAPIサーバーへの依存なし
-
-### 🔜 今後の予定
-
-- **Phase 2**: 学習データを1,800回分に拡大（MVP+2週間）
-- **Phase 3**: アンサンブル学習の実装（MVP+1ヶ月）
-- **Phase 4**: 0あり/0なし統一モデル、Supabase移行（MVP+3ヶ月）
-
----
-
-## 技術スタック
-
-### フロントエンド
-
-- **Next.js** 14.2+ (App Router)
-- **React** 18.3+
-- **TypeScript** 5.3+
-- **Tailwind CSS** 3.4+
-- **Redux Toolkit** 2.0+
-- **Framer Motion**: アニメーション
-
-### バックエンド（MVP版）
-
-- **Next.js API Routes**: サーバーレス関数
-- **TypeScript**: ビジネスロジック（CUBE生成を含む）
-- **FastAPI** (Python): AI推論エンジン（XGBoostモデル実行）
-
-### AI/ML
-
-- **XGBoost** 2.0+: 機械学習アルゴリズム
-- **scikit-learn** 1.3+: 前処理・評価
-- **Python** 3.10+: AIモデル開発
-
-### インフラ
-
-- **Vercel**: ホスティング + CI/CD
-- **GitHub**: ソースコード管理
-- **CSV**: データストレージ（MVP版）
-
----
-
-## 環境構築
-
-### 前提条件
-
-- Node.js 20.x以上
-- pnpm 9.0.0以上（高速・省スペースなパッケージマネージャー）
-  ```bash
-  npm install -g pnpm
-  ```
-- Python 3.10以上（AI開発時）
-
-### セットアップ手順
-
-1. **リポジトリのクローン**
-
-```bash
-git clone https://github.com/YOUR_USERNAME/numbers-ai.git
-cd numbers-ai
+```
+┌──────────────────────────────────────────────────────────────┐
+│                    Numbers-AI Architecture                     │
+│                                                               │
+│  ┌─────────────┐    ┌──────────────┐    ┌──────────────────┐ │
+│  │  Next.js     │    │  Next.js     │    │  FastAPI         │ │
+│  │  Frontend    │───▶│  API Routes  │───▶│  ML Inference    │ │
+│  │  (React/TS)  │    │  (16 routes) │    │  Server (Python) │ │
+│  │  12,200+ LoC │    │              │    │  30,000+ LoC     │ │
+│  └─────────────┘    └──────┬───────┘    └────────┬─────────┘ │
+│                            │                      │           │
+│                     ┌──────▼──────────────────────▼────────┐ │
+│                     │  Domain Theory Engine                 │ │
+│                     │  (Proprietary Algorithm — Patent      │ │
+│                     │   Pending — Details Not Published)     │ │
+│                     └──────────────┬───────────────────────┘ │
+│                                    │                          │
+│                  ┌─────────────────▼─────────────────┐       │
+│                  │  Feature Engineering Pipeline       │       │
+│                  │  70+ dimensions × 4 categories      │       │
+│                  │  ┌───────┐ ┌───────┐ ┌──────────┐ │       │
+│                  │  │Shape  │ │Pos.   │ │Relation  │ │       │
+│                  │  │(7 dim)│ │(12dim)│ │(~35 dim) │ │       │
+│                  │  └───────┘ └───────┘ └──────────┘ │       │
+│                  └─────────────────┬─────────────────┘       │
+│                                    │                          │
+│         ┌──────────────────────────▼──────────────────────┐  │
+│         │  6× Specialized XGBoost Models                   │  │
+│         │  ┌─────────┐ ┌─────────┐ ┌─────────┐           │  │
+│         │  │N3 Axis  │ │N3 Box   │ │N3 Str.  │           │  │
+│         │  │Predictor│ │Combiner │ │Combiner │           │  │
+│         │  └─────────┘ └─────────┘ └─────────┘           │  │
+│         │  ┌─────────┐ ┌─────────┐ ┌─────────┐           │  │
+│         │  │N4 Axis  │ │N4 Box   │ │N4 Str.  │           │  │
+│         │  │Predictor│ │Combiner │ │Combiner │           │  │
+│         │  └─────────┘ └─────────┘ └─────────┘           │  │
+│         │  103 model artifacts │ 79 vectorized batches     │  │
+│         └─────────────────────────────────────────────────┘  │
+└──────────────────────────────────────────────────────────────┘
 ```
 
-2. **依存関係のインストール**
+---
 
-```bash
-pnpm install
-```
+## Technology Stack
 
-3. **環境変数の設定**
-
-```bash
-# .env.localファイルを作成
-echo "FASTAPI_URL=http://localhost:8000" > .env.local
-```
-
-`.env.local` を編集して `FASTAPI_URL` を設定してください。
-
-4. **FastAPIサーバーの起動**
-
-```bash
-# apiディレクトリに移動
-cd api
-
-# 仮想環境を作成（初回のみ）
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-
-# 依存関係をインストール（初回のみ）
-pip install -r requirements.txt
-
-# サーバーを起動
-python run.py
-```
-
-FastAPIサーバーは `http://localhost:8000` で起動します。
-
-5. **Next.js開発サーバーの起動**
-
-別のターミナルで：
-
-```bash
-# プロジェクトルートに戻る
-cd ..
-
-# 開発サーバーを起動
-pnpm dev
-```
-
-ブラウザで `http://localhost:3000` を開いてください。
-
-### API統合テストの実行
-
-両方のサーバーが起動している状態で、以下のコマンドでAPI統合テストを実行できます：
-
-```bash
-# テストスクリプトを実行
-pnpm test:api
-
-# または直接実行
-bash scripts/test-api.sh
-```
-
-テストスクリプトは以下を確認します：
-- FastAPIサーバーのヘルスチェック
-- Next.js API Routeの動作確認
-- FastAPI軸数字予測エンドポイントのテスト
-- FastAPI組み合わせ予測エンドポイントのテスト
-
-詳細は `docs/SETUP.md` を参照してください。
-
-### Vercelへのデプロイ
-
-プロジェクトをVercelにデプロイする手順：
-
-1. **GitHubリポジトリにプッシュ**
-   ```bash
-   git add .
-   git commit -m "Deploy to Vercel"
-   git push origin main
-   ```
-
-2. **Vercelプロジェクトの作成**
-   - [Vercelダッシュボード](https://vercel.com/dashboard)にログイン
-   - 「Add New...」→「Project」をクリック
-   - GitHubリポジトリ `Ks-Classic/numbers-ai` を選択
-   - プロジェクト名: `numbers-ai` を確認
-
-3. **環境変数の設定**
-   - Vercelダッシュボード → Settings → Environment Variables
-   - **必須**: `GITHUB_TOKEN` を設定（GitHub Personal Access Token、データ更新機能用）
-     - スコープ: `repo`, `workflow`
-   - **オプション**: `GITHUB_REPO` を設定（デフォルト: `Ks-Classic/numbers-ai`）
-   - Environment: Production, Preview, Development すべてにチェック
-
-4. **デプロイの実行**
-   - 「Deploy」ボタンをクリック
-   - デプロイが完了するまで待機
-
-**注意**: 
-- **CUBE生成機能はVercelでそのまま動作します**（FastAPIサーバー不要）
-- データ更新機能を使用する場合は、`GITHUB_TOKEN`の設定が必要です
-- 詳細は `docs/VERCEL_CUBE_DEPLOY.md` を参照してください
-
-### データの準備
-
-MVP版では、以下のデータファイルが必要です：
-
-**予測機能に必要なデータ:**
-- `data/past_results.csv`: 過去当選番号データ
-- `data/models/*.pkl`: 学習済みモデル（AI推論用）
-
-**CUBE生成機能に必要なデータ:**
-- `data/past_results.csv`: 過去当選番号データ（予測機能と共通）
-- `data/keisen_master.json`: 現罫線マスターデータ
-- `data/keisen_master_new.json`: 新罫線マスターデータ
-
-**注意**: これらのファイルはGitリポジトリに含まれている必要があります（Vercelデプロイ時に必要）。
-
-詳細は `docs/design/04-algorithm-ai.md` を参照してください。
-
-### AIモデルの学習
-
-モデルを学習する場合は、以下の手順でNotebookを実行してください：
-
-1. **データ準備** (`notebooks/01_data_preparation.ipynb`)
-   - 過去当選番号データの読み込みとクリーニング
-   - 学習用データセットの準備（直近100回分）
-
-2. **予測表生成** (`notebooks/02_chart_generation.ipynb`)
-   - 各回号に対して4パターン（A1/A2/B1/B2）の予測表を生成
-
-3. **特徴量エンジニアリング** (`notebooks/03_feature_engineering.ipynb`)
-   - 予測表から特徴量を抽出
-   - 学習データの生成と保存
-
-4. **モデル学習** (`notebooks/04_model_training.ipynb`)
-   - 6つの統合モデルの学習
-   - モデル評価と保存
-
-詳細な手順は `docs/design/04-algorithm-ai.md` の「4.5.2 モデル学習手順」を参照してください。
+| Layer | Technologies |
+|-------|-------------|
+| **Frontend** | Next.js 14.2, React 18.3, TypeScript 5.3, Tailwind CSS, Redux Toolkit, Framer Motion |
+| **Backend API** | Next.js API Routes (16 endpoints) |
+| **ML Inference** | FastAPI, Python 3.10 |
+| **ML Framework** | XGBoost 2.0, scikit-learn 1.3, LightGBM |
+| **Data Pipeline** | pandas, NumPy, custom feature extractors |
+| **Infrastructure** | Vercel (Frontend), GitHub CI/CD |
+| **State Management** | Redux Toolkit with async thunks |
+| **Visualization** | Recharts, custom chart generators |
 
 ---
 
-## 使い方
+## ML Pipeline
 
-### Webアプリケーション
+### 6-Model Ensemble Architecture
 
-#### 予測機能（Phase 2以降）
+Each lottery type (N3/N4) has 3 dedicated prediction models:
 
-### 1. ホーム画面
+| Model | Task | Output |
+|-------|------|--------|
+| **Axis Number Predictor** | Classify digits 0-9 by win probability | Ranked digit scores |
+| **Box Combination Model** | Rank unordered number combinations | Top-N candidates |
+| **Straight Combination Model** | Rank exact-order combinations | Top-N candidates |
 
-アプリを開くと、「新規予測を開始」ボタンが表示されます。
+### Feature Engineering
 
-### 2. 回号入力
+70+ features extracted across 4 categories from the proprietary domain transformation:
 
-4桁の回号（例: 6701）を入力します。
+- **Shape Features** (7 dims): Spatial pattern geometry
+- **Position Features** (12 dims): Grid coordinate statistics
+- **Relationship Features** (~35 dims): Multi-directional interaction analysis, distance metrics, overlap patterns
+- **Aggregate Features** (~7 dims): Statistical tendency summaries
 
-### 3. リハーサル数字入力
+> **Note**: The feature extraction logic and domain transformation algorithm are proprietary  
+> intellectual property. Implementation details are not published in this repository's documentation.
 
-- **N4**: 4桁のリハーサル数字を入力
-- **N3**: 3桁のリハーサル数字を入力
+### Training Data Pipeline
 
-各桁は自動的に次のフィールドにフォーカスが移動します。
-
-### 4. AI予測実行
-
-「AI予測を実行」ボタンをタップすると、AIが分析を開始します（3〜5秒）。
-
-### 5. 結果表示
-
-- **タブ切替**: N3/N4、ボックス/ストレート
-- **表示モード**: 軸数字モード / 総合ランキングモード
-- **軸数字候補**: スコア順にランキング表示、タップで展開
-- **手動指定軸**: 任意の数字（0〜9）を指定して予測
-
-#### CUBE生成機能
-
-### 1. CUBE表示ページにアクセス
-
-ナビゲーションから「CUBE」を選択するか、`/cube`にアクセスします。
-
-### 2. 回号を入力
-
-4桁の回号（例: 6851）を入力します。
-
-### 3. CUBE生成
-
-「生成」ボタンをクリックすると、以下の10個のCUBEが自動生成されます：
-
-- **通常CUBE（8個）**:
-  - 現罫線: N3/N4 × A1/A2/B1/B2 = 4個
-  - 新罫線: N3/N4 × A1/A2/B1/B2 = 4個
-- **極CUBE（2個）**:
-  - 現罫線: N3のみ = 1個
-  - 新罫線: N3のみ = 1個
-
-### 4. Excelにコピー
-
-各CUBEの「コピー」ボタンをクリックすると、TSV形式でクリップボードにコピーされます。Excelに貼り付けると、そのままCUBEとして表示されます。
-
-詳細は [CUBE生成ルール.md](./docs/01_design/CUBE生成ルール.md) を参照してください。
-
-### CLIツール（MVP版）
-
-コマンドラインから予測を実行するためのCLIツールが利用可能です。
-
-**使用方法:**
-
-```bash
-cd notebooks
-
-# コマンドライン引数で実行
-python predict_cli.py --round 6758 --n3-rehearsal 149 --n4-rehearsal 3782
-
-# 対話的に実行
-python predict_cli.py
 ```
-
-**出力内容:**
-- パターン別軸数字予測結果（A1/A2/B1/B2）
-- 最良パターンの特定
-- 軸数字ランキング（上位10件）
-- 組み合わせランキング（ボックス/ストレート別、上位10件）
-
-詳細は `notebooks/README_predict_cli.md` を参照してください。
+Historical Data (6,700+ draws)
+    → Proprietary Domain Transformation
+    → Feature Extraction (70+ dimensions)
+    → 6 Dedicated Training Datasets (.pkl)
+    → XGBoost Model Training
+    → 103 Serialized Model Artifacts
+    → 79 Vectorized Combination Batches
+```
 
 ---
 
-## プロジェクト構造
+## Project Structure
 
 ```
 numbers-ai/
-├── docs/                      # ドキュメント
-│   ├── requirements.md        # 要件定義書
-│   ├── specifications.md      # 技術仕様書
-│   ├── UIイメージ.md          # UI設計
-│   └── ...
-├── src/
-│   ├── app/                   # Next.js App Router
-│   ├── components/            # Reactコンポーネント
-│   ├── lib/                   # ビジネスロジック
-│   ├── store/                 # Redux状態管理
-│   └── types/                 # TypeScript型定義
-├── data/                      # データファイル（MVP）
-├── notebooks/                 # Jupyter Notebooks
-├── tests/                     # テストコード
-└── public/                    # 静的ファイル
+├── src/                           # Next.js Web Application (12,200+ LoC)
+│   ├── app/                       # App Router + 16 API route handlers
+│   │   └── api/                   # REST API endpoints
+│   ├── components/                # 17 React components
+│   ├── lib/                       # Core business logic
+│   │   ├── cube-generator/        # Domain theory engine (proprietary)
+│   │   ├── predictor/             # Prediction orchestration
+│   │   ├── data-loader/           # Data ingestion layer
+│   │   ├── chart-generator/       # Visualization engine
+│   │   └── utils/                 # Shared utilities
+│   ├── store/                     # Redux state management
+│   └── types/                     # TypeScript type definitions
+│
+├── core/                          # Python core logic modules
+├── api/                           # FastAPI ML inference server
+│
+├── scripts/                       # ML pipeline scripts (25,500+ LoC)
+│   ├── training/                  # Model training pipelines
+│   ├── analysis/                  # Statistical analysis tools
+│   ├── feature_engineering/       # Feature extraction logic
+│   └── data_processing/          # Data preparation utilities
+│
+├── data/                          # Data & Model artifacts (193 files)
+│   ├── training_data/             # 6 training datasets (.pkl)
+│   ├── models/                    # 103 trained model files
+│   │   └── combination_batches/   # 79 vectorized prediction batches
+│   ├── archive/                   # Historical reference data
+│   └── *.csv                      # 17 data source files
+│
+├── docs/                          # 100+ design documents
+└── notebooks/                     # Jupyter analysis notebooks
 ```
 
-詳細は `docs/specifications.md` の「ディレクトリ構成」セクションを参照してください。
+---
+
+## Key Features
+
+- **AI Axis Prediction**: Scores and ranks digits 0-9 by predicted win probability
+- **AI Combination Prediction**: Generates ranked lottery number candidates
+- **Dual Support**: Numbers 3 (3-digit) and Numbers 4 (4-digit)
+- **Box/Straight Modes**: Both unordered and exact-order predictions
+- **Manual Override**: Users can specify custom axis digits for prediction
+- **Domain Theory Visualization**: Proprietary transformation results with Excel export
+- **Responsive UI**: Mobile-friendly with animated transitions (Framer Motion)
 
 ---
 
-## ドキュメント
+## Quick Start
 
-プロジェクトの詳細な情報は、以下のドキュメントを参照してください：
+### Prerequisites
 
-### 📚 主要ドキュメント（v2.0: 7カテゴリ分割版）
+- Node.js 20.x+
+- pnpm 9.0.0+
+- Python 3.10+ (for ML inference)
 
-#### 開発の3本柱ドキュメント
-- **[01-ビジネス要件定義書](./docs/01-business-requirements.md)**: システムの要件・機能・非機能要件（**What**を定義）
-- **[02-システムアーキテクチャ設計書](./docs/02-system-architecture.md)**: 技術スタック・システム構成（**How - Architecture**を定義）
-- **[06-実装計画書](./docs/06-implementation-plan.md)** または [元ネタ版](./docs/元ネタ/implementation-plan.md): 段階的な開発計画・技術選定理由（**When & Why**を定義）⭐️ **開発前必読**
-
-#### 設計ドキュメント
-- **[03-データ・API設計書](./docs/03-data-api-design.md)**: データモデル・API仕様（**How - Data Layer**）
-- **[04-アルゴリズム・AI設計書](./docs/04-algorithm-ai.md)**: 予測表生成・AIモデル（**How - Core Logic**）
-- **[05-フロントエンド設計書](./docs/05-frontend-design.md)**: UI/UXガイドライン・コンポーネント（**How - UI/UX**）
-
-#### 運用ドキュメント
-- **[07-運用・品質管理書](./docs/07-operations-quality.md)**: CI/CD・セキュリティ・品質基準（**DevOps & QA**）
-
-#### 補助ドキュメント
-- **[INDEX.md](./docs/INDEX.md)**: ドキュメントインデックス（推奨読書順序付き）
-- **[SUMMARY.md](./docs/SUMMARY.md)**: ドキュメント作成サマリー
-- **[UIイメージ.md](./docs/UIイメージ.md)**: 詳細なUI設計
-
-### 📖 ドキュメントの読み方
-
-1. **初めての方**: `INDEX.md` → `01-business-requirements.md` → `06-implementation-plan.md`⭐️ の順に読むことを推奨
-2. **開発者**: `06-implementation-plan.md`で現在のフェーズを確認⭐️ → 必要なドキュメント（02〜05）を参照
-3. **アルゴリズム理解**: `04-algorithm-ai.md`で予測表生成ロジックを理解
-
-**重要**: `06-implementation-plan.md`は、「なぜ今この技術を使うのか」「なぜ今は使わないのか」を明確にしているため、開発開始前に必ず読んでください。⭐️
-
-**v2.0の改善点:**
-- 巨大ドキュメントを7つのカテゴリに分割
-- 各ドキュメントが10,000文字以下で読みやすい
-- 役割別・開発フェーズ別に最適化された構成
-
----
-
-## 開発ロードマップ
-
-### ✅ Phase 1: MVP（7日間） - 現在
-
-- [x] 環境構築
-- [x] ドキュメント作成
-- [x] 罫線データのデジタル化
-- [x] 予測表生成アルゴリズム実装
-- [x] AIモデル構築（100回分データ）
-- [x] フロントエンド実装
-- [x] Vercelデプロイ設定（vercel.json作成完了）
-
-### 🔜 Phase 2: 信頼性向上（MVP+2週間）
-
-- [ ] 学習データを1,800回分に拡大
-- [ ] モデル再学習・精度向上
-- [ ] パフォーマンス最適化
-
-### 🔜 Phase 3: アンサンブル導入（MVP+1ヶ月）
-
-- [ ] 全6,700回分データで学習
-- [ ] チャート・マスターモデル構築
-- [ ] アンサンブル学習実装
-
-### 🔜 Phase 4: プロフェッショナル化（MVP+3ヶ月）
-
-- [ ] 0あり/0なし統一モデル
-- [ ] Supabase移行
-- [ ] GCP Cloud Run移行
-- [ ] ユーザー認証機能
-- [ ] 履歴管理機能
-
----
-
-## 開発コマンド
+### Web Application
 
 ```bash
-# 開発サーバー起動
+git clone https://github.com/Ks-Classic/numbers-ai.git
+cd numbers-ai
+pnpm install
 pnpm dev
+```
 
-# ビルド
-pnpm build
+### ML Inference Server
 
-# 本番環境起動
-pnpm start
-
-# Lint
-pnpm lint
-
-# テスト実行
-pnpm test:data-loader
-pnpm test:chart-generator
-pnpm test:patterns
-pnpm test:api
+```bash
+cd api
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+python run.py
 ```
 
 ---
 
-## 貢献
+## Development
 
-現在このプロジェクトは個人開発中のため、外部からの貢献は受け付けていません。
-
-将来的にオープンソース化する予定です。
-
----
-
-## ライセンス
-
-MIT License
-
-Copyright (c) 2025 Numbers-AI Project
+```bash
+pnpm dev              # Development server (http://localhost:3000)
+pnpm build            # Production build
+pnpm start            # Production server
+pnpm lint             # ESLint
+pnpm test:api         # API integration tests
+```
 
 ---
 
-## 参考リソース
+## License
 
-- **元リポジトリ**: [genesis-numbers](https://github.com/Ks-Classic/genesis-numbers)
-- **Next.js ドキュメント**: https://nextjs.org/docs
-- **XGBoost ドキュメント**: https://xgboost.readthedocs.io/
-- **Vercel ドキュメント**: https://vercel.com/docs
+MIT License — Copyright (c) 2025 Numbers-AI Project
 
----
-
-## お問い合わせ
-
-プロジェクトに関する質問・要望は、GitHub Issuesまでお願いします。
+> **Intellectual Property Notice**: While the source code is MIT-licensed,  
+> the proprietary prediction theory, domain transformation algorithms,  
+> and feature engineering methodology constitute trade secrets  
+> and are protected intellectual property.
 
 ---
 
-**Last Updated**: 2025-11-22
-
+**Last Updated**: 2026-03-13
